@@ -973,14 +973,25 @@ def crear_reserva_fija_dueno(request, complejo_slug):
     cancha = get_object_or_404(Cancha, id=cancha_id, complejo=complejo)
     
     try:
+        from datetime import datetime, timedelta
+        
+        # Calcular hora_fin basado en la duración del turno
+        hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
+        hora_inicio_dt = datetime.combine(timezone.now().date(), hora_inicio_obj)
+        hora_fin_dt = hora_inicio_dt + timedelta(minutes=cancha.duracion_turno_minutos)
+        hora_fin = hora_fin_dt.time()
+        
         # Crear reserva fija
         reserva_fija = ReservaFija.objects.create(
             cancha=cancha,
             dia_semana=int(dia_semana),
             hora_inicio=hora_inicio,
+            hora_fin=hora_fin,
+            fecha_inicio=timezone.now().date(),
             nombre_cliente=nombre_cliente,
             telefono_cliente=telefono_cliente,
-            precio=float(precio)
+            precio=float(precio),
+            creada_por=perfil_dueno
         )
         
         # Mapear día de semana a nombre
