@@ -23,10 +23,10 @@ urlpatterns = [
     path('dashboard/<slug:slug>/estadisticas/', dashboard_views.estadisticas_complejo, name='estadisticas'),
     
     # Calendario y gestión de reservas para dueños
-    path('<slug:slug>/reservas/', views.calendario_reservas_dueno, name='calendario_reservas_dueno'),
-    path('<slug:slug>/reservas/crear/', views.crear_reserva_dueno, name='crear_reserva_dueno'),
-    path('<slug:slug>/reservas/fija/crear/', views.crear_reserva_fija_dueno, name='crear_reserva_fija_dueno'),
-    path('<slug:slug>/reservas/<int:reserva_id>/cancelar/', views.cancelar_reserva_dueno, name='cancelar_reserva_dueno'),
+    path('<slug:complejo_slug>/reservas/', views.calendario_reservas_dueno, name='calendario_reservas_dueno'),
+    path('<slug:complejo_slug>/reservas/crear/', views.crear_reserva_dueno, name='crear_reserva_dueno'),
+    path('<slug:complejo_slug>/reservas/fija/crear/', views.crear_reserva_fija_dueno, name='crear_reserva_fija_dueno'),
+    path('<slug:complejo_slug>/reservas/<int:reserva_id>/cancelar/', views.cancelar_reserva_dueno, name='cancelar_reserva_dueno'),
     
     # Gestión de complejo y canchas
     path('<slug:slug>/gestionar/', views.gestionar_complejo, name='gestionar'),
