@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}{{ complejo.nombre }} - DeRevés{% endblock %}
 
@@ -223,9 +224,9 @@
     // Inicializar Google Maps
     function initMap() {
         try {
-            // Coordenadas numéricas directas
-            const latitud = {{ complejo.latitud|default:0 }};
-            const longitud = {{ complejo.longitud|default:0 }};
+            // Coordenadas seguras para JavaScript
+            const latitud = parseFloat('{{ complejo.latitud|default_if_none:"0"|unlocalize }}');
+            const longitud = parseFloat('{{ complejo.longitud|default_if_none:"0"|unlocalize }}');
             
             const position = { 
                 lat: latitud, 
