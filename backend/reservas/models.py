@@ -883,11 +883,22 @@ class ReservaFija(models.Model):
         on_delete=models.CASCADE,
         related_name='reservas_fijas'
     )
+    # Jugador asignado al turno fijo (puede ser null si es reserva del dueño para cliente sin cuenta)
     jugador = models.ForeignKey(
         'cuentas.PerfilJugador',
         on_delete=models.CASCADE,
-        related_name='reservas_fijas'
+        related_name='reservas_fijas',
+        null=True,
+        blank=True
     )
+
+    # Campos para turnos fijos de clientes sin cuenta
+    nombre_cliente = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Nombre del cliente que tiene el turno fijo'
+    )
+    telefono_cliente = models.CharField(max_length=20, blank=True)
     
     # Día y horario del turno fijo
     dia_semana = models.IntegerField(
