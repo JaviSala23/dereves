@@ -189,7 +189,7 @@
     </div>
 
     <!-- Mapa (si tiene coordenadas) -->
-    {% if complejo.latitud and complejo.longitud %}
+    {% if tiene_coordenadas_validas %}
         <div class="card">
             <div class="card-body">
                 <h4 class="mb-3">
@@ -218,18 +218,22 @@
     {% endif %}
 </div>
 
-{% if complejo.latitud and complejo.longitud %}
+{% if tiene_coordenadas_validas %}
 <script>
     // Inicializar Google Maps
     function initMap() {
         try {
+            // Coordenadas numéricas directas
+            const latitud = {{ complejo.latitud|default:0 }};
+            const longitud = {{ complejo.longitud|default:0 }};
+            
             const position = { 
-                lat: parseFloat("{{ complejo.latitud }}"), 
-                lng: parseFloat("{{ complejo.longitud }}") 
+                lat: latitud, 
+                lng: longitud 
             };
             
             // Validar que las coordenadas sean números válidos
-            if (isNaN(position.lat) || isNaN(position.lng)) {
+            if (isNaN(position.lat) || isNaN(position.lng) || (position.lat === 0 && position.lng === 0)) {
                 console.error('Coordenadas inválidas:', position);
                 return;
             }
@@ -242,24 +246,30 @@
                 fullscreenControl: true,
             });
             
+            // Datos seguros para el marcador
+            const complejoNombre = "{{ complejo.nombre|escapejs }}";
+            const complejoDireccion = "{{ complejo.direccion|escapejs }}";
+            const complejoLocalidad = "{{ complejo.localidad|escapejs }}";
+            
             const marker = new google.maps.Marker({
                 position: position,
                 map: map,
-                title: "{{ complejo.nombre|escapejs }}",
+                title: complejoNombre,
                 animation: google.maps.Animation.DROP,
             });
             
+            // Crear contenido del infoWindow
+            const infoContent = '<div style="padding: 10px;">' +
+                '<h5 class="mb-2">' + complejoNombre + '</h5>' +
+                '<p class="mb-1"><strong>' + complejoDireccion + '</strong></p>' +
+                '<p class="mb-0 text-muted">' + complejoLocalidad + '</p>' +
+                '</div>';
+            
             const infoWindow = new google.maps.InfoWindow({
-                content: `
-                    <div style="padding: 10px;">
-                        <h5 class="mb-2">{{ complejo.nombre|escapejs }}</h5>
-                        <p class="mb-1"><strong>{{ complejo.direccion|escapejs }}</strong></p>
-                        <p class="mb-0 text-muted">{{ complejo.localidad|escapejs }}</p>
-                    </div>
-                `
+                content: infoContent
             });
             
-            marker.addListener("click", () => {
+            marker.addListener("click", function() {
                 infoWindow.open(map, marker);
             });
             

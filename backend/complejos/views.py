@@ -104,10 +104,23 @@ def detalle_complejo(request, slug):
     canchas = complejo.canchas.filter(activo=True)
     servicios = complejo.servicios.all()
     
+    # Validar coordenadas para evitar errores en el mapa
+    tiene_coordenadas_validas = False
+    if complejo.latitud and complejo.longitud:
+        try:
+            lat = float(complejo.latitud)
+            lng = float(complejo.longitud)
+            # Validar que estén en rangos válidos
+            if -90 <= lat <= 90 and -180 <= lng <= 180 and (lat != 0 or lng != 0):
+                tiene_coordenadas_validas = True
+        except (ValueError, TypeError):
+            pass
+    
     context = {
         'complejo': complejo,
         'canchas': canchas,
         'servicios': servicios,
+        'tiene_coordenadas_validas': tiene_coordenadas_validas,
         'GOOGLE_MAPS_API_KEY': settings.GOOGLE_MAPS_API_KEY,
     }
     return render(request, 'complejos/detalle.html', context)
