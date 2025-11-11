@@ -269,28 +269,35 @@
                             <option value="BLOQUEADA">Bloqueo de Horario</option>
                             <option value="MANTENIMIENTO">Mantenimiento</option>
                         </select>
+                        <small class="text-muted">
+                            <strong>Cliente:</strong> Reserva para un cliente específico<br>
+                            <strong>Administrativa:</strong> Uso interno (no requiere cliente)<br>
+                            <strong>Bloqueada:</strong> Horario no disponible<br>
+                            <strong>Mantenimiento:</strong> Mantenimiento de cancha
+                        </small>
                     </div>
                     
                     <div id="campos_cliente">
                         <div class="mb-3">
-                            <label class="form-label">Nombre del Cliente</label>
-                            <input type="text" name="nombre_cliente" class="form-control" placeholder="Nombre completo">
+                            <label class="form-label">Nombre del Cliente <small class="text-muted">(opcional)</small></label>
+                            <input type="text" name="nombre_cliente" id="nombre_cliente" class="form-control" placeholder="Nombre completo">
+                            <small class="text-muted">Solo necesario para reservas de cliente</small>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Teléfono</label>
-                            <input type="tel" name="telefono_cliente" class="form-control" placeholder="Ej: 351-1234567">
+                            <label class="form-label">Teléfono <small class="text-muted">(opcional)</small></label>
+                            <input type="tel" name="telefono_cliente" id="telefono_cliente" class="form-control" placeholder="Ej: 351-1234567">
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Precio</label>
-                            <input type="number" name="precio" class="form-control" step="0.01" placeholder="Dejar vacío para usar precio default">
+                            <label class="form-label">Precio <small class="text-muted">(opcional)</small></label>
+                            <input type="number" name="precio" id="precio_reserva" class="form-control" step="0.01" placeholder="Dejar vacío para usar precio default de la cancha">
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Observaciones</label>
-                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Notas adicionales..."></textarea>
+                        <label class="form-label">Observaciones <small class="text-muted">(opcional)</small></label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Notas adicionales (ej: motivo del bloqueo, detalles del cliente, etc.)"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -321,11 +328,21 @@ function abrirModalReserva(canchaId, canchaNombre, hora) {
 function toggleCamposCliente() {
     const tipo = document.getElementById('tipo_reserva').value;
     const campos = document.getElementById('campos_cliente');
+    const nombreInput = document.getElementById('nombre_cliente');
+    const telefonoInput = document.getElementById('telefono_cliente');
+    const precioInput = document.getElementById('precio_reserva');
     
     if (tipo === 'CLIENTE') {
+        // Mostrar campos y marcar como opcionales pero visibles
         campos.style.display = 'block';
+        campos.style.opacity = '1';
     } else {
+        // Ocultar campos para otros tipos
         campos.style.display = 'none';
+        // Limpiar valores cuando no son necesarios
+        nombreInput.value = '';
+        telefonoInput.value = '';
+        precioInput.value = '';
     }
 }
 

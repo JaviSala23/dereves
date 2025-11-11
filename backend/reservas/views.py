@@ -482,7 +482,15 @@ def crear_reserva_fija(request, cancha_id):
     turnos_bloqueados = reserva_fija.bloquear_turnos_futuros(hasta_fecha)
     
     dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-    cliente_nombre = jugador.alias if jugador else nombre_cliente
+    
+    # Determinar nombre para el mensaje
+    if jugador:
+        cliente_nombre = jugador.alias
+    elif nombre_cliente:
+        cliente_nombre = nombre_cliente
+    else:
+        cliente_nombre = "Reserva administrativa"
+    
     messages.success(
         request, 
         f'Reserva fija creada: {dias[dia_semana]}s {hora_inicio_str} para {cliente_nombre}. Se bloquearon {len(turnos_bloqueados)} turnos.'

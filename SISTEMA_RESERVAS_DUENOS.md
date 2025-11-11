@@ -61,23 +61,35 @@
 2. **Crear Reserva para Cliente**:
    - Click en "Nueva Reserva/Bloqueo"
    - Seleccionar: Tipo = "Reserva de Cliente"
-   - Ingresar nombre y teléfono del cliente
+   - **Nombre y teléfono son OPCIONALES** (si el cliente no tiene cuenta)
    - Ingresar precio (o dejar vacío para usar precio default)
    - Agregar observaciones si es necesario
 
 3. **Bloquear Horario**:
    - Click en "Nueva Reserva/Bloqueo"
    - Seleccionar: Tipo = "Bloqueo de Horario"
-   - Agregar observaciones (ej: "Torneo interno")
+   - **NO requiere datos de cliente**
+   - Agregar observaciones (ej: "Torneo interno", "Evento privado")
    - El horario quedará bloqueado y no disponible para jugadores
 
 4. **Reserva Administrativa**:
    - Para eventos especiales, entrenamientos, etc.
-   - No requiere datos de cliente
+   - **NO requiere datos de cliente**
+   - Ideal para uso interno del complejo
 
 5. **Mantenimiento**:
    - Para marcar horarios de mantenimiento de cancha
+   - **NO requiere datos de cliente**
    - Visible con color especial en el calendario
+
+### Reservas Fijas (Turnos Recurrentes)
+
+- Se crean desde "Gestionar Complejo"
+- **Cliente es OPCIONAL**: puede ser para un jugador específico o administrativa
+- Si es para un jugador registrado: seleccionar de la lista
+- Si es para cliente sin cuenta: ingresar nombre
+- Si es administrativa: dejar ambos vacíos
+- Se bloquean automáticamente todos los turnos futuros
 
 ### Para Jugadores
 

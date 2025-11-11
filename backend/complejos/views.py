@@ -872,8 +872,22 @@ def crear_reserva_dueno(request, complejo_slug):
         turno.estado = 'RESERVADO'
     turno.save()
     
+    # Mensaje de éxito personalizado
     tipo_texto = dict(Reserva.TIPO_RESERVA_CHOICES).get(tipo_reserva, 'Reserva')
-    messages.success(request, f'{tipo_texto} creada exitosamente.')
+    
+    if tipo_reserva == 'CLIENTE' and nombre_cliente:
+        mensaje = f'{tipo_texto} creada para {nombre_cliente} - {hora_inicio_str}'
+    elif tipo_reserva == 'CLIENTE':
+        mensaje = f'{tipo_texto} creada - {hora_inicio_str}'
+    elif tipo_reserva == 'BLOQUEADA':
+        razon = f" ({observaciones[:30]}...)" if observaciones else ""
+        mensaje = f'Horario bloqueado: {hora_inicio_str}{razon}'
+    elif tipo_reserva == 'MANTENIMIENTO':
+        mensaje = f'Mantenimiento programado: {hora_inicio_str}'
+    else:  # ADMINISTRATIVA
+        mensaje = f'{tipo_texto}: {hora_inicio_str}'
+    
+    messages.success(request, mensaje)
     
     return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
 
