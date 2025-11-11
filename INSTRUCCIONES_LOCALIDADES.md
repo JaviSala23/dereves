@@ -1,18 +1,43 @@
-# Sistema de Localidades Personalizadas
+# Sistema de Localidades Personalizadas y Múltiples Fotos
 
 ## Resumen
-Se ha implementado un sistema completo para que los dueños de complejos puedan agregar sus propias localidades si no encuentran la suya en la lista predeterminada.
+Se han implementado dos funcionalidades principales:
+1. **Sistema de localidades personalizadas** - Los dueños pueden agregar sus localidades
+2. **Múltiples fotos por complejo** - Los complejos pueden tener una galería de fotos
 
 ## Cambios Realizados
 
-### 1. Nuevo Modelo: `Localidad`
-**Archivo:** `backend/complejos/models.py`
+### 1. Nuevos Modelos
 
+#### a) `Localidad`
+**Archivo:** `backend/complejos/models.py`
 - Almacena localidades personalizadas agregadas por usuarios
 - Campos: nombre, provincia, país, agregada_por, aprobada
 - Validación única por combinación de nombre + provincia + país
 
-### 2. API Endpoints Nuevos
+#### b) `FotoComplejo`
+**Archivo:** `backend/complejos/models.py`
+- Almacena múltiples fotos por complejo
+- Campos: complejo, imagen, descripcion, orden, es_principal
+- Auto-gestión de foto principal (solo una puede ser principal)
+
+### 2. Nuevos Templates
+
+#### a) `crear.html` (actualizado)
+- Soporte para subir logo (foto principal) - **REQUERIDO**
+- Soporte para subir múltiples fotos adicionales - **OPCIONAL**
+- Preview de fotos antes de subir
+- Validación de tamaño (máx 5MB por foto)
+
+#### b) `editar.html` (nuevo)
+- Formulario completo para editar datos del complejo
+- Gestión de país, provincia y localidad con selectores dinámicos
+- Subir nuevo logo
+- Agregar fotos a la galería existente
+- Eliminar fotos de la galería con confirmación SweetAlert2
+- Preview de fotos existentes
+
+### 3. API Endpoints
 
 #### a) Obtener localidades (actualizado)
 - **URL:** `/complejos/api/localidades/?provincia=NOMBRE_PROVINCIA`
@@ -32,21 +57,41 @@ Se ha implementado un sistema completo para que los dueños de complejos puedan 
 }
 ```
 
-### 3. Interfaz de Usuario
-**Archivo:** `backend/templates/complejos/crear.html`
+#### c) Eliminar foto (nuevo)
+- **URL:** `/complejos/<slug>/fotos/<foto_id>/eliminar/`
+- **Método:** POST
+- **Autenticación:** Requerida (debe ser dueño del complejo)
+- **Respuesta:** `{"success": true, "mensaje": "..."}`
 
-- Botón "+" junto al selector de localidades
-- Modal/prompt para ingresar nombre de nueva localidad
-- Actualización automática de la lista tras agregar
-- Selección automática de la localidad recién agregada
+### 4. Vistas Actualizadas
+#### a) `crear_complejo` (actualizada)
+- Maneja subida de logo (foto principal)
+- Maneja subida de múltiples fotos adicionales
+- Crea registros de FotoComplejo para cada foto
 
-### 4. Panel de Administración
+#### b) `editar_complejo` (actualizada)
+- Permite editar todos los campos del complejo
+- Maneja actualización de logo
+- Permite agregar más fotos a la galería
+
+#### c) `eliminar_foto_complejo` (nueva)
+- Permite eliminar fotos individuales de la galería
+- Valida permisos del usuario
+
+### 5. Panel de Administración
 **Archivo:** `backend/complejos/admin.py`
 
+#### Localidades
 - Vista de todas las localidades agregadas
 - Filtros por provincia, país, estado de aprobación
 - Acciones masivas: aprobar/desaprobar localidades
 - Visualización de quién agregó cada localidad
+
+#### Fotos de Complejos
+- Vista de todas las fotos por complejo
+- Edición de orden y foto principal
+- Filtros por complejo y fecha
+- Gestión completa de la galería
 
 ## Instrucciones para Desplegar
 
@@ -59,8 +104,9 @@ python manage.py makemigrations complejos
 Deberías ver algo como:
 ```
 Migrations for 'complejos':
-  complejos/migrations/000X_localidad.py
+  complejos/migrations/000X_localidad_fotocomplejo.py
     - Create model Localidad
+    - Create model FotoComplejo
 ```
 
 ### Paso 2: Aplicar Migraciones
@@ -70,11 +116,29 @@ python manage.py migrate complejos
 
 ### Paso 3: Verificar en Admin
 1. Accede al panel de administración: `/admin/`
-2. Verifica que aparezca la sección "Localidades" bajo "Complejos"
+2. Verifica que aparezcan las secciones:
+   - "Localidades" bajo "Complejos"
+   - "Fotos de Complejos" bajo "Complejos"
 
 ### Paso 4: Probar la Funcionalidad
 
-#### Desde el Formulario de Crear Complejo:
+#### A) Crear Complejo con Fotos:
+1. Ve a `/complejos/crear/`
+2. Llena el formulario
+3. **Sube un logo (obligatorio)**
+4. Opcionalmente, sube múltiples fotos adicionales
+5. Ve el preview de las fotos antes de guardar
+6. Guarda el complejo
+
+#### B) Editar Complejo:
+1. Ve a `/complejos/<slug>/editar/`
+2. Edita cualquier campo del complejo
+3. Cambia el logo si quieres
+4. Agrega más fotos a la galería
+5. Elimina fotos existentes con el botón "Eliminar"
+6. Guarda los cambios
+
+#### C) Agregar Localidades:
 1. Ve a `/complejos/crear/`
 2. Selecciona un país (Argentina)
 3. Selecciona una provincia

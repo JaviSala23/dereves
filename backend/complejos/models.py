@@ -100,6 +100,45 @@ class Complejo(models.Model):
         return self.nombre
 
 
+class FotoComplejo(models.Model):
+    """
+    Modelo para almacenar múltiples fotos de un complejo.
+    """
+    complejo = models.ForeignKey(
+        Complejo,
+        on_delete=models.CASCADE,
+        related_name='fotos'
+    )
+    imagen = models.ImageField(upload_to='complejos/fotos/')
+    descripcion = models.CharField(max_length=200, blank=True)
+    orden = models.IntegerField(default=0, help_text="Orden de visualización")
+    es_principal = models.BooleanField(
+        default=False,
+        help_text="Marca si esta es la foto principal del complejo"
+    )
+    
+    # Campos de auditoría
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Foto de Complejo'
+        verbose_name_plural = 'Fotos de Complejos'
+        ordering = ['complejo', '-es_principal', 'orden', '-creado_en']
+    
+    def __str__(self):
+        return f"{self.complejo.nombre} - Foto {self.id}"
+    
+    def save(self, *args, **kwargs):
+        # Si se marca como principal, desmarcar las demás del mismo complejo
+        if self.es_principal:
+            FotoComplejo.objects.filter(
+                complejo=self.complejo,
+                es_principal=True
+            ).exclude(id=self.id).update(es_principal=False)
+        super().save(*args, **kwargs)
+
+
 class Cancha(models.Model):
     """
     Modelo para canchas dentro de un complejo.

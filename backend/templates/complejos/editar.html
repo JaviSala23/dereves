@@ -1,110 +1,133 @@
 {% extends 'base.html' %}
 
-{% block title %}Crear Complejo - DeRevés{% endblock %}
+{% block title %}Editar Complejo - {{ complejo.nombre }} - DeRevés{% endblock %}
 
 {% block content %}
 <div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card">
                 <div class="card-body">
-                    <h2 class="card-title mb-4">Crear Nuevo Complejo</h2>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="card-title mb-0">Editar Complejo</h2>
+                        <a href="{% url 'complejos:detalle' complejo.slug %}" class="btn btn-outline-secondary">
+                            <span class="material-symbols-rounded">arrow_back</span>
+                            Volver
+                        </a>
+                    </div>
                     
-                    <form method="post" enctype="multipart/form-data">
+                    <form method="post" enctype="multipart/form-data" id="formEditarComplejo">
                         {% csrf_token %}
                         
                         <div class="mb-3">
                             <label for="nombre" class="form-label">Nombre del Complejo *</label>
-                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                            <input type="text" class="form-control" id="nombre" name="nombre" value="{{ complejo.nombre }}" required>
                         </div>
                         
                         <div class="mb-3">
                             <label for="descripcion" class="form-label">Descripción</label>
-                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3" placeholder="Describe tu complejo..."></textarea>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3" placeholder="Describe tu complejo...">{{ complejo.descripcion }}</textarea>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="pais" class="form-label">País *</label>
                                 <select class="form-select" id="pais" name="pais" required>
-                                    <option value="Argentina" selected>Argentina</option>
+                                    <option value="Argentina" {% if complejo.pais == 'Argentina' %}selected{% endif %}>Argentina</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="provincia" class="form-label">Provincia *</label>
                                 <select class="form-select" id="provincia" name="provincia" required>
-                                    <option value="">Selecciona una provincia</option>
+                                    <option value="">Cargando...</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="localidad" class="form-label">Localidad *</label>
                                 <div class="input-group">
                                     <select class="form-select" id="localidad" name="localidad" required>
-                                        <option value="">Primero selecciona provincia</option>
+                                        <option value="">Selecciona provincia primero</option>
                                     </select>
                                     <button class="btn btn-outline-secondary" type="button" id="btnAgregarLocalidad" title="Agregar nueva localidad">
                                         <span class="material-symbols-rounded">add</span>
                                     </button>
                                 </div>
-                                <small class="text-muted">¿No está tu localidad? Agrégala con el botón +</small>
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label for="direccion" class="form-label">Dirección *</label>
-                                <input type="text" class="form-control" id="direccion" name="direccion" required placeholder="Ej: Av. Libertador 1234">
+                                <input type="text" class="form-control" id="direccion" name="direccion" value="{{ complejo.direccion }}" required placeholder="Ej: Av. Libertador 1234">
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="latitud" class="form-label">Latitud *</label>
-                                <input type="number" step="any" class="form-control" id="latitud" name="latitud" required placeholder="-30.5">
+                                <input type="number" step="any" class="form-control" id="latitud" name="latitud" value="{{ complejo.latitud }}" required placeholder="-30.5">
                                 <small class="text-muted">Usa Google Maps para obtener coordenadas</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="longitud" class="form-label">Longitud *</label>
-                                <input type="number" step="any" class="form-control" id="longitud" name="longitud" required placeholder="-61.5">
+                                <input type="number" step="any" class="form-control" id="longitud" name="longitud" value="{{ complejo.longitud }}" required placeholder="-61.5">
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="telefono" class="form-label">Teléfono</label>
-                                <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="3537-123456">
+                                <input type="tel" class="form-control" id="telefono" name="telefono" value="{{ complejo.telefono }}" placeholder="3537-123456">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" placeholder="info@complejo.com">
+                                <input type="email" class="form-control" id="email" name="email" value="{{ complejo.email }}" placeholder="info@complejo.com">
                             </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="subdominio" class="form-label">Subdominio *</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="subdominio" name="subdominio" required placeholder="micompejo">
-                                <span class="input-group-text">.dereves.ar</span>
-                            </div>
-                            <small class="text-muted">Tu sitio será: micompejo.dereves.ar</small>
                         </div>
                         
                         <!-- Sección de Fotos -->
                         <hr class="my-4">
                         <h4 class="mb-3">Fotos del Complejo</h4>
                         
-                        <div class="mb-3">
-                            <label for="logo" class="form-label">Logo o Foto Principal *</label>
-                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*" required>
+                        <!-- Logo/Foto Principal -->
+                        <div class="mb-4">
+                            <label for="logo" class="form-label">Logo o Foto Principal</label>
+                            {% if complejo.logo %}
+                            <div class="mb-2">
+                                <img src="{{ complejo.logo.url }}" alt="Logo actual" class="img-thumbnail" style="max-height: 150px;">
+                                <p class="text-muted small mt-1">Logo actual</p>
+                            </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
                             <small class="text-muted">Foto principal que aparecerá en las listas</small>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="fotos" class="form-label">Galería de Fotos (opcional)</label>
+                        <!-- Galería de Fotos -->
+                        <div class="mb-4">
+                            <label class="form-label">Galería de Fotos (múltiples)</label>
+                            
+                            {% if complejo.fotos.all %}
+                            <div class="row g-2 mb-3" id="fotosActuales">
+                                {% for foto in complejo.fotos.all %}
+                                <div class="col-md-3" data-foto-id="{{ foto.id }}">
+                                    <div class="card">
+                                        <img src="{{ foto.imagen.url }}" class="card-img-top" alt="Foto">
+                                        <div class="card-body p-2">
+                                            <button type="button" class="btn btn-sm btn-danger w-100 btn-eliminar-foto" data-foto-id="{{ foto.id }}">
+                                                <span class="material-symbols-rounded" style="font-size: 16px;">delete</span>
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
                             <input type="file" class="form-control" id="fotos" name="fotos" accept="image/*" multiple>
                             <small class="text-muted">Puedes seleccionar múltiples fotos. Formatos: JPG, PNG. Máximo 5MB por foto.</small>
                             
-                            <!-- Preview de fotos -->
+                            <!-- Preview de fotos nuevas -->
                             <div id="previewFotos" class="row g-2 mt-2"></div>
                         </div>
                         
@@ -115,10 +138,10 @@
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <span class="material-symbols-rounded">add</span>
-                                Crear Complejo
+                                <span class="material-symbols-rounded">save</span>
+                                Guardar Cambios
                             </button>
-                            <a href="{% url 'home' %}" class="btn btn-outline-secondary">Cancelar</a>
+                            <a href="{% url 'complejos:detalle' complejo.slug %}" class="btn btn-outline-secondary">Cancelar</a>
                         </div>
                     </form>
                 </div>
@@ -135,23 +158,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const fotosInput = document.getElementById('fotos');
     const previewFotos = document.getElementById('previewFotos');
     
+    const provinciaActual = '{{ complejo.provincia }}';
+    const localidadActual = '{{ complejo.localidad }}';
+    
     // Cargar provincias al inicio
     fetch('{% url "complejos:api_provincias" %}')
         .then(response => response.json())
         .then(data => {
+            provinciaSelect.innerHTML = '<option value="">Selecciona una provincia</option>';
             data.provincias.forEach(provincia => {
                 const option = document.createElement('option');
                 option.value = provincia;
                 option.textContent = provincia;
+                if (provincia === provinciaActual) {
+                    option.selected = true;
+                }
                 provinciaSelect.appendChild(option);
             });
+            
+            // Cargar localidades de la provincia actual
+            if (provinciaActual) {
+                cargarLocalidades(provinciaActual, localidadActual);
+            }
         })
         .catch(error => {
             console.error('Error cargando provincias:', error);
         });
     
     // Función para cargar localidades
-    function cargarLocalidades(provincia) {
+    function cargarLocalidades(provincia, seleccionar = null) {
         localidadSelect.innerHTML = '<option value="">Cargando localidades...</option>';
         localidadSelect.disabled = true;
         
@@ -172,6 +207,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         const option = document.createElement('option');
                         option.value = localidad;
                         option.textContent = localidad;
+                        if (seleccionar && localidad === seleccionar) {
+                            option.selected = true;
+                        }
                         localidadSelect.appendChild(option);
                     });
                     localidadSelect.disabled = false;
@@ -188,44 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
         cargarLocalidades(this.value);
     });
     
-    // Preview de fotos múltiples
-    if (fotosInput) {
-        fotosInput.addEventListener('change', function(e) {
-            previewFotos.innerHTML = '';
-            const files = Array.from(e.target.files);
-            
-            if (files.length > 0) {
-                files.forEach((file, index) => {
-                    // Validar tamaño (máximo 5MB)
-                    if (file.size > 5 * 1024 * 1024) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Archivo muy grande',
-                            text: `La foto "${file.name}" excede los 5MB y no será subida.`
-                        });
-                        return;
-                    }
-                    
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const col = document.createElement('div');
-                        col.className = 'col-md-3';
-                        col.innerHTML = `
-                            <div class="card">
-                                <img src="${e.target.result}" class="card-img-top" alt="Preview" style="height: 150px; object-fit: cover;">
-                                <div class="card-body p-2">
-                                    <small class="text-muted">${file.name}</small>
-                                </div>
-                            </div>
-                        `;
-                        previewFotos.appendChild(col);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-        });
-    }
-    
     // Agregar nueva localidad
     btnAgregarLocalidad.addEventListener('click', async function() {
         const provincia = provinciaSelect.value;
@@ -240,7 +240,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Mostrar input con SweetAlert2
         const { value: nombreLocalidad } = await Swal.fire({
             title: 'Agregar Localidad',
             text: `Ingresa el nombre de la localidad en ${provincia}:`,
@@ -256,15 +255,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        if (!nombreLocalidad) {
-            return;
-        }
+        if (!nombreLocalidad) return;
         
-        // Mostrar indicador de carga
         btnAgregarLocalidad.disabled = true;
         btnAgregarLocalidad.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         
-        // Enviar solicitud para agregar localidad
         fetch('{% url "complejos:api_agregar_localidad" %}', {
             method: 'POST',
             headers: {
@@ -287,12 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     timer: 2000,
                     showConfirmButton: false
                 });
-                // Recargar la lista de localidades
-                cargarLocalidades(provincia);
-                // Seleccionar la nueva localidad
-                setTimeout(() => {
-                    localidadSelect.value = data.localidad.nombre;
-                }, 500);
+                cargarLocalidades(provincia, data.localidad.nombre);
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -303,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Error agregando localidad:', error);
+            console.error('Error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error de conexión',
@@ -312,9 +302,85 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         })
         .finally(() => {
-            // Restaurar botón
             btnAgregarLocalidad.disabled = false;
             btnAgregarLocalidad.innerHTML = '<span class="material-symbols-rounded">add</span>';
+        });
+    });
+    
+    // Preview de fotos nuevas
+    fotosInput.addEventListener('change', function(e) {
+        previewFotos.innerHTML = '';
+        const files = Array.from(e.target.files);
+        
+        files.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const col = document.createElement('div');
+                col.className = 'col-md-3';
+                col.innerHTML = `
+                    <div class="card">
+                        <img src="${e.target.result}" class="card-img-top" alt="Preview">
+                        <div class="card-body p-2">
+                            <small class="text-muted">${file.name}</small>
+                        </div>
+                    </div>
+                `;
+                previewFotos.appendChild(col);
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+    
+    // Eliminar fotos existentes
+    document.querySelectorAll('.btn-eliminar-foto').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const fotoId = this.dataset.fotoId;
+            
+            const result = await Swal.fire({
+                title: '¿Eliminar foto?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33'
+            });
+            
+            if (result.isConfirmed) {
+                fetch(`{% url 'complejos:eliminar_foto' complejo.slug 0 %}`.replace('/0/', `/${fotoId}/`), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector(`[data-foto-id="${fotoId}"]`).remove();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Eliminada',
+                            text: 'La foto ha sido eliminada',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.error || 'No se pudo eliminar la foto'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo eliminar la foto'
+                    });
+                });
+            }
         });
     });
 });

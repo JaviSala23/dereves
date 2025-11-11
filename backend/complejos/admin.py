@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Complejo, Cancha, ServicioComplejo, Localidad
+from .models import Complejo, Cancha, ServicioComplejo, Localidad, FotoComplejo
 
 
 @admin.register(Localidad)
@@ -74,3 +74,24 @@ class ServicioComplejoAdmin(admin.ModelAdmin):
     list_display = ['complejo', 'tipo_servicio']
     list_filter = ['tipo_servicio']
     search_fields = ['complejo__nombre']
+
+
+@admin.register(FotoComplejo)
+class FotoComplejoAdmin(admin.ModelAdmin):
+    list_display = ['complejo', 'es_principal', 'orden', 'creado_en']
+    list_filter = ['es_principal', 'creado_en']
+    search_fields = ['complejo__nombre', 'descripcion']
+    readonly_fields = ['creado_en', 'actualizado_en']
+    list_editable = ['orden', 'es_principal']
+    
+    fieldsets = (
+        ('Información', {
+            'fields': ('complejo', 'imagen', 'descripcion')
+        }),
+        ('Configuración', {
+            'fields': ('orden', 'es_principal')
+        }),
+        ('Auditoría', {
+            'fields': ('creado_en', 'actualizado_en')
+        }),
+    )

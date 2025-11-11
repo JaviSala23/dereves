@@ -7,7 +7,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.utils import timezone
 from datetime import datetime, timedelta
-from .models import Complejo, Cancha, ServicioComplejo, Localidad
+from .models import Complejo, Cancha, ServicioComplejo, Localidad, FotoComplejo
 from cuentas.models import PerfilDueno
 from reservas.models import Reserva, ReservaFija
 
@@ -160,6 +160,22 @@ def crear_complejo(request):
                 slug=slug,
                 subdominio=subdominio,
             )
+            
+            # Manejar logo/foto principal
+            if 'logo' in request.FILES:
+                complejo.logo = request.FILES['logo']
+                complejo.save()
+            
+            # Manejar fotos adicionales de la galería
+            fotos = request.FILES.getlist('fotos')
+            for index, foto in enumerate(fotos):
+                FotoComplejo.objects.create(
+                    complejo=complejo,
+                    imagen=foto,
+                    orden=index,
+                    es_principal=(index == 0 and not complejo.logo)
+                )
+            
             messages.success(request, f'¡Complejo {nombre} creado exitosamente!')
             return redirect('complejos:detalle', slug=complejo.slug)
     
@@ -193,7 +209,26 @@ def editar_complejo(request, slug):
         complejo.telefono = request.POST.get('telefono', complejo.telefono)
         complejo.email = request.POST.get('email', complejo.email)
         
+        # Manejar logo/foto principal
+        if 'logo' in request.FILES:
+            complejo.logo = request.FILES['logo']
+        
         complejo.save()
+        
+        # Manejar fotos adicionales de la galería
+        fotos = request.FILES.getlist('fotos')
+        if fotos:
+            # Obtener el último orden
+            ultima_foto = complejo.fotos.order_by('-orden').first()
+            orden_inicial = (ultima_foto.orden + 1) if ultima_foto else 0
+            
+            for index, foto in enumerate(fotos):
+                FotoComplejo.objects.create(
+                    complejo=complejo,
+                    imagen=foto,
+                    orden=orden_inicial + index
+                )
+        
         messages.success(request, 'Complejo actualizado correctamente.')
         return redirect('complejos:detalle', slug=complejo.slug)
     
@@ -620,6 +655,25 @@ def obtener_localidades(request):
     todas_localidades.sort()
     
     return JsonResponse({'localidades': todas_localidades})
+
+
+@login_required
+def eliminar_foto_complejo(request, slug, foto_id):
+    """
+    Elimina una foto de la galería de un complejo.
+    """
+    complejo = get_object_or_404(Complejo, slug=slug)
+    
+    # Verificar que sea el dueño
+    if complejo.dueno.usuario != request.user:
+        return JsonResponse({'error': 'No tienes permiso'}, status=403)
+    
+    try:
+        foto = get_object_or_404(FotoComplejo, id=foto_id, complejo=complejo)
+        foto.delete()
+        return JsonResponse({'success': True, 'mensaje': 'Foto eliminada correctamente'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required
