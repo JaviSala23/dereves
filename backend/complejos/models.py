@@ -2,6 +2,43 @@ from django.db import models
 from django.conf import settings
 
 
+class Localidad(models.Model):
+    """
+    Modelo para localidades personalizadas agregadas por usuarios.
+    """
+    nombre = models.CharField(max_length=200)
+    provincia = models.CharField(max_length=100)
+    pais = models.CharField(max_length=100, default='Argentina')
+    
+    # Usuario que agregó la localidad
+    agregada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='localidades_agregadas'
+    )
+    
+    # Validación y moderación
+    aprobada = models.BooleanField(
+        default=True,
+        help_text="Si está aprobada para uso público"
+    )
+    
+    # Campos de auditoría
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Localidad'
+        verbose_name_plural = 'Localidades'
+        ordering = ['provincia', 'nombre']
+        unique_together = ['nombre', 'provincia', 'pais']
+    
+    def __str__(self):
+        return f"{self.nombre}, {self.provincia}"
+
+
 class Complejo(models.Model):
     """
     Modelo para complejos deportivos.

@@ -1,5 +1,36 @@
 from django.contrib import admin
-from .models import Complejo, Cancha, ServicioComplejo
+from .models import Complejo, Cancha, ServicioComplejo, Localidad
+
+
+@admin.register(Localidad)
+class LocalidadAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'provincia', 'pais', 'aprobada', 'agregada_por', 'creado_en']
+    list_filter = ['provincia', 'pais', 'aprobada', 'creado_en']
+    search_fields = ['nombre', 'provincia']
+    readonly_fields = ['creado_en', 'actualizado_en', 'agregada_por']
+    actions = ['aprobar_localidades', 'desaprobar_localidades']
+    
+    fieldsets = (
+        ('Información', {
+            'fields': ('nombre', 'provincia', 'pais')
+        }),
+        ('Estado', {
+            'fields': ('aprobada', 'agregada_por')
+        }),
+        ('Auditoría', {
+            'fields': ('creado_en', 'actualizado_en')
+        }),
+    )
+    
+    def aprobar_localidades(self, request, queryset):
+        count = queryset.update(aprobada=True)
+        self.message_user(request, f'{count} localidades aprobadas exitosamente.')
+    aprobar_localidades.short_description = "Aprobar localidades seleccionadas"
+    
+    def desaprobar_localidades(self, request, queryset):
+        count = queryset.update(aprobada=False)
+        self.message_user(request, f'{count} localidades desaprobadas.')
+    desaprobar_localidades.short_description = "Desaprobar localidades seleccionadas"
 
 
 @admin.register(Complejo)

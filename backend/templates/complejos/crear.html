@@ -24,13 +24,36 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-8 mb-3">
-                                <label for="direccion" class="form-label">Dirección *</label>
-                                <input type="text" class="form-control" id="direccion" name="direccion" required placeholder="Ej: Av. Libertador 1234">
+                            <div class="col-md-4 mb-3">
+                                <label for="pais" class="form-label">País *</label>
+                                <select class="form-select" id="pais" name="pais" required>
+                                    <option value="Argentina" selected>Argentina</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="provincia" class="form-label">Provincia *</label>
+                                <select class="form-select" id="provincia" name="provincia" required>
+                                    <option value="">Selecciona una provincia</option>
+                                </select>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="localidad" class="form-label">Localidad *</label>
-                                <input type="text" class="form-control" id="localidad" name="localidad" required placeholder="Ej: Cruz Alta">
+                                <div class="input-group">
+                                    <select class="form-select" id="localidad" name="localidad" required>
+                                        <option value="">Primero selecciona provincia</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary" type="button" id="btnAgregarLocalidad" title="Agregar nueva localidad">
+                                        <span class="material-symbols-rounded">add</span>
+                                    </button>
+                                </div>
+                                <small class="text-muted">¿No está tu localidad? Agrégala con el botón +</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="direccion" class="form-label">Dirección *</label>
+                                <input type="text" class="form-control" id="direccion" name="direccion" required placeholder="Ej: Av. Libertador 1234">
                             </div>
                         </div>
                         
@@ -84,4 +107,122 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const provinciaSelect = document.getElementById('provincia');
+    const localidadSelect = document.getElementById('localidad');
+    const btnAgregarLocalidad = document.getElementById('btnAgregarLocalidad');
+    
+    // Cargar provincias al inicio
+    fetch('{% url "complejos:api_provincias" %}')
+        .then(response => response.json())
+        .then(data => {
+            data.provincias.forEach(provincia => {
+                const option = document.createElement('option');
+                option.value = provincia;
+                option.textContent = provincia;
+                provinciaSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error cargando provincias:', error);
+        });
+    
+    // Función para cargar localidades
+    function cargarLocalidades(provincia) {
+        localidadSelect.innerHTML = '<option value="">Cargando localidades...</option>';
+        localidadSelect.disabled = true;
+        
+        if (!provincia) {
+            localidadSelect.innerHTML = '<option value="">Primero selecciona provincia</option>';
+            return;
+        }
+        
+        fetch(`{% url "complejos:api_localidades" %}?provincia=${encodeURIComponent(provincia)}`)
+            .then(response => response.json())
+            .then(data => {
+                localidadSelect.innerHTML = '<option value="">Selecciona una localidad</option>';
+                
+                if (data.localidades.length === 0) {
+                    localidadSelect.innerHTML = '<option value="">No hay localidades disponibles</option>';
+                } else {
+                    data.localidades.forEach(localidad => {
+                        const option = document.createElement('option');
+                        option.value = localidad;
+                        option.textContent = localidad;
+                        localidadSelect.appendChild(option);
+                    });
+                    localidadSelect.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando localidades:', error);
+                localidadSelect.innerHTML = '<option value="">Error cargando localidades</option>';
+            });
+    }
+    
+    // Cuando cambia la provincia, cargar localidades
+    provinciaSelect.addEventListener('change', function() {
+        cargarLocalidades(this.value);
+    });
+    
+    // Agregar nueva localidad
+    btnAgregarLocalidad.addEventListener('click', function() {
+        const provincia = provinciaSelect.value;
+        
+        if (!provincia) {
+            alert('Por favor, primero selecciona una provincia');
+            return;
+        }
+        
+        const nombreLocalidad = prompt('Ingresa el nombre de la localidad:');
+        
+        if (!nombreLocalidad || nombreLocalidad.trim() === '') {
+            return;
+        }
+        
+        // Mostrar indicador de carga
+        btnAgregarLocalidad.disabled = true;
+        btnAgregarLocalidad.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        
+        // Enviar solicitud para agregar localidad
+        fetch('{% url "complejos:api_agregar_localidad" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                nombre: nombreLocalidad.trim(),
+                provincia: provincia,
+                pais: 'Argentina'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.mensaje);
+                // Recargar la lista de localidades
+                cargarLocalidades(provincia);
+                // Seleccionar la nueva localidad
+                setTimeout(() => {
+                    localidadSelect.value = data.localidad.nombre;
+                }, 500);
+            } else {
+                alert('Error: ' + (data.error || 'No se pudo agregar la localidad'));
+            }
+        })
+        .catch(error => {
+            console.error('Error agregando localidad:', error);
+            alert('Error al agregar la localidad. Intenta nuevamente.');
+        })
+        .finally(() => {
+            // Restaurar botón
+            btnAgregarLocalidad.disabled = false;
+            btnAgregarLocalidad.innerHTML = '<span class="material-symbols-rounded">add</span>';
+        });
+    });
+});
+</script>
 {% endblock %}

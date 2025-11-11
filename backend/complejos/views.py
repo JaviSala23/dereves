@@ -7,7 +7,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.utils import timezone
 from datetime import datetime, timedelta
-from .models import Complejo, Cancha, ServicioComplejo
+from .models import Complejo, Cancha, ServicioComplejo, Localidad
 from cuentas.models import PerfilDueno
 from reservas.models import Reserva, ReservaFija
 
@@ -181,6 +181,8 @@ def editar_complejo(request, slug):
         complejo.descripcion = request.POST.get('descripcion', complejo.descripcion)
         complejo.direccion = request.POST.get('direccion', complejo.direccion)
         complejo.localidad = request.POST.get('localidad', complejo.localidad)
+        complejo.provincia = request.POST.get('provincia', complejo.provincia)
+        complejo.pais = request.POST.get('pais', complejo.pais)
         
         latitud = request.POST.get('latitud')
         longitud = request.POST.get('longitud')
@@ -456,3 +458,231 @@ def obtener_horarios_disponibles(request, cancha_id):
         'fecha': fecha.isoformat(),
         'horarios': horarios,
     })
+
+
+def obtener_provincias(request):
+    """
+    API endpoint para obtener las provincias de Argentina.
+    """
+    provincias = [
+        'Buenos Aires',
+        'Ciudad Autónoma de Buenos Aires',
+        'Catamarca',
+        'Chaco',
+        'Chubut',
+        'Córdoba',
+        'Corrientes',
+        'Entre Ríos',
+        'Formosa',
+        'Jujuy',
+        'La Pampa',
+        'La Rioja',
+        'Mendoza',
+        'Misiones',
+        'Neuquén',
+        'Río Negro',
+        'Salta',
+        'San Juan',
+        'San Luis',
+        'Santa Cruz',
+        'Santa Fe',
+        'Santiago del Estero',
+        'Tierra del Fuego',
+        'Tucumán',
+    ]
+    
+    return JsonResponse({'provincias': provincias})
+
+
+def obtener_localidades(request):
+    """
+    API endpoint para obtener localidades por provincia de Argentina.
+    Incluye localidades predeterminadas + localidades agregadas por usuarios.
+    """
+    provincia = request.GET.get('provincia', '')
+    
+    # Diccionario de localidades principales por provincia
+    localidades_por_provincia = {
+        'Buenos Aires': [
+            'La Plata', 'Mar del Plata', 'Bahía Blanca', 'San Nicolás', 'Tandil',
+            'Olavarría', 'Pergamino', 'Azul', 'Junín', 'Necochea', 'Quilmes',
+            'Lanús', 'Lomas de Zamora', 'Avellaneda', 'San Isidro', 'Vicente López',
+            'Morón', 'San Miguel', 'Tigre', 'Pilar', 'Escobar', 'La Matanza',
+        ],
+        'Ciudad Autónoma de Buenos Aires': [
+            'Palermo', 'Belgrano', 'Recoleta', 'San Telmo', 'Caballito',
+            'Villa Urquiza', 'Núñez', 'Flores', 'Almagro', 'Villa Crespo',
+        ],
+        'Catamarca': [
+            'San Fernando del Valle de Catamarca', 'Andalgalá', 'Santa María',
+            'Belén', 'Tinogasta', 'Recreo', 'Valle Viejo',
+        ],
+        'Chaco': [
+            'Resistencia', 'Presidencia Roque Sáenz Peña', 'Villa Ángela',
+            'Barranqueras', 'Fontana', 'Charata', 'General San Martín',
+        ],
+        'Chubut': [
+            'Rawson', 'Comodoro Rivadavia', 'Trelew', 'Puerto Madryn',
+            'Esquel', 'Sarmiento', 'Puerto Deseado',
+        ],
+        'Córdoba': [
+            'Córdoba', 'Villa María', 'Río Cuarto', 'San Francisco', 'Villa Carlos Paz',
+            'Alta Gracia', 'Bell Ville', 'Jesús María', 'La Calera', 'Río Tercero',
+            'Cruz Alta', 'Marcos Juárez', 'Villa Dolores', 'Deán Funes', 'Cosquín',
+            'Laboulaye', 'Villa Allende', 'Arroyito', 'Las Varillas', 'Morteros',
+        ],
+        'Corrientes': [
+            'Corrientes', 'Goya', 'Paso de los Libres', 'Mercedes', 'Curuzú Cuatiá',
+            'Esquina', 'Santo Tomé', 'Bella Vista',
+        ],
+        'Entre Ríos': [
+            'Paraná', 'Concordia', 'Gualeguaychú', 'Concepción del Uruguay',
+            'Victoria', 'Gualeguay', 'Chajarí', 'La Paz', 'Villaguay',
+        ],
+        'Formosa': [
+            'Formosa', 'Clorinda', 'Pirané', 'El Colorado', 'Ibarreta',
+            'Las Lomitas', 'Ingeniero Juárez',
+        ],
+        'Jujuy': [
+            'San Salvador de Jujuy', 'Palpalá', 'San Pedro', 'Libertador General San Martín',
+            'Perico', 'La Quiaca', 'Humahuaca', 'Tilcara',
+        ],
+        'La Pampa': [
+            'Santa Rosa', 'General Pico', 'General Acha', 'Eduardo Castex',
+            'Realicó', 'Victorica', 'Ingeniero Luiggi',
+        ],
+        'La Rioja': [
+            'La Rioja', 'Chilecito', 'Aimogasta', 'Chamical', 'Chepes',
+            'Villa Unión', 'Arauco',
+        ],
+        'Mendoza': [
+            'Mendoza', 'Godoy Cruz', 'Guaymallén', 'Las Heras', 'Maipú',
+            'San Rafael', 'San Martín', 'Tunuyán', 'Tupungato', 'Malargüe',
+            'Luján de Cuyo', 'Rivadavia', 'Lavalle',
+        ],
+        'Misiones': [
+            'Posadas', 'Oberá', 'Eldorado', 'Puerto Iguazú', 'Apóstoles',
+            'Leandro N. Alem', 'San Vicente', 'Montecarlo', 'Jardín América',
+        ],
+        'Neuquén': [
+            'Neuquén', 'Centenario', 'Plottier', 'San Martín de los Andes',
+            'Zapala', 'Cutral Có', 'Plaza Huincul', 'Junín de los Andes', 'Villa La Angostura',
+        ],
+        'Río Negro': [
+            'Viedma', 'San Carlos de Bariloche', 'General Roca', 'Cipolletti',
+            'El Bolsón', 'Cinco Saltos', 'Villa Regina', 'Catriel',
+        ],
+        'Salta': [
+            'Salta', 'San Ramón de la Nueva Orán', 'Tartagal', 'General Güemes',
+            'Metán', 'Rosario de la Frontera', 'Cafayate', 'Joaquín V. González',
+        ],
+        'San Juan': [
+            'San Juan', 'Rawson', 'Chimbas', 'Rivadavia', 'Santa Lucía',
+            'Pocito', 'Caucete', 'Albardón', 'San Martín',
+        ],
+        'San Luis': [
+            'San Luis', 'Villa Mercedes', 'La Punta', 'Merlo', 'Justo Daract',
+            'Tilisarao', 'Concarán', 'Villa de la Quebrada',
+        ],
+        'Santa Cruz': [
+            'Río Gallegos', 'Caleta Olivia', 'Pico Truncado', 'Puerto Deseado',
+            'Puerto San Julián', 'El Calafate', 'Río Turbio', 'Las Heras',
+        ],
+        'Santa Fe': [
+            'Santa Fe', 'Rosario', 'Rafaela', 'Reconquista', 'Venado Tuerto',
+            'Villa Gobernador Gálvez', 'Casilda', 'San Lorenzo', 'Esperanza',
+            'Santo Tomé', 'Cañada de Gómez', 'Firmat', 'Vera', 'Funes',
+        ],
+        'Santiago del Estero': [
+            'Santiago del Estero', 'La Banda', 'Termas de Río Hondo', 'Frías',
+            'Añatuya', 'Fernández', 'Monte Quemado', 'Suncho Corral',
+        ],
+        'Tierra del Fuego': [
+            'Ushuaia', 'Río Grande', 'Tolhuin',
+        ],
+        'Tucumán': [
+            'San Miguel de Tucumán', 'Yerba Buena', 'Tafí Viejo', 'Concepción',
+            'Banda del Río Salí', 'Aguilares', 'Monteros', 'Famaillá', 'Simoca',
+        ],
+    }
+    
+    # Obtener localidades predeterminadas
+    localidades = localidades_por_provincia.get(provincia, [])
+    
+    # Agregar localidades personalizadas de la base de datos (solo aprobadas)
+    localidades_custom = Localidad.objects.filter(
+        provincia=provincia,
+        aprobada=True
+    ).values_list('nombre', flat=True)
+    
+    # Combinar y eliminar duplicados
+    todas_localidades = list(set(localidades + list(localidades_custom)))
+    todas_localidades.sort()
+    
+    return JsonResponse({'localidades': todas_localidades})
+
+
+@login_required
+def agregar_localidad(request):
+    """
+    API endpoint para agregar una nueva localidad.
+    Solo usuarios autenticados pueden agregar localidades.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    import json
+    try:
+        data = json.loads(request.body)
+        nombre = data.get('nombre', '').strip()
+        provincia = data.get('provincia', '').strip()
+        pais = data.get('pais', 'Argentina')
+        
+        if not nombre or not provincia:
+            return JsonResponse({
+                'error': 'Nombre y provincia son requeridos'
+            }, status=400)
+        
+        # Verificar si ya existe
+        localidad_existente = Localidad.objects.filter(
+            nombre__iexact=nombre,
+            provincia=provincia,
+            pais=pais
+        ).first()
+        
+        if localidad_existente:
+            return JsonResponse({
+                'success': True,
+                'mensaje': 'La localidad ya existe',
+                'localidad': {
+                    'nombre': localidad_existente.nombre,
+                    'provincia': localidad_existente.provincia,
+                    'aprobada': localidad_existente.aprobada,
+                }
+            })
+        
+        # Crear nueva localidad
+        localidad = Localidad.objects.create(
+            nombre=nombre,
+            provincia=provincia,
+            pais=pais,
+            agregada_por=request.user,
+            aprobada=True  # Auto-aprobar por ahora
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'mensaje': 'Localidad agregada exitosamente',
+            'localidad': {
+                'nombre': localidad.nombre,
+                'provincia': localidad.provincia,
+                'aprobada': localidad.aprobada,
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Error al agregar localidad: {str(e)}'
+        }, status=500)

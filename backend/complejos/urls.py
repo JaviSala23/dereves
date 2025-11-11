@@ -11,6 +11,11 @@ urlpatterns = [
     # API para horarios disponibles
     path('api/canchas/<int:cancha_id>/horarios/', views.obtener_horarios_disponibles, name='api_horarios'),
     
+    # API para provincias y localidades
+    path('api/provincias/', views.obtener_provincias, name='api_provincias'),
+    path('api/localidades/', views.obtener_localidades, name='api_localidades'),
+    path('api/localidades/agregar/', views.agregar_localidad, name='api_agregar_localidad'),
+    
     # Dashboard para dueños
     path('dashboard/', dashboard_views.dashboard_principal, name='dashboard_principal'),
     path('dashboard/complejos/', dashboard_views.mis_complejos_dashboard, name='mis_complejos_dashboard'),
