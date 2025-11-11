@@ -73,6 +73,15 @@ def calendario_cancha(request, cancha_id):
     """Calendario de disponibilidad de una cancha con sistema de Turnos."""
     cancha = get_object_or_404(Cancha, id=cancha_id)
     
+    # Verificar si el usuario es dueño del complejo
+    es_dueno = False
+    if request.user.is_authenticated and request.user.tipo_usuario == 'DUENIO':
+        try:
+            perfil_dueno = request.user.perfil_dueno
+            es_dueno = cancha.complejo.dueno == perfil_dueno
+        except AttributeError:
+            pass
+    
     # Obtener fecha desde parámetros o usar hoy
     fecha_str = request.GET.get('fecha', timezone.now().date().isoformat())
     try:
@@ -118,16 +127,19 @@ def calendario_cancha(request, cancha_id):
             
             if turno:
                 # Turno existe, obtener su estado
+                # El dueño puede seleccionar cualquier turno, jugadores solo DISPONIBLE
+                disponible = turno.estado == 'DISPONIBLE' or es_dueno
+                
                 horarios.append({
                     'hora': hora_actual.strftime('%H:%M'),
                     'hora_fin': hora_fin.strftime('%H:%M'),
                     'estado': turno.estado,
-                    'disponible': turno.estado == 'DISPONIBLE',
+                    'disponible': disponible,
                     'precio': turno.precio,
                     'turno_id': turno.id,
                 })
             else:
-                # Turno no existe, asumir disponible
+                # Turno no existe, asumir disponible (tanto para dueño como jugador)
                 horarios.append({
                     'hora': hora_actual.strftime('%H:%M'),
                     'hora_fin': hora_fin.strftime('%H:%M'),
@@ -150,6 +162,7 @@ def calendario_cancha(request, cancha_id):
         'fecha_anterior': fecha - timedelta(days=1),
         'fecha_siguiente': fecha + timedelta(days=1),
         'horarios': horarios,
+        'es_dueno': es_dueno,
     }
     return render(request, 'reservas/calendario.html', context)
 

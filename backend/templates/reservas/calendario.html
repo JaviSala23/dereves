@@ -84,17 +84,42 @@
                                     </small>
                                 </button>
                             {% else %}
-                                <!-- Turno disponible - verde y clickeable -->
-                                <button class="btn btn-outline-success w-100 horario-disponible" 
-                                        data-hora="{{ horario.hora }}" 
-                                        data-hora-fin="{{ horario.hora_fin }}"
-                                        data-precio="{{ horario.precio }}"
-                                        data-turno-id="{{ horario.turno_id }}"
-                                        onclick="seleccionarHorario('{{ horario.hora }}', '{{ horario.hora_fin }}', {{ horario.precio }}, {{ horario.turno_id }})">
-                                    <span class="material-symbols-rounded">check_circle</span>
-                                    {{ horario.hora }} - {{ horario.hora_fin }}
-                                    <small class="d-block">${{ horario.precio }}</small>
-                                </button>
+                                <!-- Turno disponible o seleccionable por dueño -->
+                                {% if horario.estado == 'DISPONIBLE' %}
+                                    <!-- Turno completamente disponible - verde -->
+                                    <button class="btn btn-outline-success w-100 horario-disponible" 
+                                            data-hora="{{ horario.hora }}" 
+                                            data-hora-fin="{{ horario.hora_fin }}"
+                                            data-precio="{{ horario.precio }}"
+                                            data-turno-id="{{ horario.turno_id }}"
+                                            onclick="seleccionarHorario('{{ horario.hora }}', '{{ horario.hora_fin }}', {{ horario.precio }}, {{ horario.turno_id }})">
+                                        <span class="material-symbols-rounded">check_circle</span>
+                                        {{ horario.hora }} - {{ horario.hora_fin }}
+                                        <small class="d-block">${{ horario.precio }}</small>
+                                    </button>
+                                {% else %}
+                                    <!-- Turno con otro estado pero seleccionable por dueño - naranja -->
+                                    <button class="btn btn-outline-warning w-100 horario-disponible" 
+                                            data-hora="{{ horario.hora }}" 
+                                            data-hora-fin="{{ horario.hora_fin }}"
+                                            data-precio="{{ horario.precio }}"
+                                            data-turno-id="{{ horario.turno_id }}"
+                                            onclick="seleccionarHorario('{{ horario.hora }}', '{{ horario.hora_fin }}', {{ horario.precio }}, {{ horario.turno_id }})">
+                                        <span class="material-symbols-rounded">edit</span>
+                                        {{ horario.hora }} - {{ horario.hora_fin }}
+                                        <small class="d-block">
+                                            {% if horario.estado == 'FIJO' %}
+                                                Turno Fijo - ${{ horario.precio }}
+                                            {% elif horario.estado == 'BLOQUEADO_TORNEO' %}
+                                                Torneo - ${{ horario.precio }}
+                                            {% elif horario.estado == 'PARTIDO_ABIERTO' %}
+                                                Partido Abierto - ${{ horario.precio }}
+                                            {% else %}
+                                                {{ horario.estado }} - ${{ horario.precio }}
+                                            {% endif %}
+                                        </small>
+                                    </button>
+                                {% endif %}
                             {% endif %}
                         </div>
                         {% endfor %}
@@ -213,13 +238,25 @@ let turnoSeleccionado = null;
 function seleccionarHorario(hora, horaFin, precio, turnoId) {
     // Remover selección previa
     document.querySelectorAll('.horario-disponible').forEach(btn => {
-        btn.classList.remove('btn-success');
-        btn.classList.add('btn-outline-success');
+        if (btn.classList.contains('btn-success')) {
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-success');
+        }
+        if (btn.classList.contains('btn-warning')) {
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-outline-warning');
+        }
     });
     
     // Marcar como seleccionado
-    event.target.closest('.horario-disponible').classList.remove('btn-outline-success');
-    event.target.closest('.horario-disponible').classList.add('btn-success');
+    const btnClicked = event.target.closest('.horario-disponible');
+    if (btnClicked.classList.contains('btn-outline-success')) {
+        btnClicked.classList.remove('btn-outline-success');
+        btnClicked.classList.add('btn-success');
+    } else if (btnClicked.classList.contains('btn-outline-warning')) {
+        btnClicked.classList.remove('btn-outline-warning');
+        btnClicked.classList.add('btn-warning');
+    }
     
     // Guardar turno seleccionado
     turnoSeleccionado = turnoId;
@@ -248,7 +285,7 @@ function crearPartidoAbierto() {
     window.location.href = url;
 }
 
-// Agregar estilo para hover en botones deshabilitados
+// Agregar estilo para hover en botones
 document.addEventListener('DOMContentLoaded', function() {
     const style = document.createElement('style');
     style.textContent = `
@@ -262,6 +299,11 @@ document.addEventListener('DOMContentLoaded', function() {
         .horario-disponible:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .btn-outline-warning:hover {
+            color: #fff;
+            background-color: #ffc107;
+            border-color: #ffc107;
         }
     `;
     document.head.appendChild(style);
