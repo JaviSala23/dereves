@@ -92,9 +92,13 @@
                 <p class="mb-0 opacity-75">{{ complejo.nombre }} - Gestión de turnos y bloqueos</p>
             </div>
             <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <button type="button" class="btn btn-light btn-lg me-2" data-bs-toggle="modal" data-bs-target="#modalReservaFija">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">event_repeat</span>
+                    Turno Fijo
+                </button>
                 <button type="button" class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaReserva">
                     <span class="material-symbols-rounded" style="vertical-align: middle;">add_circle</span>
-                    Nueva Reserva/Bloqueo
+                    Reserva Simple
                 </button>
             </div>
         </div>
@@ -305,6 +309,81 @@
                     <button type="submit" class="btn btn-sport">
                         <span class="material-symbols-rounded" style="vertical-align: middle;">save</span>
                         Crear
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear Reserva Fija (Turno Fijo) -->
+<div class="modal fade" id="modalReservaFija" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'complejos:crear_reserva_fija_dueno' complejo.slug %}">
+                {% csrf_token %}
+                <div class="modal-header bg-sport text-white">
+                    <h5 class="modal-title">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">event_repeat</span>
+                        Crear Turno Fijo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">info</span>
+                        Los turnos fijos se repiten todas las semanas en el día y horario seleccionado.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Cancha</label>
+                        <select name="cancha_id" class="form-select" required>
+                            <option value="">Seleccione una cancha</option>
+                            {% for cancha in complejo.canchas.all %}
+                            <option value="{{ cancha.id }}">{{ cancha.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Día de la semana</label>
+                        <select name="dia_semana" class="form-select" required>
+                            <option value="">Seleccione un día</option>
+                            <option value="0">Lunes</option>
+                            <option value="1">Martes</option>
+                            <option value="2">Miércoles</option>
+                            <option value="3">Jueves</option>
+                            <option value="4">Viernes</option>
+                            <option value="5">Sábado</option>
+                            <option value="6">Domingo</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Hora de inicio</label>
+                        <input type="time" name="hora_inicio" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Cliente</label>
+                        <input type="text" name="nombre_cliente" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono del Cliente</label>
+                        <input type="tel" name="telefono_cliente" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Precio</label>
+                        <input type="number" name="precio" class="form-control" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sport">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">save</span>
+                        Crear Turno Fijo
                     </button>
                 </div>
             </form>

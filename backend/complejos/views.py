@@ -933,3 +933,64 @@ def cancelar_reserva_dueno(request, complejo_slug, reserva_id):
     messages.success(request, 'Reserva cancelada exitosamente.')
     return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
 
+
+@login_required
+def crear_reserva_fija_dueno(request, complejo_slug):
+    """
+    Crear una reserva fija (turno fijo) desde el panel del dueño.
+    """
+    if request.method != 'POST':
+        return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+    
+    complejo = get_object_or_404(Complejo, slug=complejo_slug)
+    
+    # Verificar que sea el dueño
+    if request.user.tipo_usuario != 'DUENIO':
+        messages.error(request, 'Solo los dueños pueden crear turnos fijos.')
+        return redirect('complejos:detalle', slug=complejo_slug)
+    
+    try:
+        perfil_dueno = request.user.perfil_dueno
+        if complejo.dueno != perfil_dueno:
+            messages.error(request, 'No tienes permiso para gestionar este complejo.')
+            return redirect('complejos:dashboard_principal')
+    except AttributeError:
+        messages.error(request, 'No se encontró tu perfil de dueño.')
+        return redirect('home')
+    
+    # Obtener datos del formulario
+    cancha_id = request.POST.get('cancha_id')
+    dia_semana = request.POST.get('dia_semana')
+    hora_inicio = request.POST.get('hora_inicio')
+    nombre_cliente = request.POST.get('nombre_cliente')
+    telefono_cliente = request.POST.get('telefono_cliente')
+    precio = request.POST.get('precio')
+    
+    # Validar que la cancha pertenezca al complejo
+    cancha = get_object_or_404(Cancha, id=cancha_id, complejo=complejo)
+    
+    try:
+        # Crear reserva fija
+        reserva_fija = ReservaFija.objects.create(
+            cancha=cancha,
+            dia_semana=int(dia_semana),
+            hora_inicio=hora_inicio,
+            nombre_cliente=nombre_cliente,
+            telefono_cliente=telefono_cliente,
+            precio=float(precio)
+        )
+        
+        # Mapear día de semana a nombre
+        dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+        dia_nombre = dias_semana[int(dia_semana)]
+        
+        messages.success(
+            request, 
+            f'¡Turno fijo creado! {cancha.nombre} - {dia_nombre}s a las {hora_inicio} para {nombre_cliente}'
+        )
+    except Exception as e:
+        messages.error(request, f'Error al crear turno fijo: {str(e)}')
+    
+    return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+
+
