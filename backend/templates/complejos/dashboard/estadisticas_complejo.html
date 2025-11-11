@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Estadísticas - {{ complejo.nombre }} - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'complejos:dashboard_principal' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'complejos:mis_complejos_dashboard' %}">Mis Complejos</a></li>
+                    <li class="breadcrumb-item active">{{ complejo.nombre }}</li>
+                </ol>
+            </nav>
+            <h2>{{ complejo.nombre }}</h2>
+            <p class="text-muted">Estadísticas del último mes</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'complejos:detalle' complejo.slug %}" class="btn btn-outline-primary">
+                <span class="material-symbols-rounded">visibility</span>
+                Ver Complejo
+            </a>
+        </div>
+    </div>
+    
+    <!-- Estadísticas Generales -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Reservas</p>
+                            <h3 class="mb-0">{{ total_reservas }}</h3>
+                        </div>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <span class="material-symbols-rounded text-primary" style="font-size: 32px;">event</span>
+                        </div>
+                    </div>
+                    <small class="text-muted">Últimos 30 días</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Ingresos Totales</p>
+                            <h3 class="mb-0">${{ ingresos_total|floatformat:0 }}</h3>
+                        </div>
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <span class="material-symbols-rounded text-success" style="font-size: 32px;">payments</span>
+                        </div>
+                    </div>
+                    <small class="text-muted">Reservas confirmadas y pagadas</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Canchas</p>
+                            <h3 class="mb-0">{{ canchas.count }}</h3>
+                        </div>
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <span class="material-symbols-rounded text-info" style="font-size: 32px;">sports_soccer</span>
+                        </div>
+                    </div>
+                    <small class="text-muted">Canchas activas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Complejo -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="mb-0">Información del Complejo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Dirección</label>
+                            <p class="mb-0">
+                                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">location_on</span>
+                                {{ complejo.direccion }}, {{ complejo.localidad }}
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Contacto</label>
+                            <p class="mb-0">
+                                {% if complejo.telefono %}
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">phone</span>
+                                    {{ complejo.telefono }}<br>
+                                {% endif %}
+                                {% if complejo.email %}
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">email</span>
+                                    {{ complejo.email }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        {% if complejo.descripcion %}
+                        <div class="col-12">
+                            <label class="text-muted small">Descripción</label>
+                            <p>{{ complejo.descripcion }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            {% if complejo.logo %}
+                <div class="card border-0 shadow-sm h-100">
+                    <img src="{{ complejo.logo.url }}" class="card-img-top" alt="{{ complejo.nombre }}" style="object-fit: cover; max-height: 250px;">
+                </div>
+            {% else %}
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center justify-content-center bg-light">
+                        <div class="text-center">
+                            <span class="material-symbols-rounded text-muted" style="font-size: 80px;">stadium</span>
+                            <p class="text-muted mt-2">Sin logo</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Estadísticas por Cancha -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h5 class="mb-0">Rendimiento por Cancha</h5>
+            <small class="text-muted">Últimos 30 días</small>
+        </div>
+        <div class="card-body p-0">
+            {% if stats_canchas %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cancha</th>
+                                <th>Deporte</th>
+                                <th>Precio/Hora</th>
+                                <th>Total Reservas</th>
+                                <th>Confirmadas</th>
+                                <th>Ingresos</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in stats_canchas %}
+                            <tr>
+                                <td><strong>{{ stat.cancha.nombre }}</strong></td>
+                                <td>
+                                    <span class="badge bg-info">{{ stat.cancha.get_deporte_display }}</span>
+                                </td>
+                                <td>${{ stat.cancha.precio_hora|default:stat.cancha.precio_base }}</td>
+                                <td>{{ stat.total_reservas }}</td>
+                                <td>
+                                    <span class="badge bg-success">{{ stat.confirmadas }}</span>
+                                </td>
+                                <td><strong class="text-success">${{ stat.ingresos|floatformat:0 }}</strong></td>
+                                <td>
+                                    {% if stat.cancha.activo %}
+                                        <span class="badge bg-success">Activa</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactiva</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="5" class="text-end">Total:</th>
+                                <th colspan="2"><strong class="text-success">${{ ingresos_total|floatformat:0 }}</strong></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <span class="material-symbols-rounded text-muted" style="font-size: 80px;">sports_soccer</span>
+                    <p class="text-muted mt-3">No hay canchas registradas</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

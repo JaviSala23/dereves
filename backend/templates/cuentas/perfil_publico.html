@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ jugador.nombre_real|default:jugador.username }} - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if jugador.foto_perfil %}
+                        <img src="{{ jugador.foto_perfil.url }}" alt="Foto de perfil" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    {% else %}
+                        <div class="avatar-circle mx-auto mb-3" style="width: 150px; height: 150px; background: linear-gradient(135deg, var(--verde-lima), var(--morado)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: bold; color: white;">
+                            {% if jugador.nombre_real %}
+                                {{ jugador.nombre_real|slice:":1"|upper }}
+                            {% else %}
+                                {{ jugador.username|slice:":1"|upper }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <h4 class="mb-1">{{ jugador.nombre_real|default:jugador.username }}</h4>
+                    <p class="text-muted mb-3">@{{ jugador.username }}</p>
+                    <span class="badge bg-success mb-3">Jugador</span>
+                    
+                    {% if perfil_jugador.localidad %}
+                    <p class="text-muted mb-2">
+                        <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">location_on</span>
+                        {{ perfil_jugador.localidad }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if perfil_jugador.biografia %}
+                    <p class="text-start mt-3">{{ perfil_jugador.biografia }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Información</h6>
+                </div>
+                <div class="card-body">
+                    {% if perfil_jugador.posicion_favorita %}
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="material-symbols-rounded me-2 text-verde-lima">sports_soccer</span>
+                        <div>
+                            <small class="text-muted d-block">Posición</small>
+                            <strong>{{ perfil_jugador.posicion_favorita }}</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if perfil_jugador.pie_habil %}
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="material-symbols-rounded me-2 text-azul">footprint</span>
+                        <div>
+                            <small class="text-muted d-block">Pie Hábil</small>
+                            <strong>{{ perfil_jugador.get_pie_habil_display }}</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if perfil_jugador.fecha_nacimiento %}
+                    <div class="d-flex align-items-center">
+                        <span class="material-symbols-rounded me-2 text-morado">cake</span>
+                        <div>
+                            <small class="text-muted d-block">Edad</small>
+                            <strong>{{ perfil_jugador.fecha_nacimiento|timesince|slice:":2" }} años</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Estadísticas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <h2 class="text-verde-lima mb-0">{{ perfil_jugador.partidos_jugados }}</h2>
+                                <small class="text-muted">Partidos Jugados</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <h2 class="text-azul mb-0">{{ perfil_jugador.torneos_ganados }}</h2>
+                                <small class="text-muted">Torneos Ganados</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <h2 class="text-morado mb-0">{{ perfil_jugador.rating }}</h2>
+                                <small class="text-muted">Rating</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <h2 class="text-naranja mb-0">0</h2>
+                                <small class="text-muted">Goles</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Actividad Reciente</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center text-muted py-5">
+                        <span class="material-symbols-rounded" style="font-size: 64px;">event</span>
+                        <p class="mt-3 mb-0">No hay actividad reciente</p>
+                        <small>Los partidos y torneos aparecerán aquí</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Partidos Próximos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center text-muted py-5">
+                        <span class="material-symbols-rounded" style="font-size: 64px;">calendar_today</span>
+                        <p class="mt-3 mb-0">No hay partidos próximos</p>
+                        <small>Las próximas reservas y partidos aparecerán aquí</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

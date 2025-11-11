@@ -1,0 +1,68 @@
+/* Estilos adicionales para DeRevés */
+
+/* Logo animations */
+.navbar-brand img {
+    transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover img {
+    transform: scale(1.05);
+}
+
+/* Hero section logo */
+.hero-section img {
+    animation: fadeInDown 0.8s ease-out;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Footer logo */
+footer img {
+    filter: brightness(1.1);
+}
+
+/* Mejorar contraste del logo sobre fondos */
+.navbar-brand img,
+footer img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* Responsive logo sizes */
+@media (max-width: 768px) {
+    .navbar-brand img {
+        height: 32px;
+    }
+    
+    .hero-section img {
+        height: 80px !important;
+    }
+    
+    footer img {
+        height: 32px;
+    }
+}
+
+/* Smooth page transitions */
+body {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

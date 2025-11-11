@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Perfil - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Editar Perfil</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <h6 class="border-bottom pb-2 mb-3">Información de Cuenta</h6>
+                        
+                        <div class="mb-4 text-center">
+                            <label class="form-label d-block">Foto de Perfil</label>
+                            <div class="mb-3">
+                                {% if user.foto_perfil %}
+                                    <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil actual" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                                        <span class="material-symbols-rounded text-white" style="font-size: 60px;">person</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <input type="file" class="form-control" id="foto_perfil" name="foto_perfil" accept="image/*">
+                            <small class="text-muted">JPG, PNG o GIF. Máximo 5MB.</small>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="username" class="form-label">Nombre de Usuario *</label>
+                                <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="nombre_real" class="form-label">Nombre Completo</label>
+                            <input type="text" class="form-control" id="nombre_real" name="nombre_real" value="{{ user.nombre_real|default:'' }}" placeholder="Tu nombre real">
+                        </div>
+                        
+                        {% if user.tipo_usuario == 'JUGADOR' and perfil %}
+                        <h6 class="border-bottom pb-2 mb-3 mt-4">Información de Jugador</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="posicion_favorita" class="form-label">Posición Favorita</label>
+                                <select class="form-select" id="posicion_favorita" name="posicion_favorita">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Arquero" {% if perfil.posicion_favorita == 'Arquero' %}selected{% endif %}>Arquero</option>
+                                    <option value="Defensor" {% if perfil.posicion_favorita == 'Defensor' %}selected{% endif %}>Defensor</option>
+                                    <option value="Mediocampista" {% if perfil.posicion_favorita == 'Mediocampista' %}selected{% endif %}>Mediocampista</option>
+                                    <option value="Delantero" {% if perfil.posicion_favorita == 'Delantero' %}selected{% endif %}>Delantero</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="pie_habil" class="form-label">Pie Hábil</label>
+                                <select class="form-select" id="pie_habil" name="pie_habil">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="DERECHO" {% if perfil.pie_habil == 'DERECHO' %}selected{% endif %}>Derecho</option>
+                                    <option value="IZQUIERDO" {% if perfil.pie_habil == 'IZQUIERDO' %}selected{% endif %}>Izquierdo</option>
+                                    <option value="AMBOS" {% if perfil.pie_habil == 'AMBOS' %}selected{% endif %}>Ambos</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="biografia" class="form-label">Biografía</label>
+                            <textarea class="form-control" id="biografia" name="biografia" rows="4" placeholder="Cuéntanos sobre ti...">{{ perfil.biografia|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="localidad" class="form-label">Localidad</label>
+                                <input type="text" class="form-control" id="localidad" name="localidad" value="{{ perfil.localidad|default:'' }}" placeholder="Tu ciudad">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                                <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" value="{{ perfil.fecha_nacimiento|date:'Y-m-d'|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="perfil_publico" name="perfil_publico" {% if perfil.perfil_publico %}checked{% endif %}>
+                            <label class="form-check-label" for="perfil_publico">
+                                Hacer mi perfil público
+                            </label>
+                        </div>
+                        
+                        {% elif user.tipo_usuario == 'DUENIO' and perfil %}
+                        <h6 class="border-bottom pb-2 mb-3 mt-4">Información del Negocio</h6>
+                        
+                        <div class="mb-3">
+                            <label for="nombre_negocio" class="form-label">Nombre del Negocio</label>
+                            <input type="text" class="form-control" id="nombre_negocio" name="nombre_negocio" value="{{ perfil.nombre_negocio|default:'' }}" placeholder="Nombre de tu complejo o empresa">
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="telefono_contacto" class="form-label">Teléfono de Contacto</label>
+                                <input type="tel" class="form-control" id="telefono_contacto" name="telefono_contacto" value="{{ perfil.telefono_contacto|default:'' }}" placeholder="+54 9 11 1234-5678">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cuit_cuil" class="form-label">CUIT/CUIL</label>
+                                <input type="text" class="form-control" id="cuit_cuil" name="cuit_cuil" value="{{ perfil.cuit_cuil|default:'' }}" placeholder="XX-XXXXXXXX-X">
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'cuentas:mi_perfil' %}" class="btn btn-outline-secondary">
+                                <span class="material-symbols-rounded">cancel</span>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-symbols-rounded">save</span>
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">Zona de Peligro</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, asegúrate.</p>
+                    <button class="btn btn-outline-danger" disabled>
+                        <span class="material-symbols-rounded">delete_forever</span>
+                        Eliminar Cuenta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear Complejo - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Crear Nuevo Complejo</h2>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre del Complejo *</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3" placeholder="Describe tu complejo..."></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="direccion" class="form-label">Dirección *</label>
+                                <input type="text" class="form-control" id="direccion" name="direccion" required placeholder="Ej: Av. Libertador 1234">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="localidad" class="form-label">Localidad *</label>
+                                <input type="text" class="form-control" id="localidad" name="localidad" required placeholder="Ej: Cruz Alta">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="latitud" class="form-label">Latitud *</label>
+                                <input type="number" step="any" class="form-control" id="latitud" name="latitud" required placeholder="-30.5">
+                                <small class="text-muted">Usa Google Maps para obtener coordenadas</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="longitud" class="form-label">Longitud *</label>
+                                <input type="number" step="any" class="form-control" id="longitud" name="longitud" required placeholder="-61.5">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="telefono" class="form-label">Teléfono</label>
+                                <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="3537-123456">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="info@complejo.com">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="subdominio" class="form-label">Subdominio *</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="subdominio" name="subdominio" required placeholder="micompejo">
+                                <span class="input-group-text">.dereves.ar</span>
+                            </div>
+                            <small class="text-muted">Tu sitio será: micompejo.dereves.ar</small>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <span class="material-symbols-rounded">info</span>
+                            Los campos marcados con * son obligatorios
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <span class="material-symbols-rounded">add</span>
+                                Crear Complejo
+                            </button>
+                            <a href="{% url 'home' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

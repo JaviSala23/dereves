@@ -1,0 +1,18 @@
+from django.urls import path
+from . import views
+
+app_name = 'reservas'
+
+urlpatterns = [
+    path('mis-reservas/', views.mis_reservas, name='mis_reservas'),
+    path('canchas/<int:cancha_id>/calendario/', views.calendario_cancha, name='calendario_cancha'),
+    path('canchas/<int:cancha_id>/crear/', views.crear_reserva, name='crear_reserva'),
+    path('<int:reserva_id>/', views.detalle_reserva, name='detalle_reserva'),
+    path('<int:reserva_id>/cancelar/', views.cancelar_reserva, name='cancelar_reserva'),
+    path('<int:reserva_id>/confirmar/', views.confirmar_reserva, name='confirmar_reserva'),
+    
+    # Reservas fijas (solo dueños)
+    path('fijas/cancha/<int:cancha_id>/crear/', views.crear_reserva_fija, name='crear_reserva_fija'),
+    path('fijas/<int:reserva_fija_id>/editar/', views.editar_reserva_fija, name='editar_reserva_fija'),
+    path('fijas/<int:reserva_fija_id>/cancelar/', views.cancelar_reserva_fija, name='cancelar_reserva_fija'),
+]

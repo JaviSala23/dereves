@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis Reservas - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4">Mis Reservas</h2>
+    
+    <!-- Reservas Fijas -->
+    {% if reservas_fijas %}
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <span class="material-symbols-rounded">repeat</span>
+                Mis Reservas Fijas (Semanales)
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for reserva in reservas_fijas %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-{% if reserva.estado == 'ACTIVA' %}success{% else %}secondary{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="mb-1">{{ reserva.cancha.nombre }}</h6>
+                                    <p class="text-muted mb-0">{{ reserva.cancha.complejo.nombre }}</p>
+                                </div>
+                                <span class="badge {% if reserva.estado == 'ACTIVA' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ reserva.get_estado_display }}
+                                </span>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
+                                <strong>Todos los {{ reserva.get_dia_semana_display }}s</strong>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                                {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}
+                            </div>
+                            
+                            <div class="mb-2">
+                                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">event</span>
+                                Desde: {{ reserva.fecha_inicio|date:"d/m/Y" }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">payments</span>
+                                <strong class="text-success">${{ reserva.precio }}/semana</strong>
+                            </div>
+                            
+                            {% if reserva.observaciones %}
+                            <div class="alert alert-info mb-3 py-2">
+                                <small><strong>Nota:</strong> {{ reserva.observaciones }}</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if reserva.estado == 'ACTIVA' %}
+                            <div class="alert alert-success mb-3 py-2">
+                                <small><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">check_circle</span> Reserva activa - Tu turno está asegurado todas las semanas</small>
+                            </div>
+                            <form method="post" action="{% url 'reservas:cancelar_reserva_fija' reserva.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('¿Estás seguro de cancelar esta reserva fija? Perderás el turno permanentemente.')">
+                                    <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">cancel</span>
+                                    Cancelar Reserva Fija
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Reservas Activas -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <span class="material-symbols-rounded">event_available</span>
+                Reservas Activas
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if reservas_activas %}
+                <div class="row">
+                    {% for reserva in reservas_activas %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="mb-1">{{ reserva.cancha.nombre }}</h6>
+                                        <p class="text-muted mb-0">{{ reserva.cancha.complejo.nombre }}</p>
+                                    </div>
+                                    <span class="badge 
+                                        {% if reserva.estado == 'CONFIRMADA' %}bg-success
+                                        {% elif reserva.estado == 'PENDIENTE' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ reserva.get_estado_display }}
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
+                                    <strong>{{ reserva.fecha|date:"d/m/Y" }}</strong>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                                    {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">payments</span>
+                                    <strong class="text-success">${{ reserva.precio_total }}</strong>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'reservas:detalle_reserva' reserva.id %}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                        Ver Detalle
+                                    </a>
+                                    {% if reserva.estado != 'CANCELADA' %}
+                                    <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="flex-grow-1">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('¿Estás seguro de cancelar esta reserva?')">
+                                            Cancelar
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center text-muted py-5">
+                    <span class="material-symbols-rounded" style="font-size: 64px;">event_busy</span>
+                    <p class="mt-3 mb-0">No tienes reservas activas</p>
+                    <a href="{% url 'complejos:lista' %}" class="btn btn-primary mt-3">
+                        Explorar Complejos
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Historial de Reservas -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <span class="material-symbols-rounded">history</span>
+                Historial
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if reservas_pasadas %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Horario</th>
+                                <th>Cancha</th>
+                                <th>Complejo</th>
+                                <th>Estado</th>
+                                <th>Precio</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reserva in reservas_pasadas %}
+                            <tr>
+                                <td>{{ reserva.fecha|date:"d/m/Y" }}</td>
+                                <td>{{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}</td>
+                                <td>{{ reserva.cancha.nombre }}</td>
+                                <td>{{ reserva.cancha.complejo.nombre }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if reserva.estado == 'COMPLETADA' %}bg-success
+                                        {% elif reserva.estado == 'CANCELADA' %}bg-danger
+                                        {% elif reserva.estado == 'NO_ASISTIO' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ reserva.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td>${{ reserva.precio_total }}</td>
+                                <td>
+                                    <a href="{% url 'reservas:detalle_reserva' reserva.id %}" class="btn btn-sm btn-outline-primary">
+                                        Ver
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-muted py-4">
+                    <p class="mb-0">No hay historial de reservas</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 36px;">dashboard</span>
+                Dashboard
+            </h2>
+            <p class="text-muted">Bienvenido, {{ perfil_dueno.nombre_negocio|default:user.nombre_real }}</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'complejos:crear' %}" class="btn btn-primary">
+                <span class="material-symbols-rounded">add</span>
+                Nuevo Complejo
+            </a>
+        </div>
+    </div>
+    
+    <!-- Cards de Estadísticas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Complejos</p>
+                            <h3 class="mb-0">{{ total_complejos }}</h3>
+                        </div>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <span class="material-symbols-rounded text-primary" style="font-size: 32px;">stadium</span>
+                        </div>
+                    </div>
+                    <small class="text-success">
+                        <span class="material-symbols-rounded" style="font-size: 14px;">check_circle</span>
+                        {{ total_canchas }} canchas totales
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Reservas del Mes</p>
+                            <h3 class="mb-0">{{ total_reservas_mes }}</h3>
+                        </div>
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <span class="material-symbols-rounded text-success" style="font-size: 32px;">event</span>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        <span class="text-success">{{ reservas_confirmadas }} confirmadas</span> · 
+                        <span class="text-warning">{{ reservas_pendientes }} pendientes</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Ingresos del Mes</p>
+                            <h3 class="mb-0">${{ ingresos_mes|floatformat:0 }}</h3>
+                        </div>
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <span class="material-symbols-rounded text-success" style="font-size: 32px;">payments</span>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        Solo reservas confirmadas
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Tasa de Ocupación</p>
+                            <h3 class="mb-0">{{ tasa_ocupacion }}%</h3>
+                        </div>
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <span class="material-symbols-rounded text-info" style="font-size: 32px;">trending_up</span>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ tasa_ocupacion }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-3">
+        <!-- Gráfico de Reservas -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="mb-0">Reservas de la Última Semana</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="reservasChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Canchas Más Populares -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="mb-0">Canchas Más Reservadas</h5>
+                    <small class="text-muted">Último mes</small>
+                </div>
+                <div class="card-body">
+                    {% if canchas_populares %}
+                        <ul class="list-unstyled mb-0">
+                            {% for cancha in canchas_populares %}
+                            <li class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong class="d-block">{{ cancha.nombre }}</strong>
+                                        <small class="text-muted">{{ cancha.complejo.nombre }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary rounded-pill">{{ cancha.num_reservas }}</span>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted text-center">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Próximas Reservas -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">Próximas Reservas</h5>
+                        <small class="text-muted">Hoy y mañana</small>
+                    </div>
+                    <a href="{% url 'complejos:gestionar_reservas' %}" class="btn btn-sm btn-outline-primary">
+                        Ver Todas
+                        <span class="material-symbols-rounded" style="font-size: 16px;">arrow_forward</span>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if proximas_reservas %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Complejo</th>
+                                        <th>Cancha</th>
+                                        <th>Jugador</th>
+                                        <th>Estado</th>
+                                        <th>Precio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reserva in proximas_reservas %}
+                                    <tr>
+                                        <td>{{ reserva.fecha|date:"d/m/Y" }}</td>
+                                        <td>{{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}</td>
+                                        <td>{{ reserva.cancha.complejo.nombre }}</td>
+                                        <td>{{ reserva.cancha.nombre }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if reserva.jugador_principal.usuario.foto_perfil %}
+                                                    <img src="{{ reserva.jugador_principal.usuario.foto_perfil.url }}" 
+                                                         class="rounded-circle me-2" 
+                                                         style="width: 24px; height: 24px; object-fit: cover;">
+                                                {% endif %}
+                                                {{ reserva.jugador_principal.alias }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if reserva.estado == 'CONFIRMADA' %}
+                                                <span class="badge bg-success">Confirmada</span>
+                                            {% elif reserva.estado == 'PENDIENTE' %}
+                                                <span class="badge bg-warning">Pendiente</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ reserva.get_estado_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><strong>${{ reserva.precio }}</strong></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <span class="material-symbols-rounded text-muted" style="font-size: 64px;">event_busy</span>
+                            <p class="text-muted mt-2">No hay reservas próximas</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Accesos Rápidos -->
+    <div class="row mt-3 g-3">
+        <div class="col-md-4">
+            <a href="{% url 'complejos:mis_complejos_dashboard' %}" class="card border-0 shadow-sm text-decoration-none hover-card">
+                <div class="card-body text-center py-4">
+                    <span class="material-symbols-rounded text-primary" style="font-size: 48px;">stadium</span>
+                    <h5 class="mt-2 mb-1">Mis Complejos</h5>
+                    <p class="text-muted small mb-0">Gestionar complejos y canchas</p>
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-md-4">
+            <a href="{% url 'complejos:gestionar_reservas' %}" class="card border-0 shadow-sm text-decoration-none hover-card">
+                <div class="card-body text-center py-4">
+                    <span class="material-symbols-rounded text-success" style="font-size: 48px;">event_note</span>
+                    <h5 class="mt-2 mb-1">Reservas</h5>
+                    <p class="text-muted small mb-0">Ver y gestionar reservas</p>
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-md-4">
+            <a href="{% url 'complejos:crear' %}" class="card border-0 shadow-sm text-decoration-none hover-card">
+                <div class="card-body text-center py-4">
+                    <span class="material-symbols-rounded text-info" style="font-size: 48px;">add_business</span>
+                    <h5 class="mt-2 mb-1">Nuevo Complejo</h5>
+                    <p class="text-muted small mb-0">Agregar un nuevo complejo</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: all 0.3s ease;
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Gráfico de reservas por día
+    const ctx = document.getElementById('reservasChart').getContext('2d');
+    const reservasData = {{ reservas_por_dia|safe }};
+    
+    const labels = reservasData.map(item => item.fecha);
+    const data = reservasData.map(item => item.cantidad);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Reservas',
+                data: data,
+                borderColor: '#8AE234',
+                backgroundColor: 'rgba(138, 226, 52, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

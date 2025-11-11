@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi Perfil - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if user.foto_perfil %}
+                        <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                    {% else %}
+                        <div class="avatar-circle mx-auto mb-3" style="width: 120px; height: 120px; background: linear-gradient(135deg, var(--verde-lima), var(--morado)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: bold; color: white;">
+                            {% if user.nombre_real %}
+                                {{ user.nombre_real|slice:":1"|upper }}
+                            {% else %}
+                                {{ user.username|slice:":1"|upper }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <h5 class="mb-1">{{ user.nombre_real|default:user.username }}</h5>
+                    <p class="text-muted mb-3">@{{ user.username }}</p>
+                    <span class="badge bg-success mb-3">{{ user.get_tipo_usuario_display }}</span>
+                    <div class="d-grid">
+                        <a href="{% url 'cuentas:editar_perfil' %}" class="btn btn-outline-primary">
+                            <span class="material-symbols-rounded">edit</span>
+                            Editar Perfil
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="list-group">
+                <a href="{% url 'cuentas:mi_perfil' %}" class="list-group-item list-group-item-action active">
+                    <span class="material-symbols-rounded">person</span>
+                    Mi Perfil
+                </a>
+                {% if user.tipo_usuario == 'JUGADOR' %}
+                <a href="{% url 'reservas:mis_reservas' %}" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">event</span>
+                    Mis Reservas
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">emoji_events</span>
+                    Mis Torneos
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">group</span>
+                    Mis Partidos
+                </a>
+                {% elif user.tipo_usuario == 'DUENIO' %}
+                <a href="{% url 'complejos:dashboard_principal' %}" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="{% url 'complejos:mis_complejos_dashboard' %}" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">stadium</span>
+                    Mis Complejos
+                </a>
+                <a href="{% url 'complejos:gestionar_reservas' %}" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">event_note</span>
+                    Gestionar Reservas
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">payments</span>
+                    Finanzas
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Información Personal</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Nombre de Usuario</label>
+                            <p class="mb-0">{{ user.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Email</label>
+                            <p class="mb-0">
+                                {{ user.email }}
+                                {% if user.email_verified %}
+                                <span class="badge bg-success ms-2">Verificado</span>
+                                {% else %}
+                                <span class="badge bg-warning ms-2">No Verificado</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Nombre Real</label>
+                            <p class="mb-0">{{ user.nombre_real|default:"No especificado" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Tipo de Usuario</label>
+                            <p class="mb-0">{{ user.get_tipo_usuario_display }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Fecha de Registro</label>
+                            <p class="mb-0">{{ user.date_joined|date:"d/m/Y" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Proveedor</label>
+                            <p class="mb-0">
+                                {% if user.provider == 'google' %}
+                                <span class="badge bg-danger">Google</span>
+                                {% else %}
+                                <span class="badge bg-primary">DeRevés</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if perfil %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if user.tipo_usuario == 'JUGADOR' %}
+                        Perfil de Jugador
+                        {% else %}
+                        Perfil de Dueño
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if user.tipo_usuario == 'JUGADOR' %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Posición</label>
+                            <p class="mb-0">{{ perfil.posicion_favorita|default:"No especificada" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Pie Hábil</label>
+                            <p class="mb-0">{{ perfil.get_pie_habil_display|default:"No especificado" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="text-muted small">Biografía</label>
+                            <p class="mb-0">{{ perfil.biografia|default:"Sin biografía" }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-verde-lima">{{ perfil.partidos_jugados }}</h3>
+                                <small class="text-muted">Partidos</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-azul">{{ perfil.torneos_ganados }}</h3>
+                                <small class="text-muted">Torneos</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-morado">{{ perfil.rating }}</h3>
+                                <small class="text-muted">Rating</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% elif user.tipo_usuario == 'DUENIO' %}
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="text-muted small">Nombre del Negocio</label>
+                            <p class="mb-0">{{ perfil.nombre_negocio|default:"No especificado" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Teléfono de Contacto</label>
+                            <p class="mb-0">{{ perfil.telefono_contacto|default:"No especificado" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Complejos Activos</label>
+                            <p class="mb-0">{{ perfil.complejos.count }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if user.tipo_usuario == 'JUGADOR' %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Actividad Reciente</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center text-muted py-4">
+                        <span class="material-symbols-rounded" style="font-size: 48px;">sports_soccer</span>
+                        <p class="mt-2">No hay actividad reciente</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

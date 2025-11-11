@@ -1,0 +1,31 @@
+# Requirements recommended for DeRevés (backend + common dev tools)
+# Adjust versions as needed for your deployment environment.
+
+# Core
+Django>=4.2,<5.0
+djangorestframework
+django-allauth
+mysqlclient
+gunicorn
+
+# Environment / config
+python-dotenv
+django-environ
+dj-database-url
+
+# Media / images
+Pillow
+
+# CORS
+django-cors-headers
+
+# Dev / testing / linting
+pytest
+pytest-django
+black
+isort
+flake8
+
+# Optional / utilities
+markdown
+reportlab

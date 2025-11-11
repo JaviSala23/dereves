@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle Reserva #{{ reserva.id }} - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Detalle de Reserva #{{ reserva.id }}</h5>
+                        <span class="badge 
+                            {% if reserva.estado == 'CONFIRMADA' %}bg-success
+                            {% elif reserva.estado == 'PENDIENTE' %}bg-warning
+                            {% elif reserva.estado == 'CANCELADA' %}bg-danger
+                            {% elif reserva.estado == 'COMPLETADA' %}bg-info
+                            {% else %}bg-secondary{% endif %} fs-6">
+                            {{ reserva.get_estado_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Información del Complejo</h6>
+                            <div class="mb-2">
+                                <label class="text-muted small">Complejo</label>
+                                <p class="mb-0">
+                                    <strong>{{ reserva.cancha.complejo.nombre }}</strong>
+                                </p>
+                            </div>
+                            <div class="mb-2">
+                                <label class="text-muted small">Cancha</label>
+                                <p class="mb-0">{{ reserva.cancha.nombre }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <label class="text-muted small">Tipo</label>
+                                <p class="mb-0">{{ reserva.cancha.get_tipo_cancha_display }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <label class="text-muted small">Ubicación</label>
+                                <p class="mb-0">{{ reserva.cancha.complejo.direccion }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Información de la Reserva</h6>
+                            <div class="mb-2">
+                                <label class="text-muted small">Fecha</label>
+                                <p class="mb-0">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
+                                    <strong>{{ reserva.fecha|date:"d/m/Y" }}</strong>
+                                </p>
+                            </div>
+                            <div class="mb-2">
+                                <label class="text-muted small">Horario</label>
+                                <p class="mb-0">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                                    {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}
+                                </p>
+                            </div>
+                            <div class="mb-2">
+                                <label class="text-muted small">Usuario</label>
+                                <p class="mb-0">{{ reserva.usuario.nombre_real|default:reserva.usuario.username }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <label class="text-muted small">Creada</label>
+                                <p class="mb-0">{{ reserva.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Información de Pago</h6>
+                            {% if reserva.metodo_pago %}
+                            <div class="mb-2">
+                                <label class="text-muted small">Método de Pago</label>
+                                <p class="mb-0">{{ reserva.metodo_pago.nombre }}</p>
+                            </div>
+                            {% endif %}
+                            <div class="mb-2">
+                                <label class="text-muted small">Precio por Hora</label>
+                                <p class="mb-0">${{ reserva.cancha.precio_hora }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <label class="text-muted small">Total</label>
+                                <h4 class="text-success mb-0">${{ reserva.precio_total }}</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if reserva.notas %}
+                            <h6 class="text-muted mb-3">Notas</h6>
+                            <p>{{ reserva.notas }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'reservas:mis_reservas' %}" class="btn btn-outline-secondary">
+                            <span class="material-symbols-rounded">arrow_back</span>
+                            Volver
+                        </a>
+                        
+                        {% if not es_dueno and reserva.estado not in 'CANCELADA,COMPLETADA' %}
+                        <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('¿Estás seguro de cancelar esta reserva?')">
+                                <span class="material-symbols-rounded">cancel</span>
+                                Cancelar Reserva
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        {% if es_dueno and reserva.estado == 'PENDIENTE' %}
+                        <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <span class="material-symbols-rounded">check_circle</span>
+                                Confirmar Pago
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if reserva.estado == 'PENDIENTE' %}
+            <div class="alert alert-warning mt-3">
+                <span class="material-symbols-rounded">info</span>
+                <strong>Reserva Pendiente:</strong> Debes confirmar el pago en el complejo antes de jugar.
+            </div>
+            {% elif reserva.estado == 'CONFIRMADA' %}
+            <div class="alert alert-success mt-3">
+                <span class="material-symbols-rounded">check_circle</span>
+                <strong>Reserva Confirmada:</strong> ¡Todo listo! Te esperamos en el complejo.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

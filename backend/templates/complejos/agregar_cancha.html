@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Agregar Cancha - {{ complejo.nombre }} - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'complejos:dashboard_principal' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'complejos:mis_complejos_dashboard' %}">Mis Complejos</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'complejos:gestionar' complejo.slug %}">{{ complejo.nombre }}</a></li>
+            <li class="breadcrumb-item active">Agregar Cancha</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">add_circle</span>
+                        Agregar Nueva Cancha
+                    </h4>
+                    <p class="text-muted mb-0 mt-2">Complejo: {{ complejo.nombre }}</p>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="nombre" class="form-label">Nombre de la Cancha *</label>
+                                <input type="text" class="form-control" id="nombre" name="nombre" required 
+                                       placeholder="Ej: Cancha 1, Pádel VIP, etc.">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="deporte" class="form-label">Deporte *</label>
+                                <select class="form-select" id="deporte" name="deporte" required>
+                                    <option value="">Seleccionar...</option>
+                                    {% for codigo, nombre in deportes %}
+                                        <option value="{{ codigo }}">{{ nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="foto" class="form-label">Foto de la Cancha</label>
+                            <input type="file" class="form-control" id="foto" name="foto" accept="image/*">
+                            <small class="text-muted">Opcional. Formatos: JPG, PNG. Máximo 5MB.</small>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="tipo_superficie" class="form-label">Tipo de Superficie</label>
+                                <input type="text" class="form-control" id="tipo_superficie" name="tipo_superficie" 
+                                       placeholder="Ej: Césped sintético, Cemento, etc.">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tipo_pared" class="form-label">Tipo de Pared</label>
+                                <select class="form-select" id="tipo_pared" name="tipo_pared">
+                                    <option value="">No especificar...</option>
+                                    {% for codigo, nombre in tipos_pared %}
+                                        <option value="{{ codigo }}">{{ nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="precio_hora" class="form-label">Precio por Hora *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="precio_hora" name="precio_hora" 
+                                           step="0.01" min="0" required placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="horario_apertura" class="form-label">Horario Apertura</label>
+                                <input type="time" class="form-control" id="horario_apertura" name="horario_apertura" value="08:00">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="horario_cierre" class="form-label">Horario Cierre</label>
+                                <input type="time" class="form-control" id="horario_cierre" name="horario_cierre" value="23:00">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="duracion_turno_minutos" class="form-label">Duración Turno (min)</label>
+                                <select class="form-select" id="duracion_turno_minutos" name="duracion_turno_minutos">
+                                    <option value="30">30 minutos</option>
+                                    <option value="60" selected>60 minutos</option>
+                                    <option value="90">90 minutos</option>
+                                    <option value="120">120 minutos</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="techada" name="techada">
+                                    <label class="form-check-label" for="techada">
+                                        <strong>Cancha Techada</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="iluminacion" name="iluminacion">
+                                    <label class="form-check-label" for="iluminacion">
+                                        <strong>Con Iluminación</strong>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">info</span>
+                            <strong>Nota:</strong> Los turnos se generarán automáticamente según la duración configurada y el horario de apertura/cierre.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'complejos:gestionar' complejo.slug %}" class="btn btn-outline-secondary">
+                                <span class="material-symbols-rounded">cancel</span>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <span class="material-symbols-rounded">save</span>
+                                Crear Cancha
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

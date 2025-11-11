@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis Complejos - Dashboard - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'complejos:dashboard_principal' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Mis Complejos</li>
+                </ol>
+            </nav>
+            <h2>
+                <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 36px;">stadium</span>
+                Mis Complejos
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'complejos:crear' %}" class="btn btn-primary">
+                <span class="material-symbols-rounded">add</span>
+                Nuevo Complejo
+            </a>
+        </div>
+    </div>
+    
+    {% if complejos %}
+        <div class="row g-3">
+            {% for complejo in complejos %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    {% if complejo.logo %}
+                        <img src="{{ complejo.logo.url }}" class="card-img-top" alt="{{ complejo.nombre }}" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(135deg, var(--dereves-verde), var(--dereves-azul));">
+                            <span class="material-symbols-rounded text-white" style="font-size: 80px;">stadium</span>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ complejo.nombre }}</h5>
+                            {% if complejo.activo %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </div>
+                        
+                        <p class="text-muted small mb-2">
+                            <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">location_on</span>
+                            {{ complejo.localidad }}
+                        </p>
+                        
+                        {% if complejo.descripcion %}
+                            <p class="card-text text-muted small">{{ complejo.descripcion|truncatewords:15 }}</p>
+                        {% endif %}
+                        
+                        <hr>
+                        
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <div class="text-primary fw-bold">{{ complejo.num_canchas }}</div>
+                                <small class="text-muted">Canchas</small>
+                            </div>
+                            <div class="col-8">
+                                <div class="text-success fw-bold">{{ complejo.num_reservas_mes }}</div>
+                                <small class="text-muted">Reservas (30 días)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'complejos:gestionar' complejo.slug %}" class="btn btn-primary btn-sm">
+                                <span class="material-symbols-rounded" style="font-size: 16px;">settings</span>
+                                Gestionar
+                            </a>
+                            <a href="{% url 'complejos:detalle' complejo.slug %}" class="btn btn-outline-primary btn-sm">
+                                <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
+                                Ver Complejo
+                            </a>
+                            <a href="{% url 'complejos:estadisticas' complejo.slug %}" class="btn btn-outline-info btn-sm">
+                                <span class="material-symbols-rounded" style="font-size: 16px;">analytics</span>
+                                Estadísticas
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-white border-0">
+                        <div class="d-flex gap-2">
+                            <a href="#" class="btn btn-sm btn-outline-secondary flex-fill">
+                                <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
+                                Editar
+                            </a>
+                            <a href="#" class="btn btn-sm btn-outline-secondary flex-fill">
+                                <span class="material-symbols-rounded" style="font-size: 16px;">settings</span>
+                                Configurar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <span class="material-symbols-rounded text-muted" style="font-size: 120px;">add_business</span>
+                <h4 class="mt-3">No tienes complejos registrados</h4>
+                <p class="text-muted">Comienza creando tu primer complejo deportivo</p>
+                <a href="{% url 'complejos:crear' %}" class="btn btn-primary mt-3">
+                    <span class="material-symbols-rounded">add</span>
+                    Crear Mi Primer Complejo
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

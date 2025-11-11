@@ -1,0 +1,478 @@
+{% extends 'base.html' %}
+
+{% block title %}Reservar Canchas - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><span class="material-symbols-rounded" style="vertical-align: middle;">sports_tennis</span> Reservar Cancha</h1>
+            <p class="text-muted">Selecciona complejo, cancha, fecha y horario</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if user.is_authenticated and user.tipo_usuario == 'DUENIO' %}
+                <a href="{% url 'complejos:crear' %}" class="btn btn-primary">
+                    <span class="material-symbols-rounded">add</span>
+                    Crear Complejo
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <form method="get" class="row g-3" id="formFiltros">
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">País</label>
+                    <select class="form-select" name="pais">
+                        <option value="">Todos</option>
+                        {% for p in paises %}
+                            <option value="{{ p }}" {% if pais == p %}selected{% endif %}>{{ p }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Provincia</label>
+                    <select class="form-select" name="provincia">
+                        <option value="">Todas</option>
+                        {% for prov in provincias %}
+                            <option value="{{ prov }}" {% if provincia == prov %}selected{% endif %}>{{ prov }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Localidad</label>
+                    <input type="text" class="form-control" name="localidad" placeholder="Ej: Cruz Alta" value="{{ localidad }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Deporte</label>
+                    <select class="form-select" name="deporte">
+                        <option value="">Todos</option>
+                        {% for codigo, nombre in deportes %}
+                            <option value="{{ codigo }}" {% if deporte == codigo %}selected{% endif %}>{{ nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Fecha</label>
+                    <input type="date" class="form-control" name="fecha" value="{{ fecha.isoformat }}" min="{{ fecha.isoformat }}" id="inputFecha">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <span class="material-symbols-rounded">search</span>
+                        Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Opción de vista agrupada -->
+    <div class="mb-3">
+        <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="vista" id="vistaLista" checked onclick="toggleVista('lista')">
+            <label class="btn btn-outline-primary" for="vistaLista">
+                <span class="material-symbols-rounded" style="vertical-align: middle;">view_list</span>
+                Lista
+            </label>
+            
+            <input type="radio" class="btn-check" name="vista" id="vistaAgrupada" onclick="toggleVista('agrupada')">
+            <label class="btn btn-outline-primary" for="vistaAgrupada">
+                <span class="material-symbols-rounded" style="vertical-align: middle;">folder</span>
+                Agrupado por Ubicación
+            </label>
+        </div>
+    </div>
+        </div>
+    </div>
+
+    <!-- Navegación de fechas -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        {% if fecha_anterior %}
+        <a href="?fecha={{ fecha_anterior.isoformat }}{% if localidad %}&localidad={{ localidad }}{% endif %}{% if deporte %}&deporte={{ deporte }}{% endif %}" 
+           class="btn btn-outline-secondary">
+            <span class="material-symbols-rounded">chevron_left</span>
+            {{ fecha_anterior|date:"d/m" }}
+        </a>
+        {% else %}
+        <div></div>
+        {% endif %}
+        
+        <h4 class="mb-0">
+            <span class="material-symbols-rounded" style="vertical-align: middle;">calendar_today</span>
+            {{ fecha|date:"l d \d\e F \d\e Y" }}
+        </h4>
+        
+        <a href="?fecha={{ fecha_siguiente.isoformat }}{% if localidad %}&localidad={{ localidad }}{% endif %}{% if deporte %}&deporte={{ deporte }}{% endif %}" 
+           class="btn btn-outline-secondary">
+            {{ fecha_siguiente|date:"d/m" }}
+            <span class="material-symbols-rounded">chevron_right</span>
+        </a>
+    </div>
+
+    <!-- Vista Lista Normal -->
+    <div id="vistaListaContainer">
+    {% for item in complejos_data %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-0">{{ item.complejo.nombre }}</h4>
+                    <p class="text-muted mb-0">
+                        <span class="material-symbols-rounded" style="font-size: 1rem; vertical-align: middle;">location_on</span>
+                        {{ item.complejo.direccion }}, {{ item.complejo.localidad }}, {{ item.complejo.provincia }}, {{ item.complejo.pais }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{% url 'complejos:detalle' item.complejo.slug %}" class="btn btn-sm btn-outline-primary">
+                        <span class="material-symbols-rounded">info</span>
+                        Ver Detalle
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% for cancha in item.canchas %}
+            <div class="cancha-item border-bottom pb-3 mb-3" data-cancha-id="{{ cancha.id }}">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        {% if cancha.foto %}
+                            <img src="{{ cancha.foto.url }}" alt="{{ cancha.nombre }}" 
+                                 class="img-fluid rounded" style="height: 100px; width: 100%; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 100px;">
+                                <span class="material-symbols-rounded text-muted" style="font-size: 3rem;">sports</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <h5 class="mb-1">{{ cancha.nombre }}</h5>
+                        <span class="badge bg-primary">{{ cancha.get_deporte_display }}</span>
+                        <p class="text-muted small mb-1 mt-2">{{ cancha.tipo_superficie|default:"Superficie sintética" }}</p>
+                        {% if cancha.techada %}<span class="badge bg-success">Techada</span>{% endif %}
+                        {% if cancha.iluminacion %}<span class="badge bg-warning text-dark">Iluminada</span>{% endif %}
+                        <div class="mt-2">
+                            <strong class="text-success fs-5">${{ cancha.precio_hora }}</strong>
+                            <small class="text-muted">/ {{ cancha.duracion_turno_minutos }} min</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <label class="form-label small">Fecha para esta cancha:</label>
+                            <input type="date" class="form-control form-control-sm fecha-cancha" 
+                                   id="fecha-{{ cancha.id }}"
+                                   value="{{ fecha|date:'Y-m-d' }}" 
+                                   min="{{ fecha|date:'Y-m-d' }}"
+                                   onchange="cargarHorarios({{ cancha.id }}, this.value)">
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm w-100 mb-2 btn-ver-horarios" 
+                                onclick="cargarHorarios({{ cancha.id }}, document.getElementById('fecha-{{ cancha.id }}').value)">
+                            <span class="material-symbols-rounded">schedule</span>
+                            Ver Horarios Disponibles
+                        </button>
+                        <div class="horarios-container mt-2" id="horarios-{{ cancha.id }}" style="display: none;">
+                            <div class="text-center py-2">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <span class="material-symbols-rounded text-muted" style="font-size: 5rem;">search_off</span>
+            <h4 class="mt-3">No se encontraron complejos</h4>
+            <p class="text-muted">Intenta con otra localidad, deporte o fecha.</p>
+            <a href="{% url 'complejos:lista' %}" class="btn btn-primary">
+                Ver todos los complejos
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+    <!-- Fin Vista Lista -->
+    
+    <!-- Vista Agrupada por Ubicación -->
+    <div id="vistaAgrupadaContainer" style="display: none;">
+        {% for pais, provincias_dict in complejos_agrupados.items %}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">public</span>
+                    {{ pais }}
+                </h3>
+            </div>
+            <div class="card-body">
+                {% for provincia, items in provincias_dict.items %}
+                <div class="mb-4">
+                    <h4 class="border-bottom pb-2">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">map</span>
+                        {{ provincia }}
+                        <span class="badge bg-secondary">{{ items|length }} complejo{{ items|length|pluralize }}</span>
+                    </h4>
+                    
+                    {% for item in items %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h5 class="mb-0">{{ item.complejo.nombre }}</h5>
+                                    <p class="text-muted mb-0 small">
+                                        <span class="material-symbols-rounded" style="font-size: 1rem; vertical-align: middle;">location_on</span>
+                                        {{ item.complejo.direccion }}, {{ item.complejo.localidad }}
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <a href="{% url 'complejos:detalle' item.complejo.slug %}" class="btn btn-sm btn-outline-primary">
+                                        <span class="material-symbols-rounded">info</span>
+                                        Ver Detalle
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                {% for cancha in item.canchas %}
+                                <div class="col-md-6">
+                                    <div class="border rounded p-2">
+                                        <strong>{{ cancha.nombre }}</strong>
+                                        <span class="badge bg-primary">{{ cancha.get_deporte_display }}</span>
+                                        <br>
+                                        <small class="text-success fw-bold">${{ cancha.precio_hora }}</small>
+                                        <small class="text-muted">/ {{ cancha.duracion_turno_minutos }} min</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">No hay complejos para mostrar</div>
+        {% endfor %}
+    </div>
+    <!-- Fin Vista Agrupada -->
+    
+    <!-- Mensaje cuando no hay resultados -->
+    {% if not complejos_data %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <span class="material-symbols-rounded text-muted" style="font-size: 5rem;">search_off</span>
+            <h4 class="mt-3">No se encontraron complejos</h4>
+            <p class="text-muted">Intenta con otra localidad, deporte o fecha.</p>
+            <a href="{% url 'complejos:lista' %}" class="btn btn-primary">
+                Ver todos los complejos
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Confirmación de Reserva -->
+<div class="modal fade" id="modalReserva" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">event_available</span>
+                    Confirmar Reserva
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'reservas:crear_reserva' 0 %}" id="formReserva">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="fecha" id="reservaFecha">
+                    <input type="hidden" name="hora" id="reservaHora">
+                    
+                    <div class="mb-3">
+                        <label class="text-muted small">Cancha</label>
+                        <p class="mb-0 fw-bold" id="reservaCancha"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Fecha</label>
+                        <p class="mb-0 fw-bold" id="reservaFechaTexto"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Horario</label>
+                        <p class="mb-0 fw-bold" id="reservaHorarioTexto"></p>
+                    </div>
+                    
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Total a pagar:</span>
+                        <h3 class="mb-0 text-success" id="reservaPrecio"></h3>
+                    </div>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <small>
+                            <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">info</span>
+                            El pago se realiza en el complejo
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <span class="material-symbols-rounded">check_circle</span>
+                        Confirmar Reserva
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let canchaActualId = null;
+let canchaActualNombre = '';
+let precioUnitario = 0;
+
+function cargarHorarios(canchaId, fecha) {
+    const container = document.getElementById('horarios-' + canchaId);
+    const btn = event.target.closest('.btn-ver-horarios');
+    
+    // Si ya está visible, ocultarlo
+    if (container.style.display !== 'none') {
+        container.style.display = 'none';
+        btn.innerHTML = '<span class="material-symbols-rounded">schedule</span> Ver Horarios Disponibles';
+        return;
+    }
+    
+    // Mostrar loading
+    container.style.display = 'block';
+    container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm"></div></div>';
+    btn.innerHTML = '<span class="material-symbols-rounded">expand_less</span> Ocultar Horarios';
+    
+    // Obtener horarios via AJAX
+    fetch(`/complejos/api/canchas/${canchaId}/horarios/?fecha=${fecha}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                container.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            canchaActualId = data.cancha.id;
+            canchaActualNombre = data.cancha.nombre;
+            
+            let html = '<div class="row g-2">';
+            
+            if (data.horarios.length === 0) {
+                html = '<div class="alert alert-warning">No hay horarios disponibles para esta fecha</div>';
+            } else {
+                data.horarios.forEach(horario => {
+                    if (horario.ocupado) {
+                        html += `
+                            <div class="col-6 col-md-3">
+                                <button class="btn btn-outline-danger btn-sm w-100 disabled" disabled>
+                                    <small>${horario.hora_inicio} - ${horario.hora_fin}</small><br>
+                                    <small class="text-muted">Ocupado</small>
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="col-6 col-md-3">
+                                <button class="btn btn-outline-success btn-sm w-100" 
+                                        onclick="mostrarModalReserva(${canchaId}, '${data.cancha.nombre}', '${fecha}', '${horario.hora_inicio}', '${horario.hora_fin}', ${horario.precio})">
+                                    <small>${horario.hora_inicio} - ${horario.hora_fin}</small><br>
+                                    <small class="fw-bold">$${horario.precio}</small>
+                                </button>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            container.innerHTML = '<div class="alert alert-danger">Error al cargar horarios</div>';
+            console.error('Error:', error);
+        });
+}
+
+function mostrarModalReserva(canchaId, canchaNombre, fecha, horaInicio, horaFin, precio) {
+    {% if not user.is_authenticated %}
+    alert('Debes iniciar sesión para reservar');
+    window.location.href = '{% url "account_login" %}?next={{ request.path }}';
+    return;
+    {% endif %}
+    
+    precioUnitario = precio;
+    
+    // Actualizar datos del modal
+    document.getElementById('reservaCancha').textContent = canchaNombre;
+    document.getElementById('reservaFechaTexto').textContent = new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    document.getElementById('reservaHorarioTexto').textContent = horaInicio + ' - ' + horaFin;
+    document.getElementById('reservaPrecio').textContent = '$' + precio;
+    
+    // Actualizar campos ocultos
+    document.getElementById('reservaFecha').value = fecha;
+    document.getElementById('reservaHora').value = horaInicio;
+    
+    // Actualizar action del form
+    document.getElementById('formReserva').action = `/reservas/canchas/${canchaId}/crear/`;
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalReserva'));
+    modal.show();
+}
+
+// Auto-submit cuando cambia la fecha
+document.getElementById('inputFecha')?.addEventListener('change', function() {
+    document.getElementById('formFiltros').submit();
+});
+
+// Toggle entre vista lista y agrupada
+function toggleVista(tipo) {
+    const vistaLista = document.getElementById('vistaListaContainer');
+    const vistaAgrupada = document.getElementById('vistaAgrupadaContainer');
+    
+    if (tipo === 'lista') {
+        vistaLista.style.display = 'block';
+        vistaAgrupada.style.display = 'none';
+    } else {
+        vistaLista.style.display = 'none';
+        vistaAgrupada.style.display = 'block';
+    }
+}
+
+// Inicializar fechas mínimas en todos los date inputs
+document.addEventListener('DOMContentLoaded', function() {
+    const hoy = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('.fecha-cancha').forEach(input => {
+        if (!input.value || input.value < hoy) {
+            input.value = hoy;
+        }
+        input.min = hoy;
+    });
+});
+</script>
+
+<style>
+.cancha-item:last-child {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+</style>
+{% endblock %}
