@@ -34,35 +34,66 @@ class TurnoAdmin(admin.ModelAdmin):
 
 @admin.register(Reserva)
 class ReservaAdmin(admin.ModelAdmin):
-    list_display = ['turno', 'get_jugador_display', 'reservado_por_dueno', 'estado', 'pagado']
-    list_filter = ['estado', 'pagado', 'reservado_por_dueno']
+    list_display = ['get_turno_info', 'get_jugador_display', 'estado', 'pagado']
+    list_filter = ['estado', 'pagado']
     search_fields = ['turno__cancha__nombre', 'jugador__alias', 'nombre_cliente_sin_cuenta']
     readonly_fields = ['creado_en', 'actualizado_en']
     
+    def get_turno_info(self, obj):
+        if hasattr(obj, 'turno'):
+            return f"{obj.turno.cancha.nombre} - {obj.turno.fecha} {obj.turno.hora_inicio}"
+        # Compatibilidad con modelo antiguo
+        return f"{obj.cancha.nombre} - {obj.fecha} {obj.hora_inicio}" if hasattr(obj, 'cancha') else 'N/A'
+    get_turno_info.short_description = 'Turno'
+    
     def get_jugador_display(self, obj):
-        if obj.reservado_por_dueno:
+        if hasattr(obj, 'reservado_por_dueno') and obj.reservado_por_dueno:
             return obj.nombre_cliente_sin_cuenta or 'Cliente sin nombre'
-        return obj.jugador.alias if obj.jugador else 'Sin jugador'
+        elif hasattr(obj, 'jugador') and obj.jugador:
+            return obj.jugador.alias
+        elif hasattr(obj, 'jugador_principal') and obj.jugador_principal:
+            return obj.jugador_principal.alias
+        return 'Sin jugador'
     get_jugador_display.short_description = 'Cliente/Jugador'
     
-    fieldsets = (
-        ('Información de la reserva', {
-            'fields': ('turno', 'jugador', 'reservado_por_dueno')
-        }),
-        ('Cliente sin cuenta', {
-            'fields': ('nombre_cliente_sin_cuenta', 'telefono_cliente', 'email_cliente'),
-            'classes': ('collapse',)
-        }),
-        ('Pago', {
-            'fields': ('precio', 'metodo_pago', 'pagado')
-        }),
-        ('Estado', {
-            'fields': ('estado', 'observaciones')
-        }),
-        ('Auditoría', {
-            'fields': ('creado_en', 'actualizado_en')
-        }),
-    )
+    def get_fieldsets(self, request, obj=None):
+        # Detectar si es nuevo modelo o viejo
+        if obj and hasattr(obj, 'turno'):
+            # Nuevo modelo con Turno
+            return (
+                ('Información de la reserva', {
+                    'fields': ('turno', 'jugador')
+                }),
+                ('Cliente sin cuenta', {
+                    'fields': ('nombre_cliente_sin_cuenta', 'telefono_cliente', 'email_cliente'),
+                    'classes': ('collapse',)
+                }),
+                ('Pago', {
+                    'fields': ('precio', 'metodo_pago', 'pagado')
+                }),
+                ('Estado', {
+                    'fields': ('estado', 'observaciones')
+                }),
+                ('Auditoría', {
+                    'fields': ('creado_en', 'actualizado_en')
+                }),
+            )
+        else:
+            # Modelo antiguo sin Turno
+            return (
+                ('Información de la reserva', {
+                    'fields': ('cancha', 'jugador_principal', 'fecha', 'hora_inicio', 'hora_fin') if obj and hasattr(obj, 'cancha') else ('jugador',)
+                }),
+                ('Pago', {
+                    'fields': ('precio', 'metodo_pago', 'pagado')
+                }),
+                ('Estado', {
+                    'fields': ('estado', 'observaciones')
+                }),
+                ('Auditoría', {
+                    'fields': ('creado_en', 'actualizado_en')
+                }),
+            )
 
 
 @admin.register(ReservaFija)
@@ -73,23 +104,45 @@ class ReservaFijaAdmin(admin.ModelAdmin):
     readonly_fields = ['creado_en', 'actualizado_en']
     
     def get_cliente_display(self, obj):
-        return obj.jugador.alias if obj.jugador else obj.nombre_cliente
+        if hasattr(obj, 'nombre_cliente') and obj.nombre_cliente:
+            return obj.nombre_cliente
+        return obj.jugador.alias if obj.jugador else 'Sin cliente'
     get_cliente_display.short_description = 'Cliente'
     
-    fieldsets = (
-        ('Información de la reserva fija', {
-            'fields': ('cancha', 'jugador', 'nombre_cliente', 'dia_semana', 'hora_inicio', 'hora_fin', 'fecha_inicio', 'fecha_fin')
-        }),
-        ('Pago', {
-            'fields': ('precio',)
-        }),
-        ('Estado', {
-            'fields': ('estado', 'creada_por', 'observaciones')
-        }),
-        ('Auditoría', {
-            'fields': ('creado_en', 'actualizado_en')
-        }),
-    )
+    def get_fieldsets(self, request, obj=None):
+        # Detectar campos disponibles
+        if obj and hasattr(obj, 'nombre_cliente'):
+            # Nuevo modelo con nombre_cliente
+            return (
+                ('Información de la reserva fija', {
+                    'fields': ('cancha', 'jugador', 'nombre_cliente', 'dia_semana', 'hora_inicio', 'hora_fin', 'fecha_inicio', 'fecha_fin')
+                }),
+                ('Pago', {
+                    'fields': ('precio',)
+                }),
+                ('Estado', {
+                    'fields': ('estado', 'creada_por', 'observaciones')
+                }),
+                ('Auditoría', {
+                    'fields': ('creado_en', 'actualizado_en')
+                }),
+            )
+        else:
+            # Modelo antiguo
+            return (
+                ('Información de la reserva fija', {
+                    'fields': ('cancha', 'jugador', 'dia_semana', 'hora_inicio', 'hora_fin', 'fecha_inicio')
+                }),
+                ('Pago', {
+                    'fields': ('precio',)
+                }),
+                ('Estado', {
+                    'fields': ('estado', 'creada_por', 'observaciones')
+                }),
+                ('Auditoría', {
+                    'fields': ('creado_en', 'actualizado_en')
+                }),
+            )
 
 
 @admin.register(PartidoAbierto)

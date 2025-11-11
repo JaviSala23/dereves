@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}Partido Abierto - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Información del partido -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">groups</span>
+                            Partido Abierto
+                        </h5>
+                        <span class="badge bg-light text-dark">{{ partido.get_estado_display }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Detalles del turno -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Complejo</h6>
+                            <p class="mb-2"><strong>{{ partido.cancha.complejo.nombre }}</strong></p>
+                            <p class="text-muted mb-0">{{ partido.cancha.complejo.direccion }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Cancha</h6>
+                            <p class="mb-0"><strong>{{ partido.cancha.nombre }}</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Fecha</h6>
+                            <p class="mb-0">
+                                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
+                                {{ partido.fecha|date:"d/m/Y" }}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Horario</h6>
+                            <p class="mb-0">
+                                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                                {{ partido.hora_inicio|time:"H:i" }} - {{ partido.hora_fin|time:"H:i" }}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Precio por jugador</h6>
+                            <p class="mb-0">
+                                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">payments</span>
+                                ${{ partido.precio_por_jugador }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Nivel</h6>
+                            <p class="mb-0">
+                                <span class="badge bg-info">{{ partido.get_nivel_display }}</span>
+                            </p>
+                        </div>
+                        {% if partido.categoria %}
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Categoría</h6>
+                            <p class="mb-0">{{ partido.categoria }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if partido.descripcion %}
+                    <div class="mb-4">
+                        <h6 class="text-muted">Descripción</h6>
+                        <p class="mb-0">{{ partido.descripcion }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Progreso de cupos -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="text-muted mb-0">Jugadores</h6>
+                            <span class="badge bg-primary">{{ partido.jugadores_actuales }} / {{ partido.cupo_jugadores }}</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {% widthratio partido.jugadores_actuales partido.cupo_jugadores 100 %}%">
+                                {{ partido.jugadores_actuales }} de {{ partido.cupo_jugadores }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista de jugadores -->
+                    <div class="mb-4">
+                        <h6 class="text-muted">Jugadores confirmados</h6>
+                        <div class="list-group">
+                            {% for participante in partido.jugadores.all %}
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <span class="material-symbols-rounded me-2">
+                                        {% if participante.es_creador %}
+                                            star
+                                        {% else %}
+                                            person
+                                        {% endif %}
+                                    </span>
+                                    <div class="flex-grow-1">
+                                        <strong>
+                                            {% if participante.jugador %}
+                                                {{ participante.jugador.alias }}
+                                            {% else %}
+                                                {{ participante.nombre_invitado }}
+                                            {% endif %}
+                                        </strong>
+                                        {% if participante.es_creador %}
+                                            <span class="badge bg-warning text-dark ms-2">Organizador</span>
+                                        {% endif %}
+                                        {% if participante.es_invitado %}
+                                            <span class="badge bg-secondary ms-2">Invitado</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if participante.pagado %}
+                                    <span class="badge bg-success">
+                                        <span class="material-symbols-rounded" style="font-size: 14px;">check_circle</span>
+                                        Pagado
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-muted text-center">
+                                No hay jugadores confirmados aún
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel de acciones -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 80px;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Acciones</h5>
+                </div>
+                <div class="card-body">
+                    {% if partido.puede_sumarse and not ya_participa %}
+                        <div class="alert alert-success">
+                            <span class="material-symbols-rounded" style="font-size: 20px;">groups</span>
+                            <strong>¡Hay cupo disponible!</strong>
+                            <p class="mb-0 small mt-2">Quedan {{ partido.cupos_disponibles }} lugar{% if partido.cupos_disponibles != 1 %}es{% endif %}</p>
+                        </div>
+                        
+                        <a href="{% url 'reservas:unirse_partido' partido.token_invitacion %}" class="btn btn-success btn-lg w-100 mb-3">
+                            <span class="material-symbols-rounded">person_add</span>
+                            Unirse al Partido
+                        </a>
+                    {% elif ya_participa %}
+                        <div class="alert alert-info">
+                            <span class="material-symbols-rounded" style="font-size: 20px;">check_circle</span>
+                            <strong>Ya estás en este partido</strong>
+                        </div>
+                    {% elif partido.esta_completo %}
+                        <div class="alert alert-warning">
+                            <span class="material-symbols-rounded" style="font-size: 20px;">groups</span>
+                            <strong>Partido completo</strong>
+                            <p class="mb-0 small mt-2">No hay cupos disponibles</p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-secondary">
+                            <span class="material-symbols-rounded" style="font-size: 20px;">block</span>
+                            <strong>Partido no disponible</strong>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Link de invitación -->
+                    <div class="mb-3">
+                        <label class="text-muted small mb-2">Link de invitación</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-sm" 
+                                   id="linkInvitacion" 
+                                   value="{{ request.scheme }}://{{ request.get_host }}{{ link_invitacion }}" 
+                                   readonly>
+                            <button class="btn btn-outline-primary btn-sm" type="button" onclick="copiarLink()">
+                                <span class="material-symbols-rounded" style="font-size: 18px;">content_copy</span>
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">Comparte este link para invitar jugadores</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <p class="text-muted mb-2">Creado por</p>
+                        <p class="mb-0"><strong>{{ partido.creador.get_full_name|default:partido.creador.username }}</strong></p>
+                        <small class="text-muted">{{ partido.creado_en|date:"d/m/Y H:i" }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copiarLink() {
+    const input = document.getElementById('linkInvitacion');
+    input.select();
+    input.setSelectionRange(0, 99999); // Para móviles
+    
+    navigator.clipboard.writeText(input.value).then(() => {
+        // Mostrar feedback
+        const btn = event.target.closest('button');
+        const iconOriginal = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 18px;">check</span>';
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = iconOriginal;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-primary');
+        }, 2000);
+    }).catch(() => {
+        alert('No se pudo copiar el link. Por favor cópialo manualmente.');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Unirse al Partido - DeRevés{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">group_add</span>
+                        Unirse al Partido
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Resumen del partido -->
+                    <div class="alert alert-light border mb-4">
+                        <h5 class="mb-3">{{ partido.cancha.complejo.nombre }}</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="mb-2">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
+                                    <strong>{{ partido.fecha|date:"d/m/Y" }}</strong>
+                                </p>
+                            </div>
+                            <div class="col-6">
+                                <p class="mb-2">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                                    <strong>{{ partido.hora_inicio|time:"H:i" }}</strong>
+                                </p>
+                            </div>
+                            <div class="col-6">
+                                <p class="mb-2">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">payments</span>
+                                    ${{ partido.precio_por_jugador }} por jugador
+                                </p>
+                            </div>
+                            <div class="col-6">
+                                <p class="mb-0">
+                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">groups</span>
+                                    {{ partido.jugadores_actuales }} / {{ partido.cupo_jugadores }} jugadores
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if not partido.puede_sumarse %}
+                        <div class="alert alert-warning">
+                            <h5><span class="material-symbols-rounded">warning</span> Partido no disponible</h5>
+                            <p class="mb-0">
+                                {% if partido.esta_completo %}
+                                    Este partido ya está completo.
+                                {% else %}
+                                    Este partido ya no está abierto.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <a href="{% url 'reservas:detalle_partido' partido.id %}" class="btn btn-secondary">
+                            Ver detalles del partido
+                        </a>
+                    {% else %}
+                        {% if user.is_authenticated and user.tipo_usuario == 'JUGADOR' %}
+                            <!-- Usuario registrado -->
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="alert alert-success">
+                                    <h5><span class="material-symbols-rounded">check_circle</span> ¡Estás listo!</h5>
+                                    <p class="mb-0">Confirma tu participación en este partido.</p>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label">Tu perfil</label>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="mb-0">{{ user.perfil_jugador.alias }}</h6>
+                                            <small class="text-muted">{{ user.email }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <span class="material-symbols-rounded">how_to_reg</span>
+                                        Confirmar Participación
+                                    </button>
+                                    <a href="{% url 'reservas:detalle_partido' partido.id %}" class="btn btn-outline-secondary">
+                                        Cancelar
+                                    </a>
+                                </div>
+                            </form>
+                        {% else %}
+                            <!-- Usuario no registrado o sin perfil de jugador -->
+                            <div class="alert alert-info mb-4">
+                                <h5><span class="material-symbols-rounded">info</span> Únete como invitado</h5>
+                                <p class="mb-0">Completa tus datos para unirte al partido. No necesitas una cuenta.</p>
+                            </div>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="nombre_invitado" class="form-label">
+                                        <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">person</span>
+                                        Nombre completo *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="nombre_invitado" 
+                                           name="nombre_invitado" 
+                                           required
+                                           placeholder="Juan Pérez">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="telefono_invitado" class="form-label">
+                                        <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">phone</span>
+                                        Teléfono *
+                                    </label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="telefono_invitado" 
+                                           name="telefono_invitado" 
+                                           required
+                                           placeholder="+54 9 11 1234-5678">
+                                    <small class="text-muted">Te contactaremos para coordinar detalles</small>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="email_invitado" class="form-label">
+                                        <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">email</span>
+                                        Email (opcional)
+                                    </label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="email_invitado" 
+                                           name="email_invitado"
+                                           placeholder="tu@email.com">
+                                </div>
+                                
+                                <div class="alert alert-warning">
+                                    <small>
+                                        <span class="material-symbols-rounded" style="font-size: 16px;">info</span>
+                                        <strong>Importante:</strong> El pago se realiza directamente en el complejo antes del partido.
+                                    </small>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <span class="material-symbols-rounded">group_add</span>
+                                        Unirse al Partido
+                                    </button>
+                                    <a href="{% url 'reservas:detalle_partido' partido.id %}" class="btn btn-outline-secondary">
+                                        Cancelar
+                                    </a>
+                                </div>
+                            </form>
+                            
+                            <div class="text-center mt-4">
+                                <p class="text-muted mb-2">¿Ya tienes cuenta?</p>
+                                <a href="{% url 'account_login' %}?next={{ request.path }}" class="btn btn-outline-primary">
+                                    Iniciar sesión
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

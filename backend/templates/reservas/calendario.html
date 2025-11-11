@@ -30,22 +30,67 @@
                         </a>
                     </div>
                     
+                    <!-- Leyenda de estados -->
+                    <div class="alert alert-light border mb-3">
+                        <div class="row g-2 text-center small">
+                            <div class="col-6 col-md-3">
+                                <span class="badge bg-success w-100">
+                                    <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: middle;">check_circle</span>
+                                    Disponible
+                                </span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="badge bg-secondary w-100">
+                                    <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: middle;">event_busy</span>
+                                    Reservado
+                                </span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="badge bg-secondary w-100">
+                                    <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: middle;">repeat</span>
+                                    Turno Fijo
+                                </span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="badge bg-secondary w-100">
+                                    <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: middle;">emoji_events</span>
+                                    Torneo
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Grid de horarios -->
                     <div class="row g-2">
                         {% for horario in horarios %}
                         <div class="col-md-3 col-6">
-                            {% if horario.ocupado %}
-                                <button class="btn btn-outline-danger w-100 disabled" disabled>
-                                    <span class="material-symbols-rounded">cancel</span>
+                            {% if not horario.disponible %}
+                                <!-- Turno ocupado - gris y deshabilitado -->
+                                <button class="btn btn-secondary w-100 disabled" disabled style="opacity: 0.6; cursor: not-allowed;">
+                                    <span class="material-symbols-rounded">block</span>
                                     {{ horario.hora }}
-                                    <small class="d-block">Ocupado</small>
+                                    <small class="d-block">
+                                        {% if horario.estado == 'RESERVADO' %}
+                                            Reservado
+                                        {% elif horario.estado == 'FIJO' %}
+                                            Turno Fijo
+                                        {% elif horario.estado == 'BLOQUEADO_TORNEO' %}
+                                            Torneo
+                                        {% elif horario.estado == 'PARTIDO_ABIERTO' %}
+                                            Partido Abierto
+                                        {% else %}
+                                            Ocupado
+                                        {% endif %}
+                                    </small>
                                 </button>
                             {% else %}
+                                <!-- Turno disponible - verde y clickeable -->
                                 <button class="btn btn-outline-success w-100 horario-disponible" 
                                         data-hora="{{ horario.hora }}" 
                                         data-hora-fin="{{ horario.hora_fin }}"
                                         data-precio="{{ horario.precio }}"
-                                        onclick="seleccionarHorario('{{ horario.hora }}', '{{ horario.hora_fin }}', {{ horario.precio }})">
+                                        data-turno-id="{{ horario.turno_id }}"
+                                        onclick="seleccionarHorario('{{ horario.hora }}', '{{ horario.hora_fin }}', {{ horario.precio }}, {{ horario.turno_id }})">
                                     <span class="material-symbols-rounded">check_circle</span>
                                     {{ horario.hora }} - {{ horario.hora_fin }}
                                     <small class="d-block">${{ horario.precio }}</small>
@@ -61,6 +106,24 @@
                         <p class="mt-3">No hay horarios disponibles para esta fecha</p>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+            
+            <!-- Información adicional y opciones -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Información de la cancha</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li><span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">schedule</span> Duración: {{ cancha.duracion_turno_minutos }} minutos</li>
+                        <li><span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">sports_tennis</span> Tipo: {{ cancha.get_tipo_display }}</li>
+                        {% if cancha.techada %}
+                        <li><span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">roofing</span> Techada</li>
+                        {% endif %}
+                        {% if cancha.iluminacion %}
+                        <li><span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">lightbulb</span> Con iluminación</li>
+                        {% endif %}
+                    </ul>
+                </div>
                 </div>
             </div>
         </div>
@@ -109,14 +172,32 @@
                         <div class="d-grid">
                             <button type="submit" class="btn btn-success btn-lg" id="btnReservar" disabled>
                                 <span class="material-symbols-rounded">event_available</span>
-                                Reservar
+                                Reservar Turno
                             </button>
                         </div>
+                        
+                        <!-- Opción para crear partido abierto -->
+                        {% if user.tipo_usuario == 'JUGADOR' %}
+                        <div class="d-grid mt-2">
+                            <button type="button" class="btn btn-outline-primary" id="btnPartidoAbierto" disabled onclick="crearPartidoAbierto()">
+                                <span class="material-symbols-rounded">group_add</span>
+                                Crear Partido Abierto
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-2 text-center">
+                            <span class="material-symbols-rounded" style="font-size: 14px;">info</span>
+                            Comparte el link y divide el costo
+                        </small>
+                        {% endif %}
                         
                         <div class="alert alert-info mt-3 mb-0">
                             <small>
                                 <span class="material-symbols-rounded" style="font-size: 16px;">info</span>
-                                El pago se realizará en el complejo
+                                {% if user.tipo_usuario == 'DUENIO' %}
+                                    Como dueño, puedes reservar para clientes
+                                {% else %}
+                                    El pago se realizará en el complejo
+                                {% endif %}
                             </small>
                         </div>
                     </form>
@@ -127,7 +208,9 @@
 </div>
 
 <script>
-function seleccionarHorario(hora, horaFin, precio) {
+let turnoSeleccionado = null;
+
+function seleccionarHorario(hora, horaFin, precio, turnoId) {
     // Remover selección previa
     document.querySelectorAll('.horario-disponible').forEach(btn => {
         btn.classList.remove('btn-success');
@@ -138,11 +221,50 @@ function seleccionarHorario(hora, horaFin, precio) {
     event.target.closest('.horario-disponible').classList.remove('btn-outline-success');
     event.target.closest('.horario-disponible').classList.add('btn-success');
     
+    // Guardar turno seleccionado
+    turnoSeleccionado = turnoId;
+    
     // Actualizar resumen
     document.getElementById('horaSeleccionada').value = hora;
     document.getElementById('horarioTexto').innerHTML = '<strong>' + hora + ' - ' + horaFin + '</strong>';
     document.getElementById('precioTotal').textContent = '$' + precio;
     document.getElementById('btnReservar').disabled = false;
+    
+    // Habilitar botón de partido abierto si existe
+    const btnPartido = document.getElementById('btnPartidoAbierto');
+    if (btnPartido) {
+        btnPartido.disabled = false;
+    }
 }
+
+function crearPartidoAbierto() {
+    if (!turnoSeleccionado) {
+        alert('Por favor selecciona un horario primero');
+        return;
+    }
+    
+    // Redirigir a formulario de creación de partido abierto (o abrir modal)
+    const url = `/reservas/partidos/turno/${turnoSeleccionado}/crear/`;
+    window.location.href = url;
+}
+
+// Agregar estilo para hover en botones deshabilitados
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .btn-secondary.disabled:hover {
+            cursor: not-allowed !important;
+            transform: none !important;
+        }
+        .horario-disponible {
+            transition: all 0.2s ease;
+        }
+        .horario-disponible:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    `;
+    document.head.appendChild(style);
+});
 </script>
 {% endblock %}
