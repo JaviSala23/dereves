@@ -755,20 +755,17 @@ def calendario_reservas_dueno(request, complejo_slug):
     # Obtener turnos y reservas del día
     turnos_por_cancha = {}
     for cancha in canchas:
+        # Como Reserva tiene OneToOneField con related_name='reserva', 
+        # no podemos hacer select_related desde Turno. 
+        # En su lugar, obtenemos los turnos y Django cargará la reserva si existe
         turnos = Turno.objects.filter(
             cancha=cancha,
             fecha=fecha
-        ).prefetch_related('reservas').order_by('hora_inicio')
-        
-        # Agregar información de reserva a cada turno
-        turnos_con_info = []
-        for turno in turnos:
-            turno.reserva = turno.reservas.first() if turno.reservas.exists() else None
-            turnos_con_info.append(turno)
+        ).order_by('hora_inicio')
         
         turnos_por_cancha[cancha.id] = {
             'cancha': cancha,
-            'turnos': turnos_con_info
+            'turnos': turnos
         }
     
     context = {
