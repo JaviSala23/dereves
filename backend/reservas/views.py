@@ -3,8 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
+from django.db.models import Q
 from datetime import datetime, timedelta, time
-from .models import Reserva, MetodoPago, ReservaFija
+from .models import (
+    Turno, Reserva, MetodoPago, ReservaFija, 
+    PartidoAbierto, JugadorPartido, Torneo, BloqueoTorneo
+)
 from complejos.models import Cancha, Complejo
 
 
@@ -22,15 +26,25 @@ def mis_reservas(request):
         messages.error(request, 'No se encontró tu perfil de jugador.')
         return redirect('home')
     
-    # Reservas comunes
+    # Reservas comunes (a través del nuevo modelo Turno)
     reservas = Reserva.objects.filter(
-        jugador_principal=perfil_jugador
-    ).select_related('cancha', 'cancha__complejo').order_by('-fecha', '-hora_inicio')
+        jugador=perfil_jugador
+    ).select_related(
+        'turno__cancha__complejo'
+    ).order_by('-turno__fecha', '-turno__hora_inicio')
     
     # Reservas fijas
     reservas_fijas = ReservaFija.objects.filter(
         jugador=perfil_jugador
     ).select_related('cancha', 'cancha__complejo').order_by('dia_semana', 'hora_inicio')
+    
+    # Partidos abiertos donde participa
+    partidos = JugadorPartido.objects.filter(
+        jugador=perfil_jugador,
+        confirmado=True
+    ).select_related(
+        'partido__turno__cancha__complejo'
+    ).order_by('-partido__creado_en')
     
     # Separar en activas y pasadas
     ahora = timezone.now()
@@ -49,13 +63,14 @@ def mis_reservas(request):
         'reservas_activas': reservas_activas,
         'reservas_pasadas': reservas_pasadas,
         'reservas_fijas': reservas_fijas,
+        'partidos': partidos,
     }
     return render(request, 'reservas/mis_reservas.html', context)
 
 
 @login_required
 def calendario_cancha(request, cancha_id):
-    """Calendario de disponibilidad de una cancha."""
+    """Calendario de disponibilidad de una cancha con sistema de Turnos."""
     cancha = get_object_or_404(Cancha, id=cancha_id)
     
     # Obtener fecha desde parámetros o usar hoy
@@ -65,17 +80,19 @@ def calendario_cancha(request, cancha_id):
     except ValueError:
         fecha = timezone.now().date()
     
-    # Obtener reservas de ese día
-    reservas_dia = Reserva.objects.filter(
+    # Obtener turnos de ese día
+    turnos = Turno.objects.filter(
         cancha=cancha,
-        fecha=fecha,
-        estado__in=['PENDIENTE', 'CONFIRMADA']
-    ).values_list('hora_inicio', 'hora_fin')
+        fecha=fecha
+    ).order_by('hora_inicio')
     
-    # Convertir a lista para facilitar comparación
-    reservas_list = list(reservas_dia)
+    # Crear dict de turnos existentes por hora
+    turnos_dict = {
+        turno.hora_inicio: turno
+        for turno in turnos
+    }
     
-    # Crear lista de horarios disponibles
+    # Crear lista de horarios con su estado
     horarios = []
     hora_actual = cancha.horario_apertura
     duracion = timedelta(minutes=cancha.duracion_turno_minutos)
@@ -87,30 +104,38 @@ def calendario_cancha(request, cancha_id):
         if hora_fin > cancha.horario_cierre:
             break
         
-        # Verificar si hay conflicto con alguna reserva existente
-        ocupado = False
-        for reserva_inicio, reserva_fin in reservas_list:
-            # Hay solapamiento si el turno se cruza con una reserva
-            if (hora_actual < reserva_fin and hora_fin > reserva_inicio):
-                ocupado = True
-                break
-        
         # Si es hoy, no mostrar horarios pasados
         es_hoy = fecha == timezone.now().date()
         hora_pasada = es_hoy and hora_actual < timezone.now().time()
         
         if not hora_pasada:
-            horarios.append({
-                'hora': hora_actual.strftime('%H:%M'),
-                'hora_fin': hora_fin.strftime('%H:%M'),
-                'ocupado': ocupado,
-                'precio': cancha.precio_hora,
-            })
+            turno = turnos_dict.get(hora_actual)
+            
+            if turno:
+                # Turno existe, obtener su estado
+                horarios.append({
+                    'hora': hora_actual.strftime('%H:%M'),
+                    'hora_fin': hora_fin.strftime('%H:%M'),
+                    'estado': turno.estado,
+                    'disponible': turno.estado == 'DISPONIBLE',
+                    'precio': turno.precio,
+                    'turno_id': turno.id,
+                })
+            else:
+                # Turno no existe, asumir disponible
+                horarios.append({
+                    'hora': hora_actual.strftime('%H:%M'),
+                    'hora_fin': hora_fin.strftime('%H:%M'),
+                    'estado': 'DISPONIBLE',
+                    'disponible': True,
+                    'precio': cancha.precio_hora,
+                    'turno_id': None,
+                })
         
         # Avanzar según duración del turno
         hora_actual = (datetime.combine(fecha, hora_actual) + duracion).time()
         
-        # Evitar loop infinito si hora_actual pasa horario_cierre
+        # Evitar loop infinito
         if hora_actual <= (datetime.combine(fecha, hora_actual) - duracion).time():
             break
     
@@ -126,14 +151,15 @@ def calendario_cancha(request, cancha_id):
 
 @login_required
 def crear_reserva(request, cancha_id):
-    """Crear una nueva reserva común."""
+    """Crear una nueva reserva usando el sistema de Turnos."""
     if request.method != 'POST':
         return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
     
     cancha = get_object_or_404(Cancha, id=cancha_id)
     
-    # Los dueños y jugadores pueden reservar
+    # Verificar permisos
     perfil_jugador = None
+    es_dueno = False
     
     if request.user.tipo_usuario == 'JUGADOR':
         try:
@@ -143,21 +169,15 @@ def crear_reserva(request, cancha_id):
             return redirect('complejos:detalle', slug=cancha.complejo.slug)
     
     elif request.user.tipo_usuario == 'DUENIO':
-        # Los dueños pueden reservar, pero deben tener un perfil de jugador también
-        # Si no lo tienen, podemos crear la reserva a nombre del dueño como jugador
         try:
-            perfil_jugador = request.user.perfil_jugador
+            perfil_dueno = request.user.perfil_dueno
+            es_dueno = cancha.complejo.dueno == perfil_dueno
+            if not es_dueno:
+                messages.error(request, 'Solo puedes crear reservas en tus propios complejos.')
+                return redirect('complejos:lista')
         except AttributeError:
-            # Si el dueño no tiene perfil de jugador, usamos el primero disponible o creamos uno
-            from cuentas.models import PerfilJugador
-            perfil_jugador, created = PerfilJugador.objects.get_or_create(
-                usuario=request.user,
-                defaults={
-                    'alias': request.user.get_full_name() or request.user.email.split('@')[0],
-                    'nivel': 'INTERMEDIO'
-                }
-            )
-    
+            messages.error(request, 'No se encontró tu perfil de dueño.')
+            return redirect('home')
     else:
         messages.error(request, 'Necesitas ser jugador o dueño para hacer reservas.')
         return redirect('complejos:detalle', slug=cancha.complejo.slug)
@@ -166,6 +186,12 @@ def crear_reserva(request, cancha_id):
     fecha_str = request.POST.get('fecha')
     hora_str = request.POST.get('hora')
     metodo_pago_id = request.POST.get('metodo_pago')
+    
+    # Si es dueño, puede reservar para cliente sin cuenta
+    reservado_por_dueno = es_dueno
+    nombre_cliente = request.POST.get('nombre_cliente', '') if es_dueno else ''
+    telefono_cliente = request.POST.get('telefono_cliente', '') if es_dueno else ''
+    email_cliente = request.POST.get('email_cliente', '') if es_dueno else ''
     
     try:
         fecha = datetime.fromisoformat(fecha_str).date()
@@ -188,51 +214,64 @@ def crear_reserva(request, cancha_id):
     if metodo_pago_id:
         metodo_pago = MetodoPago.objects.filter(id=metodo_pago_id).first()
     
-    # Verificar conflictos con reservas normales
-    conflicto_reserva = Reserva.objects.filter(
+    # Buscar o crear el Turno
+    turno, created = Turno.objects.get_or_create(
         cancha=cancha,
         fecha=fecha,
-        hora_inicio__lt=hora_fin,
-        hora_fin__gt=hora_inicio,
-        estado__in=['PENDIENTE', 'CONFIRMADA']
-    ).exists()
+        hora_inicio=hora_inicio,
+        defaults={
+            'hora_fin': hora_fin,
+            'precio': cancha.precio_hora,
+            'estado': 'DISPONIBLE'
+        }
+    )
     
-    # Verificar conflictos con reservas fijas activas
-    dia_semana = fecha.weekday()
-    conflicto_fija = ReservaFija.objects.filter(
-        cancha=cancha,
-        dia_semana=dia_semana,
-        hora_inicio__lt=hora_fin,
-        hora_fin__gt=hora_inicio,
-        estado='ACTIVA',
-        fecha_inicio__lte=fecha
-    ).exists()
-    
-    if conflicto_reserva or conflicto_fija:
-        messages.error(request, 'Este horario ya está reservado.')
-        return redirect('complejos:lista')
+    # Verificar que el turno esté disponible
+    if not es_dueno:
+        # Jugadores solo pueden reservar turnos disponibles
+        if not turno.puede_ser_reservado_por_jugador():
+            messages.error(request, f'Este turno no está disponible. Estado: {turno.get_estado_display()}')
+            return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
+    else:
+        # Dueños pueden reservar sobre turnos disponibles
+        if turno.estado != 'DISPONIBLE':
+            messages.error(request, f'Este turno ya está ocupado. Estado: {turno.get_estado_display()}')
+            return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
     
     # Crear la reserva
     reserva = Reserva.objects.create(
-        cancha=cancha,
-        jugador_principal=perfil_jugador,
-        fecha=fecha,
-        hora_inicio=hora_inicio,
-        hora_fin=hora_fin,
-        precio=cancha.precio_hora,
+        turno=turno,
+        jugador=perfil_jugador if not es_dueno else None,
+        reservado_por_dueno=reservado_por_dueno,
+        nombre_cliente_sin_cuenta=nombre_cliente,
+        telefono_cliente=telefono_cliente,
+        email_cliente=email_cliente,
+        precio=turno.precio,
         metodo_pago=metodo_pago,
-        estado='PENDIENTE'
+        estado='CONFIRMADA' if es_dueno else 'PENDIENTE'
     )
     
-    messages.success(request, f'Reserva creada exitosamente. Total: ${reserva.precio}')
-    return redirect('complejos:lista')
+    # Actualizar estado del turno
+    turno.estado = 'RESERVADO'
+    turno.save()
+    
+    if es_dueno:
+        cliente_info = nombre_cliente or 'Cliente'
+        messages.success(request, f'Reserva creada para {cliente_info}. Total: ${reserva.precio}')
+    else:
+        messages.success(request, f'Reserva creada exitosamente. Total: ${reserva.precio}')
+    
+    return redirect('reservas:mis_reservas') if not es_dueno else redirect('complejos:gestionar', slug=cancha.complejo.slug)
 
 
 @login_required
 def detalle_reserva(request, reserva_id):
     """Detalle de una reserva específica."""
     reserva = get_object_or_404(
-        Reserva.objects.select_related('cancha', 'cancha__complejo', 'jugador_principal__usuario'),
+        Reserva.objects.select_related(
+            'turno__cancha__complejo',
+            'jugador__usuario'
+        ),
         id=reserva_id
     )
     
@@ -244,7 +283,13 @@ def detalle_reserva(request, reserva_id):
         except AttributeError:
             pass
     
-    if reserva.jugador_principal.usuario != request.user and not es_dueno and not request.user.is_staff:
+    es_propietario = (
+        (reserva.jugador and reserva.jugador.usuario == request.user) or
+        es_dueno or 
+        request.user.is_staff
+    )
+    
+    if not es_propietario:
         messages.error(request, 'No tienes permiso para ver esta reserva.')
         return redirect('home')
     
@@ -257,40 +302,47 @@ def detalle_reserva(request, reserva_id):
 
 @login_required
 def cancelar_reserva(request, reserva_id):
-    """Cancelar una reserva."""
+    """Cancelar una reserva usando el nuevo sistema."""
     if request.method != 'POST':
         return redirect('reservas:mis_reservas')
     
-    reserva = get_object_or_404(Reserva, id=reserva_id)
+    reserva = get_object_or_404(Reserva.objects.select_related('turno', 'jugador__usuario'), id=reserva_id)
     
-    # Verificar que sea el jugador que hizo la reserva
-    if reserva.jugador_principal.usuario != request.user:
+    # Verificar permisos
+    es_dueno = False
+    if request.user.tipo_usuario == 'DUENIO':
+        try:
+            es_dueno = reserva.cancha.complejo.dueno == request.user.perfil_dueno
+        except AttributeError:
+            pass
+    
+    es_propietario = (reserva.jugador and reserva.jugador.usuario == request.user) or es_dueno
+    
+    if not es_propietario:
         messages.error(request, 'No tienes permiso para cancelar esta reserva.')
         return redirect('reservas:mis_reservas')
     
-    # Verificar que pueda cancelarse
-    if reserva.estado == 'CANCELADA':
-        messages.warning(request, 'Esta reserva ya está cancelada.')
-    elif reserva.estado == 'COMPLETADA':
-        messages.error(request, 'No se puede cancelar una reserva completada.')
-    else:
-        reserva.estado = 'CANCELADA'
-        reserva.save()
+    # Usar el método cancelar del modelo que actualiza turno y reserva
+    resultado = reserva.cancelar()
+    
+    if resultado:
         messages.success(request, 'Reserva cancelada exitosamente.')
+    else:
+        messages.error(request, 'No se pudo cancelar la reserva.')
     
     return redirect('reservas:mis_reservas')
 
 
 @login_required
 def cancelar_reserva_fija(request, reserva_fija_id):
-    """Cancelar una reserva fija (jugador o dueño)."""
+    """Cancelar/pausar una reserva fija (jugador o dueño)."""
     if request.method != 'POST':
         return redirect('reservas:mis_reservas')
     
     reserva_fija = get_object_or_404(ReservaFija, id=reserva_fija_id)
     
     # Verificar que sea el jugador o el dueño del complejo
-    es_jugador = reserva_fija.jugador.usuario == request.user
+    es_jugador = reserva_fija.jugador and reserva_fija.jugador.usuario == request.user
     es_dueno = False
     
     if request.user.tipo_usuario == 'DUENIO':
@@ -303,24 +355,32 @@ def cancelar_reserva_fija(request, reserva_fija_id):
         messages.error(request, 'No tienes permiso para cancelar esta reserva fija.')
         return redirect('reservas:mis_reservas')
     
-    # Cancelar la reserva fija
-    reserva_fija.estado = 'CANCELADA'
+    # Opción de pausar o cancelar definitivamente
+    accion = request.POST.get('accion', 'PAUSADA')
+    
+    if accion == 'CANCELADA':
+        reserva_fija.estado = 'CANCELADA'
+        mensaje = 'cancelada'
+    else:
+        reserva_fija.estado = 'PAUSADA'
+        mensaje = 'pausada'
+    
     reserva_fija.save()
     
     actor = 'el dueño' if es_dueno else 'el jugador'
-    messages.success(request, f'Reserva fija cancelada por {actor}.')
+    messages.success(request, f'Reserva fija {mensaje} por {actor}.')
     
     if es_dueno:
-        return redirect('complejos:gestionar_reservas')
+        return redirect('complejos:gestionar', slug=reserva_fija.cancha.complejo.slug)
     else:
         return redirect('reservas:mis_reservas')
 
 
 @login_required
 def crear_reserva_fija(request, cancha_id):
-    """Crear una reserva fija (solo dueños)."""
+    """Crear una reserva fija (solo dueños) con auto-bloqueo de turnos."""
     if request.method != 'POST':
-        return redirect('complejos:gestionar_reservas')
+        return redirect('complejos:gestionar', slug=request.POST.get('slug', ''))
     
     cancha = get_object_or_404(Cancha, id=cancha_id)
     
@@ -333,27 +393,38 @@ def crear_reserva_fija(request, cancha_id):
         perfil_dueno = request.user.perfil_dueno
         if cancha.complejo.dueno != perfil_dueno:
             messages.error(request, 'No tienes permiso para crear reservas fijas en este complejo.')
-            return redirect('complejos:gestionar_reservas')
+            return redirect('complejos:gestionar', slug=cancha.complejo.slug)
     except AttributeError:
         messages.error(request, 'No se encontró tu perfil de dueño.')
         return redirect('home')
     
     # Obtener datos del formulario
     jugador_id = request.POST.get('jugador_id')
+    nombre_cliente = request.POST.get('nombre_cliente', '')
     dia_semana = int(request.POST.get('dia_semana'))
     hora_inicio_str = request.POST.get('hora_inicio')
     fecha_inicio_str = request.POST.get('fecha_inicio')
+    fecha_fin_str = request.POST.get('fecha_fin', '')
     observaciones = request.POST.get('observaciones', '')
     
     try:
         from cuentas.models import PerfilJugador
-        jugador = PerfilJugador.objects.get(id=jugador_id)
+        
+        jugador = None
+        if jugador_id:
+            jugador = PerfilJugador.objects.get(id=jugador_id)
+        
         hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M').time()
         hora_fin = (datetime.combine(datetime.today(), hora_inicio) + timedelta(minutes=cancha.duracion_turno_minutos)).time()
         fecha_inicio = datetime.fromisoformat(fecha_inicio_str).date()
+        
+        fecha_fin = None
+        if fecha_fin_str:
+            fecha_fin = datetime.fromisoformat(fecha_fin_str).date()
+        
     except (ValueError, TypeError, PerfilJugador.DoesNotExist) as e:
         messages.error(request, f'Datos inválidos: {str(e)}')
-        return redirect('complejos:gestionar_reservas')
+        return redirect('complejos:gestionar', slug=cancha.complejo.slug)
     
     # Verificar si ya existe una reserva fija para ese horario
     existe_fija = ReservaFija.objects.filter(
@@ -365,35 +436,45 @@ def crear_reserva_fija(request, cancha_id):
     
     if existe_fija:
         messages.error(request, 'Ya existe una reserva fija activa para este horario.')
-        return redirect('complejos:gestionar_reservas')
+        return redirect('complejos:gestionar', slug=cancha.complejo.slug)
     
     # Crear la reserva fija
     reserva_fija = ReservaFija.objects.create(
         cancha=cancha,
         jugador=jugador,
+        nombre_cliente=nombre_cliente,
         dia_semana=dia_semana,
         hora_inicio=hora_inicio,
         hora_fin=hora_fin,
         fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
         precio=cancha.precio_hora,
         estado='ACTIVA',
         observaciones=observaciones,
         creada_por=perfil_dueno
     )
     
+    # Bloquear turnos futuros automáticamente (próximos 3 meses)
+    hasta_fecha = fecha_inicio + timedelta(days=90)
+    if fecha_fin and fecha_fin < hasta_fecha:
+        hasta_fecha = fecha_fin
+    
+    turnos_bloqueados = reserva_fija.bloquear_turnos_futuros(hasta_fecha)
+    
     dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    cliente_nombre = jugador.alias if jugador else nombre_cliente
     messages.success(
         request, 
-        f'Reserva fija creada: {dias[dia_semana]}s {hora_inicio_str} para {jugador.usuario.get_full_name()}'
+        f'Reserva fija creada: {dias[dia_semana]}s {hora_inicio_str} para {cliente_nombre}. Se bloquearon {len(turnos_bloqueados)} turnos.'
     )
-    return redirect('complejos:gestionar_reservas')
+    return redirect('complejos:gestionar', slug=cancha.complejo.slug)
 
 
 @login_required
 def editar_reserva_fija(request, reserva_fija_id):
     """Editar una reserva fija (solo dueños)."""
     if request.method != 'POST':
-        return redirect('complejos:gestionar_reservas')
+        return redirect('complejos:gestionar', slug=request.POST.get('slug', ''))
     
     reserva_fija = get_object_or_404(ReservaFija, id=reserva_fija_id)
     
@@ -406,20 +487,27 @@ def editar_reserva_fija(request, reserva_fija_id):
         perfil_dueno = request.user.perfil_dueno
         if reserva_fija.cancha.complejo.dueno != perfil_dueno:
             messages.error(request, 'No tienes permiso para editar esta reserva fija.')
-            return redirect('complejos:gestionar_reservas')
+            return redirect('complejos:gestionar', slug=reserva_fija.cancha.complejo.slug)
     except AttributeError:
         messages.error(request, 'No se encontró tu perfil de dueño.')
         return redirect('home')
     
     # Obtener nuevos datos
     jugador_id = request.POST.get('jugador_id')
+    nombre_cliente = request.POST.get('nombre_cliente', '')
     observaciones = request.POST.get('observaciones', '')
     
     try:
         from cuentas.models import PerfilJugador
-        jugador = PerfilJugador.objects.get(id=jugador_id)
         
-        reserva_fija.jugador = jugador
+        if jugador_id:
+            jugador = PerfilJugador.objects.get(id=jugador_id)
+            reserva_fija.jugador = jugador
+            reserva_fija.nombre_cliente = ''
+        else:
+            reserva_fija.jugador = None
+            reserva_fija.nombre_cliente = nombre_cliente
+        
         reserva_fija.observaciones = observaciones
         reserva_fija.save()
         
@@ -427,19 +515,162 @@ def editar_reserva_fija(request, reserva_fija_id):
     except PerfilJugador.DoesNotExist:
         messages.error(request, 'Jugador no encontrado.')
     
-    return redirect('complejos:gestionar_reservas')
+    return redirect('complejos:gestionar', slug=reserva_fija.cancha.complejo.slug)
+
+
+# ============= NUEVAS VISTAS PARA PARTIDOS ABIERTOS =============
+
+@login_required
+def crear_partido_abierto(request, turno_id):
+    """Crear un partido abierto sobre un turno disponible."""
+    if request.method != 'POST':
+        return redirect('home')
+    
+    turno = get_object_or_404(Turno, id=turno_id)
+    
+    # Verificar que el turno esté disponible
+    if turno.estado != 'DISPONIBLE':
+        messages.error(request, f'Este turno no está disponible. Estado: {turno.get_estado_display()}')
+        return redirect('reservas:calendario_cancha', cancha_id=turno.cancha.id)
+    
+    # Obtener datos
+    cupo_jugadores = int(request.POST.get('cupo_jugadores', 4))
+    nivel = request.POST.get('nivel', 'MIXTO')
+    categoria = request.POST.get('categoria', '')
+    descripcion = request.POST.get('descripcion', '')
+    
+    # Verificar si es dueño
+    creado_por_dueno = False
+    if request.user.tipo_usuario == 'DUENIO':
+        try:
+            creado_por_dueno = turno.cancha.complejo.dueno == request.user.perfil_dueno
+        except AttributeError:
+            messages.error(request, 'No tienes permiso para crear partidos aquí.')
+            return redirect('home')
+    elif request.user.tipo_usuario != 'JUGADOR':
+        messages.error(request, 'Solo jugadores y dueños pueden crear partidos abiertos.')
+        return redirect('home')
+    
+    # Crear el partido abierto
+    partido = PartidoAbierto.objects.create(
+        turno=turno,
+        creador=request.user,
+        creado_por_dueno=creado_por_dueno,
+        cupo_jugadores=cupo_jugadores,
+        nivel=nivel,
+        categoria=categoria,
+        descripcion=descripcion,
+        precio_por_jugador=turno.precio / cupo_jugadores,
+        estado='ABIERTO'
+    )
+    
+    # Agregar al creador como primer jugador
+    if request.user.tipo_usuario == 'JUGADOR':
+        try:
+            JugadorPartido.objects.create(
+                partido=partido,
+                jugador=request.user.perfil_jugador,
+                confirmado=True,
+                es_creador=True
+            )
+        except AttributeError:
+            pass
+    
+    messages.success(request, f'Partido abierto creado! Link: {partido.get_link_invitacion()}')
+    return redirect('reservas:detalle_partido', partido_id=partido.id)
 
 
 @login_required
-def aprobar_reserva_fija(request, reserva_fija_id):
-    """Esta vista ya no se usa - las reservas fijas se crean directamente activas."""
-    return redirect('complejos:gestionar_reservas')
+def detalle_partido(request, partido_id):
+    """Ver detalle de un partido abierto."""
+    partido = get_object_or_404(
+        PartidoAbierto.objects.select_related(
+            'turno__cancha__complejo',
+            'creador'
+        ).prefetch_related('jugadores__jugador__usuario'),
+        id=partido_id
+    )
+    
+    # Verificar si el usuario ya está en el partido
+    ya_participa = False
+    if request.user.tipo_usuario == 'JUGADOR':
+        try:
+            ya_participa = partido.jugadores.filter(
+                jugador=request.user.perfil_jugador
+            ).exists()
+        except AttributeError:
+            pass
+    
+    context = {
+        'partido': partido,
+        'ya_participa': ya_participa,
+        'link_invitacion': partido.get_link_invitacion(),
+    }
+    return render(request, 'reservas/detalle_partido.html', context)
 
 
-@login_required
-def rechazar_reserva_fija(request, reserva_fija_id):
-    """Esta vista ya no se usa - las reservas fijas se crean directamente activas."""
-    return redirect('complejos:gestionar_reservas')
+def unirse_partido(request, token):
+    """Unirse a un partido abierto mediante link de invitación (público)."""
+    partido = get_object_or_404(PartidoAbierto, token_invitacion=token)
+    
+    if not partido.puede_sumarse():
+        messages.error(request, 'Este partido ya está completo o no está abierto.')
+        return redirect('reservas:detalle_partido', partido_id=partido.id)
+    
+    if request.method == 'POST':
+        # Usuario registrado
+        if request.user.is_authenticated and request.user.tipo_usuario == 'JUGADOR':
+            try:
+                perfil = request.user.perfil_jugador
+                
+                # Verificar que no esté ya en el partido
+                if partido.jugadores.filter(jugador=perfil).exists():
+                    messages.warning(request, 'Ya estás en este partido.')
+                    return redirect('reservas:detalle_partido', partido_id=partido.id)
+                
+                JugadorPartido.objects.create(
+                    partido=partido,
+                    jugador=perfil,
+                    confirmado=True,
+                    es_creador=False
+                )
+                
+                messages.success(request, 'Te uniste al partido exitosamente!')
+                return redirect('reservas:detalle_partido', partido_id=partido.id)
+            
+            except AttributeError:
+                messages.error(request, 'No tienes perfil de jugador.')
+                return redirect('reservas:detalle_partido', partido_id=partido.id)
+        
+        # Invitado sin cuenta
+        else:
+            nombre = request.POST.get('nombre_invitado')
+            telefono = request.POST.get('telefono_invitado')
+            email = request.POST.get('email_invitado', '')
+            
+            if not nombre or not telefono:
+                messages.error(request, 'Debes proporcionar nombre y teléfono.')
+                return redirect('reservas:unirse_partido', token=token)
+            
+            JugadorPartido.objects.create(
+                partido=partido,
+                jugador=None,
+                es_invitado=True,
+                nombre_invitado=nombre,
+                telefono_invitado=telefono,
+                email_invitado=email,
+                confirmado=True,
+                es_creador=False
+            )
+            
+            messages.success(request, f'{nombre} se unió al partido exitosamente!')
+            return redirect('reservas:detalle_partido', partido_id=partido.id)
+    
+    # GET: mostrar formulario
+    context = {
+        'partido': partido,
+    }
+    return render(request, 'reservas/unirse_partido.html', context)
 
 
 @login_required
@@ -451,14 +682,20 @@ def confirmar_reserva(request, reserva_id):
     reserva = get_object_or_404(Reserva, id=reserva_id)
     
     # Verificar que sea el dueño
-    if reserva.cancha.complejo.dueno != request.user:
-        messages.error(request, 'No tienes permiso para confirmar esta reserva.')
+    try:
+        if reserva.cancha.complejo.dueno != request.user.perfil_dueno:
+            messages.error(request, 'No tienes permiso para confirmar esta reserva.')
+            return redirect('home')
+    except AttributeError:
+        messages.error(request, 'Solo dueños pueden confirmar reservas.')
         return redirect('home')
     
-    if reserva.estado == 'PENDIENTE':
-        reserva.estado = 'CONFIRMADA'
-        reserva.save()
+    resultado = reserva.confirmar()
+    
+    if resultado:
         messages.success(request, 'Reserva confirmada exitosamente.')
+    else:
+        messages.warning(request, 'La reserva ya estaba confirmada.')
     
     return redirect('reservas:detalle_reserva', reserva_id=reserva_id)
 
