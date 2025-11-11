@@ -70,7 +70,7 @@ def dashboard_principal(request):
         estado__in=['PENDIENTE', 'CONFIRMADA']
     ).select_related('cancha', 'jugador_principal', 'cancha__complejo').order_by('fecha', 'hora_inicio')[:10]
     
-    # Tasa de ocupación (reservas confirmadas vs slots disponibles aproximado)
+    # Tasa de ocupación (reservas confirmadas vs slots disponibles aproxido)
     if total_canchas > 0:
         slots_disponibles_mes = total_canchas * 30 * 15  # aprox 15 slots por día por cancha
         tasa_ocupacion = (reservas_confirmadas / slots_disponibles_mes * 100) if slots_disponibles_mes > 0 else 0
@@ -363,4 +363,106 @@ def crear_reserva_fija_dashboard(request):
     except Exception as e:
         messages.error(request, f'Error al crear turno fijo: {str(e)}')
     
+    return redirect('complejos:gestionar_reservas')
+
+
+@login_required
+def crear_reserva_campeonato_dashboard(request):
+    """
+    Crear una reserva de campeonato desde el dashboard.
+    """
+    if request.method != 'POST':
+        return redirect('complejos:gestionar_reservas')
+    
+    perfil_dueno = request.user.perfil_dueno
+    cancha_id = request.POST.get('cancha_id')
+    fecha = request.POST.get('fecha')
+    hora_inicio = request.POST.get('hora_inicio')
+    nombre_campeonato = request.POST.get('nombre_campeonato')
+    precio = request.POST.get('precio')
+    
+    try:
+        cancha = Cancha.objects.get(id=cancha_id, complejo__dueno=perfil_dueno)
+        from datetime import datetime, timedelta
+        fecha_dt = datetime.fromisoformat(fecha).date()
+        hora_inicio_dt = datetime.strptime(hora_inicio, '%H:%M').time()
+        duracion_minutos = cancha.duracion_turno_minutos or 90
+        hora_fin = (datetime.combine(fecha_dt, hora_inicio_dt) + timedelta(minutes=duracion_minutos)).time()
+        from reservas.models import Turno, Reserva
+        turno, created = Turno.objects.get_or_create(
+            cancha=cancha,
+            fecha=fecha_dt,
+            hora_inicio=hora_inicio_dt,
+            defaults={
+                'hora_fin': hora_fin,
+                'precio': precio,
+                'estado': 'RESERVADO'
+            }
+        )
+        if hasattr(turno, 'reserva'):
+            messages.error(request, 'Ya existe una reserva para este horario.')
+            return redirect('complejos:gestionar_reservas')
+        Reserva.objects.create(
+            turno=turno,
+            tipo_reserva='BLOQUEADA',
+            observaciones=f'Reserva de campeonato: {nombre_campeonato}',
+            precio=precio,
+            reservado_por_dueno=True,
+            creado_por=request.user
+        )
+        messages.success(request, 'Reserva de campeonato creada correctamente.')
+    except Exception as e:
+        messages.error(request, f'Error: {e}')
+    return redirect('complejos:gestionar_reservas')
+
+
+@login_required
+def crear_reserva_simple_dashboard(request):
+    """
+    Crear una reserva simple desde el dashboard.
+    """
+    if request.method != 'POST':
+        return redirect('complejos:gestionar_reservas')
+    
+    perfil_dueno = request.user.perfil_dueno
+    cancha_id = request.POST.get('cancha_id')
+    fecha = request.POST.get('fecha')
+    hora_inicio = request.POST.get('hora_inicio')
+    nombre_cliente = request.POST.get('nombre_cliente')
+    telefono_cliente = request.POST.get('telefono_cliente')
+    precio = request.POST.get('precio')
+    
+    try:
+        cancha = Cancha.objects.get(id=cancha_id, complejo__dueno=perfil_dueno)
+        from datetime import datetime, timedelta
+        fecha_dt = datetime.fromisoformat(fecha).date()
+        hora_inicio_dt = datetime.strptime(hora_inicio, '%H:%M').time()
+        duracion_minutos = cancha.duracion_turno_minutos or 90
+        hora_fin = (datetime.combine(fecha_dt, hora_inicio_dt) + timedelta(minutes=duracion_minutos)).time()
+        from reservas.models import Turno, Reserva
+        turno, created = Turno.objects.get_or_create(
+            cancha=cancha,
+            fecha=fecha_dt,
+            hora_inicio=hora_inicio_dt,
+            defaults={
+                'hora_fin': hora_fin,
+                'precio': precio,
+                'estado': 'RESERVADO'
+            }
+        )
+        if hasattr(turno, 'reserva'):
+            messages.error(request, 'Ya existe una reserva para este horario.')
+            return redirect('complejos:gestionar_reservas')
+        Reserva.objects.create(
+            turno=turno,
+            tipo_reserva='ADMINISTRATIVA',
+            nombre_cliente_sin_cuenta=nombre_cliente,
+            telefono_cliente=telefono_cliente,
+            precio=precio,
+            reservado_por_dueno=True,
+            creado_por=request.user
+        )
+        messages.success(request, 'Reserva simple creada correctamente.')
+    except Exception as e:
+        messages.error(request, f'Error: {e}')
     return redirect('complejos:gestionar_reservas')
