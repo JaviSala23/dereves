@@ -27,6 +27,7 @@ urlpatterns = [
     path('auth/', include('allauth.urls')),  # OAuth (Google) en /auth/
     path('complejos/', include('complejos.urls')),
     path('reservas/', include('reservas.urls')),
+    path('finanzas/', include('finanzas.urls')),
 ]
 
 # Servir archivos media en desarrollo
