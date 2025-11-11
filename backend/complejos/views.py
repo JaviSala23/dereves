@@ -134,16 +134,15 @@ def crear_complejo(request):
         longitud = request.POST.get('longitud')
         telefono = request.POST.get('telefono', '')
         email = request.POST.get('email', '')
-        subdominio = request.POST.get('subdominio')
         
         # Crear slug del nombre
         slug = slugify(nombre)
+        # Generar subdominio automáticamente basado en el slug
+        subdominio = slug
         
         # Verificar que no exista
         if Complejo.objects.filter(slug=slug).exists():
             messages.error(request, 'Ya existe un complejo con ese nombre.')
-        elif Complejo.objects.filter(subdominio=subdominio).exists():
-            messages.error(request, 'Ese subdominio ya está en uso.')
         else:
             complejo = Complejo.objects.create(
                 dueno=perfil_dueno,

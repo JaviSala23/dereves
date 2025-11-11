@@ -81,7 +81,8 @@ class Complejo(models.Model):
     subdominio = models.CharField(
         max_length=50,
         unique=True,
-        help_text="Ej: puntoyreves para puntoyreves.dereves.ar"
+        blank=True,
+        help_text="Se genera automáticamente. Ej: puntoyreves para puntoyreves.dereves.ar"
     )
     
     logo = models.ImageField(upload_to='complejos/logos/', blank=True, null=True)
@@ -90,6 +91,12 @@ class Complejo(models.Model):
     # Campos de auditoría
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        """Genera automáticamente el subdominio si está vacío."""
+        if not self.subdominio:
+            self.subdominio = self.slug
+        super().save(*args, **kwargs)
     
     class Meta:
         verbose_name = 'Complejo'

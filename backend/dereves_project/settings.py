@@ -87,6 +87,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'dereves_project.context_processors.google_maps_api_key',
             ],
         },
     },
@@ -184,4 +185,4 @@ AUTH_USER_MODEL = 'cuentas.Usuario'
 
 # Google Maps API Key
 import os
-GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', 'AIzaSyC13c8_QIypeuZCt4dDZxlAUrBnpbap5Y0')

@@ -337,7 +337,12 @@ ALLOWED_HOSTS=tu-dominio.com,www.tu-dominio.com
 DATABASE_URL=mysql://user:password@localhost/dereves
 MEDIA_ROOT=/ruta/completa/al/media
 STATIC_ROOT=/ruta/completa/al/staticfiles
+
+# Google Maps API Key (OBLIGATORIO para crear/editar complejos)
+GOOGLE_MAPS_API_KEY=AIzaSyC13c8_QIypeuZCt4dDZxlAUrBnpbap5Y0
 ```
+
+**IMPORTANTE:** La API key de Google Maps es **obligatoria** para que funcionen los formularios de crear y editar complejos con el mapa interactivo.
 
 ### 2. Actualizar settings.py para usar .env
 ```python
