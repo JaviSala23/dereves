@@ -339,7 +339,7 @@ MEDIA_ROOT=/ruta/completa/al/media
 STATIC_ROOT=/ruta/completa/al/staticfiles
 
 # Google Maps API Key (OBLIGATORIO para crear/editar complejos)
-GOOGLE_MAPS_API_KEY=AIzaSyC13c8_QIypeuZCt4dDZxlAUrBnpbap5Y0
+GOOGLE_MAPS_API_KEY=AIzaSyAaKSwBOBhRshTQpxjuYQsNiw1Ex1PI3lA
 ```
 
 **IMPORTANTE:** La API key de Google Maps es **obligatoria** para que funcionen los formularios de crear y editar complejos con el mapa interactivo.
