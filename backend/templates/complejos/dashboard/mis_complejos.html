@@ -87,16 +87,10 @@
                     </div>
                     
                     <div class="card-footer bg-white border-0">
-                        <div class="d-flex gap-2">
-                            <a href="{% url 'complejos:editar' complejo.slug %}" class="btn btn-sm btn-outline-secondary flex-fill">
-                                <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
-                                Editar
-                            </a>
-                            <a href="{% url 'complejos:gestionar' complejo.slug %}" class="btn btn-sm btn-outline-secondary flex-fill">
-                                <span class="material-symbols-rounded" style="font-size: 16px;">settings</span>
-                                Configurar
-                            </a>
-                        </div>
+                        <a href="{% url 'complejos:editar' complejo.slug %}" class="btn btn-sm btn-outline-secondary w-100">
+                            <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
+                            Editar Complejo
+                        </a>
                     </div>
                 </div>
             </div>
