@@ -222,39 +222,52 @@
 <script>
     // Inicializar Google Maps
     function initMap() {
-        const position = { lat: {{ complejo.latitud }}, lng: {{ complejo.longitud }} };
-        
-        const map = new google.maps.Map(document.getElementById("map"), {
-            zoom: 15,
-            center: position,
-            mapTypeControl: true,
-            streetViewControl: true,
-            fullscreenControl: true,
-        });
-        
-        const marker = new google.maps.Marker({
-            position: position,
-            map: map,
-            title: "{{ complejo.nombre|escapejs }}",
-            animation: google.maps.Animation.DROP,
-        });
-        
-        const infoWindow = new google.maps.InfoWindow({
-            content: `
-                <div style="padding: 10px;">
-                    <h5 class="mb-2">{{ complejo.nombre|escapejs }}</h5>
-                    <p class="mb-1"><strong>{{ complejo.direccion|escapejs }}</strong></p>
-                    <p class="mb-0 text-muted">{{ complejo.localidad|escapejs }}</p>
-                </div>
-            `
-        });
-        
-        marker.addListener("click", () => {
+        try {
+            const position = { 
+                lat: parseFloat("{{ complejo.latitud }}"), 
+                lng: parseFloat("{{ complejo.longitud }}") 
+            };
+            
+            // Validar que las coordenadas sean números válidos
+            if (isNaN(position.lat) || isNaN(position.lng)) {
+                console.error('Coordenadas inválidas:', position);
+                return;
+            }
+            
+            const map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 15,
+                center: position,
+                mapTypeControl: true,
+                streetViewControl: true,
+                fullscreenControl: true,
+            });
+            
+            const marker = new google.maps.Marker({
+                position: position,
+                map: map,
+                title: "{{ complejo.nombre|escapejs }}",
+                animation: google.maps.Animation.DROP,
+            });
+            
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="padding: 10px;">
+                        <h5 class="mb-2">{{ complejo.nombre|escapejs }}</h5>
+                        <p class="mb-1"><strong>{{ complejo.direccion|escapejs }}</strong></p>
+                        <p class="mb-0 text-muted">{{ complejo.localidad|escapejs }}</p>
+                    </div>
+                `
+            });
+            
+            marker.addListener("click", () => {
+                infoWindow.open(map, marker);
+            });
+            
+            // Abrir el info window automáticamente
             infoWindow.open(map, marker);
-        });
-        
-        // Abrir el info window automáticamente
-        infoWindow.open(map, marker);
+        } catch (error) {
+            console.error('Error inicializando mapa:', error);
+        }
     }
     
     // Exponer la función globalmente para el callback de Google Maps
