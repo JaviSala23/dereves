@@ -31,5 +31,4 @@ urlpatterns = [
     # Detalle y edición
     path('<slug:slug>/', views.detalle_complejo, name='detalle'),
     path('<slug:slug>/editar/', views.editar_complejo, name='editar'),
-    path('<slug:slug>/fotos/<int:foto_id>/eliminar/', views.eliminar_foto_complejo, name='eliminar_foto'),
 ]

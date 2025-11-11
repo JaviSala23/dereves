@@ -89,23 +89,14 @@
                             <small class="text-muted">Tu sitio será: micompejo.dereves.ar</small>
                         </div>
                         
-                        <!-- Sección de Fotos -->
+                        <!-- Sección de Foto/Portada -->
                         <hr class="my-4">
-                        <h4 class="mb-3">Fotos del Complejo</h4>
+                        <h4 class="mb-3">Foto de Portada</h4>
                         
                         <div class="mb-3">
-                            <label for="logo" class="form-label">Logo o Foto Principal *</label>
+                            <label for="logo" class="form-label">Foto de Portada *</label>
                             <input type="file" class="form-control" id="logo" name="logo" accept="image/*" required>
-                            <small class="text-muted">Foto principal que aparecerá en las listas</small>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="fotos" class="form-label">Galería de Fotos (opcional)</label>
-                            <input type="file" class="form-control" id="fotos" name="fotos" accept="image/*" multiple>
-                            <small class="text-muted">Puedes seleccionar múltiples fotos. Formatos: JPG, PNG. Máximo 5MB por foto.</small>
-                            
-                            <!-- Preview de fotos -->
-                            <div id="previewFotos" class="row g-2 mt-2"></div>
+                            <small class="text-muted">Foto principal que aparecerá en las listas. Recomendado: 1200x600px</small>
                         </div>
                         
                         <div class="alert alert-info">
@@ -132,8 +123,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const provinciaSelect = document.getElementById('provincia');
     const localidadSelect = document.getElementById('localidad');
     const btnAgregarLocalidad = document.getElementById('btnAgregarLocalidad');
-    const fotosInput = document.getElementById('fotos');
-    const previewFotos = document.getElementById('previewFotos');
     
     // Cargar provincias al inicio
     fetch('{% url "complejos:api_provincias" %}')
@@ -187,44 +176,6 @@ document.addEventListener('DOMContentLoaded', function() {
     provinciaSelect.addEventListener('change', function() {
         cargarLocalidades(this.value);
     });
-    
-    // Preview de fotos múltiples
-    if (fotosInput) {
-        fotosInput.addEventListener('change', function(e) {
-            previewFotos.innerHTML = '';
-            const files = Array.from(e.target.files);
-            
-            if (files.length > 0) {
-                files.forEach((file, index) => {
-                    // Validar tamaño (máximo 5MB)
-                    if (file.size > 5 * 1024 * 1024) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Archivo muy grande',
-                            text: `La foto "${file.name}" excede los 5MB y no será subida.`
-                        });
-                        return;
-                    }
-                    
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const col = document.createElement('div');
-                        col.className = 'col-md-3';
-                        col.innerHTML = `
-                            <div class="card">
-                                <img src="${e.target.result}" class="card-img-top" alt="Preview" style="height: 150px; object-fit: cover;">
-                                <div class="card-body p-2">
-                                    <small class="text-muted">${file.name}</small>
-                                </div>
-                            </div>
-                        `;
-                        previewFotos.appendChild(col);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-        });
-    }
     
     // Agregar nueva localidad
     btnAgregarLocalidad.addEventListener('click', async function() {

@@ -40,15 +40,19 @@
 - ✅ Usuarios pueden agregar localidades personalizadas
 - ✅ Sistema de aprobación/moderación
 
-### 4. Fotos Múltiples por Complejo (IMPLEMENTADO)
-**Archivo:** `backend/complejos/models.py`
+### 4. Foto de Portada (SIMPLIFICADO)
+**Archivos modificados:**
+- `backend/complejos/models.py` - Eliminado modelo FotoComplejo
+- `backend/complejos/views.py` - Eliminadas funciones de fotos múltiples
+- `backend/complejos/admin.py` - Eliminado FotoComplejoAdmin
+- `backend/complejos/urls.py` - Eliminada ruta eliminar_foto
+- `backend/templates/complejos/crear.html` - Simplificado a solo portada
+- `backend/templates/complejos/editar.html` - Simplificado a solo portada
 
-**Funcionalidades:**
-- ✅ Modelo FotoComplejo
-- ✅ Subida múltiple de fotos
-- ✅ Ordenamiento de fotos
-- ✅ Foto principal automática
-- ✅ Eliminación de fotos
+**Cambio:**
+- ❌ Eliminado: Sistema de múltiples fotos por complejo
+- ✅ Mantenido: Un solo campo `logo` que funciona como foto de portada
+- 📝 Renombrado: "Logo o Foto Principal" → "Foto de Portada"
 
 ### 5. Edición de Complejos (IMPLEMENTADO)
 **Archivo:** `backend/templates/complejos/editar.html`
@@ -56,7 +60,7 @@
 **Funcionalidades:**
 - ✅ Template completo de edición
 - ✅ Actualización de datos del complejo
-- ✅ Gestión de fotos (agregar/eliminar)
+- ✅ Cambio de foto de portada
 - ✅ Integración con SweetAlert2
 
 ---
@@ -80,7 +84,7 @@
 1. **Hacer commit y push:**
 ```bash
 git add .
-git commit -m "feat: finanzas completo, corrección enlaces complejos"
+git commit -m "feat: finanzas completo, simplificar a solo portada, corrección enlaces"
 git push origin main
 ```
 
@@ -120,7 +124,7 @@ sudo systemctl restart gunicorn  # o tu servicio web
 - ✅ Sistema de reservas (crear, confirmar, cancelar)
 - ✅ Dashboard de dueño (estadísticas, gráficos)
 - ✅ **Sistema de finanzas** (nuevo)
-- ✅ **Fotos múltiples por complejo** (nuevo)
+- ✅ **Foto de portada por complejo** (simplificado)
 - ✅ **Sistema de localidades** (nuevo)
 
 ### En Desarrollo / Pendiente:

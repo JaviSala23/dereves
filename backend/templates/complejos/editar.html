@@ -85,50 +85,20 @@
                             </div>
                         </div>
                         
-                        <!-- Sección de Fotos -->
+                        <!-- Sección de Foto/Portada -->
                         <hr class="my-4">
-                        <h4 class="mb-3">Fotos del Complejo</h4>
+                        <h4 class="mb-3">Foto de Portada</h4>
                         
-                        <!-- Logo/Foto Principal -->
                         <div class="mb-4">
-                            <label for="logo" class="form-label">Logo o Foto Principal</label>
+                            <label for="logo" class="form-label">Foto de Portada</label>
                             {% if complejo.logo %}
                             <div class="mb-2">
-                                <img src="{{ complejo.logo.url }}" alt="Logo actual" class="img-thumbnail" style="max-height: 150px;">
-                                <p class="text-muted small mt-1">Logo actual</p>
+                                <img src="{{ complejo.logo.url }}" alt="Portada actual" class="img-thumbnail" style="max-width: 100%; max-height: 300px; object-fit: cover;">
+                                <p class="text-muted small mt-1">Portada actual</p>
                             </div>
                             {% endif %}
                             <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
-                            <small class="text-muted">Foto principal que aparecerá en las listas</small>
-                        </div>
-                        
-                        <!-- Galería de Fotos -->
-                        <div class="mb-4">
-                            <label class="form-label">Galería de Fotos (múltiples)</label>
-                            
-                            {% if complejo.fotos.all %}
-                            <div class="row g-2 mb-3" id="fotosActuales">
-                                {% for foto in complejo.fotos.all %}
-                                <div class="col-md-3" data-foto-id="{{ foto.id }}">
-                                    <div class="card">
-                                        <img src="{{ foto.imagen.url }}" class="card-img-top" alt="Foto">
-                                        <div class="card-body p-2">
-                                            <button type="button" class="btn btn-sm btn-danger w-100 btn-eliminar-foto" data-foto-id="{{ foto.id }}">
-                                                <span class="material-symbols-rounded" style="font-size: 16px;">delete</span>
-                                                Eliminar
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            
-                            <input type="file" class="form-control" id="fotos" name="fotos" accept="image/*" multiple>
-                            <small class="text-muted">Puedes seleccionar múltiples fotos. Formatos: JPG, PNG. Máximo 5MB por foto.</small>
-                            
-                            <!-- Preview de fotos nuevas -->
-                            <div id="previewFotos" class="row g-2 mt-2"></div>
+                            <small class="text-muted">Cambiar foto de portada. Recomendado: 1200x600px</small>
                         </div>
                         
                         <div class="alert alert-info">
@@ -155,8 +125,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const provinciaSelect = document.getElementById('provincia');
     const localidadSelect = document.getElementById('localidad');
     const btnAgregarLocalidad = document.getElementById('btnAgregarLocalidad');
-    const fotosInput = document.getElementById('fotos');
-    const previewFotos = document.getElementById('previewFotos');
     
     const provinciaActual = '{{ complejo.provincia }}';
     const localidadActual = '{{ complejo.localidad }}';
@@ -307,82 +275,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Preview de fotos nuevas
-    fotosInput.addEventListener('change', function(e) {
-        previewFotos.innerHTML = '';
-        const files = Array.from(e.target.files);
-        
-        files.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const col = document.createElement('div');
-                col.className = 'col-md-3';
-                col.innerHTML = `
-                    <div class="card">
-                        <img src="${e.target.result}" class="card-img-top" alt="Preview">
-                        <div class="card-body p-2">
-                            <small class="text-muted">${file.name}</small>
-                        </div>
-                    </div>
-                `;
-                previewFotos.appendChild(col);
-            };
-            reader.readAsDataURL(file);
-        });
-    });
-    
-    // Eliminar fotos existentes
-    document.querySelectorAll('.btn-eliminar-foto').forEach(btn => {
-        btn.addEventListener('click', async function() {
-            const fotoId = this.dataset.fotoId;
-            
-            const result = await Swal.fire({
-                title: '¿Eliminar foto?',
-                text: 'Esta acción no se puede deshacer',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#d33'
-            });
-            
-            if (result.isConfirmed) {
-                fetch(`{% url 'complejos:eliminar_foto' complejo.slug 0 %}`.replace('/0/', `/${fotoId}/`), {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.querySelector(`[data-foto-id="${fotoId}"]`).remove();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Eliminada',
-                            text: 'La foto ha sido eliminada',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: data.error || 'No se pudo eliminar la foto'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo eliminar la foto'
-                    });
-                });
-            }
-        });
-    });
 });
 </script>
 {% endblock %}
