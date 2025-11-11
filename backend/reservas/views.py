@@ -80,6 +80,11 @@ def calendario_cancha(request, cancha_id):
     except ValueError:
         fecha = timezone.now().date()
     
+    # Verificar que la cancha tenga horarios configurados
+    if not cancha.horario_apertura or not cancha.horario_cierre:
+        messages.error(request, 'Esta cancha no tiene horarios configurados.')
+        return redirect('complejos:detalle', slug=cancha.complejo.slug)
+    
     # Obtener turnos de ese día
     turnos = Turno.objects.filter(
         cancha=cancha,
@@ -95,7 +100,7 @@ def calendario_cancha(request, cancha_id):
     # Crear lista de horarios con su estado
     horarios = []
     hora_actual = cancha.horario_apertura
-    duracion = timedelta(minutes=cancha.duracion_turno_minutos)
+    duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)  # Default 90 minutos
     
     while hora_actual < cancha.horario_cierre:
         hora_fin = (datetime.combine(fecha, hora_actual) + duracion).time()

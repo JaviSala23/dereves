@@ -388,7 +388,10 @@ def toggle_cancha(request, slug, cancha_id):
 def obtener_horarios_disponibles(request, cancha_id):
     """
     API endpoint para obtener horarios disponibles de una cancha en una fecha.
+    Actualizado para usar el sistema de Turnos.
     """
+    from reservas.models import Turno
+    
     cancha = get_object_or_404(Cancha, id=cancha_id, activo=True)
     fecha_str = request.GET.get('fecha', timezone.now().date().isoformat())
     
@@ -401,29 +404,26 @@ def obtener_horarios_disponibles(request, cancha_id):
     if fecha < timezone.now().date():
         return JsonResponse({'error': 'No se puede reservar en fechas pasadas'}, status=400)
     
-    # Obtener reservas del día
-    reservas_dia = Reserva.objects.filter(
-        cancha=cancha,
-        fecha=fecha,
-        estado__in=['PENDIENTE', 'CONFIRMADA']
-    ).values_list('hora_inicio', 'hora_fin')
+    # Verificar que la cancha tenga horarios configurados
+    if not cancha.horario_apertura or not cancha.horario_cierre:
+        return JsonResponse({'error': 'Esta cancha no tiene horarios configurados'}, status=400)
     
-    # Verificar conflictos con reservas fijas activas
-    dia_semana = fecha.weekday()
-    reservas_fijas = ReservaFija.objects.filter(
+    # Obtener turnos del día
+    turnos = Turno.objects.filter(
         cancha=cancha,
-        dia_semana=dia_semana,
-        estado='ACTIVA',
-        fecha_inicio__lte=fecha
-    ).values_list('hora_inicio', 'hora_fin')
+        fecha=fecha
+    ).order_by('hora_inicio')
     
-    # Combinar ambas listas de reservas
-    reservas_list = list(reservas_dia) + list(reservas_fijas)
+    # Crear dict de turnos existentes por hora
+    turnos_dict = {
+        turno.hora_inicio: turno
+        for turno in turnos
+    }
     
     # Crear lista de horarios
     horarios = []
     hora_actual = cancha.horario_apertura
-    duracion = timedelta(minutes=cancha.duracion_turno_minutos)
+    duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
     
     while hora_actual < cancha.horario_cierre:
         hora_fin = (datetime.combine(fecha, hora_actual) + duracion).time()
@@ -432,31 +432,35 @@ def obtener_horarios_disponibles(request, cancha_id):
         if hora_fin > cancha.horario_cierre:
             break
         
-        # Verificar si hay conflicto con alguna reserva existente
-        # Un turno está ocupado si se solapa con alguna reserva
-        ocupado = False
-        for reserva_inicio, reserva_fin in reservas_list:
-            # Hay conflicto si:
-            # 1. El turno comienza antes de que termine una reserva Y termina después de que comience
-            # 2. Simplificado: hay solapamiento de rangos
-            if (hora_actual < reserva_fin and hora_fin > reserva_inicio):
-                ocupado = True
-                break
-        
         # Si es hoy, no mostrar horarios pasados
         es_hoy = fecha == timezone.now().date()
         hora_pasada = es_hoy and hora_actual < timezone.now().time()
         
         if not hora_pasada:
+            turno = turnos_dict.get(hora_actual)
+            
+            if turno:
+                # Turno existe, verificar su estado
+                ocupado = turno.estado != 'DISPONIBLE'
+                precio = float(turno.precio)
+            else:
+                # Turno no existe, está disponible
+                ocupado = False
+                precio = float(cancha.precio_hora)
+            
             horarios.append({
                 'hora_inicio': hora_actual.strftime('%H:%M'),
                 'hora_fin': hora_fin.strftime('%H:%M'),
                 'ocupado': ocupado,
-                'precio': float(cancha.precio_hora),
+                'precio': precio,
             })
         
         # Avanzar según duración del turno
         hora_actual = (datetime.combine(fecha, hora_actual) + duracion).time()
+        
+        # Evitar loop infinito
+        if hora_actual <= (datetime.combine(fecha, hora_actual) - duracion).time():
+            break
     
     return JsonResponse({
         'cancha': {
@@ -464,7 +468,7 @@ def obtener_horarios_disponibles(request, cancha_id):
             'nombre': cancha.nombre,
             'deporte': cancha.get_deporte_display(),
             'precio_hora': float(cancha.precio_hora),
-            'duracion_turno': cancha.duracion_turno_minutos,
+            'duracion_turno': cancha.duracion_turno_minutos or 90,
         },
         'fecha': fecha.isoformat(),
         'horarios': horarios,
