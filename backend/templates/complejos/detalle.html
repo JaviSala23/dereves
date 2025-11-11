@@ -43,31 +43,93 @@
     {% endif %}
 
     <!-- Descripción -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h4>Sobre el Complejo</h4>
-            <p>{{ complejo.descripcion|default:"Complejo deportivo en " }}{{ complejo.localidad }}</p>
-        </div>
-    </div>
-
-    <!-- Servicios -->
-    {% if servicios %}
+    {% if complejo.descripcion %}
         <div class="card mb-4">
             <div class="card-body">
-                <h4>Servicios</h4>
-                <div class="row g-2">
-                    {% for servicio in servicios %}
-                        <div class="col-auto">
-                            <span class="badge bg-success">
-                                <span class="material-symbols-rounded" style="font-size: 1rem;">check_circle</span>
-                                {{ servicio.get_tipo_servicio_display }}
-                            </span>
-                        </div>
-                    {% endfor %}
-                </div>
+                <h4 class="mb-3">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">info</span>
+                    Sobre el Complejo
+                </h4>
+                <p class="mb-0" style="white-space: pre-line;">{{ complejo.descripcion }}</p>
             </div>
         </div>
     {% endif %}
+
+    <!-- Servicios e Información -->
+    <div class="row mb-4">
+        <!-- Servicios -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="mb-3">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">local_activity</span>
+                        Servicios
+                    </h4>
+                    {% if servicios %}
+                        <div class="list-group list-group-flush">
+                            {% for servicio in servicios %}
+                                <div class="list-group-item px-0 border-0">
+                                    <span class="material-symbols-rounded text-success me-2" style="vertical-align: middle; font-size: 1.5rem;">check_circle</span>
+                                    <strong>{{ servicio.get_tipo_servicio_display }}</strong>
+                                    {% if servicio.descripcion %}
+                                        <p class="text-muted small mb-0 ms-4 ps-2">{{ servicio.descripcion }}</p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No se han especificado servicios adicionales.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información de Contacto -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="mb-3">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">contact_phone</span>
+                        Información de Contacto
+                    </h4>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item px-0 border-0">
+                            <span class="material-symbols-rounded text-primary me-2" style="vertical-align: middle;">location_on</span>
+                            <strong>Dirección:</strong><br>
+                            <span class="ms-4 ps-2">{{ complejo.direccion }}, {{ complejo.localidad }}</span>
+                        </div>
+                        {% if complejo.telefono %}
+                            <div class="list-group-item px-0 border-0">
+                                <span class="material-symbols-rounded text-primary me-2" style="vertical-align: middle;">phone</span>
+                                <strong>Teléfono:</strong><br>
+                                <span class="ms-4 ps-2">
+                                    <a href="tel:{{ complejo.telefono }}" class="text-decoration-none">{{ complejo.telefono }}</a>
+                                </span>
+                            </div>
+                        {% endif %}
+                        {% if complejo.email %}
+                            <div class="list-group-item px-0 border-0">
+                                <span class="material-symbols-rounded text-primary me-2" style="vertical-align: middle;">email</span>
+                                <strong>Email:</strong><br>
+                                <span class="ms-4 ps-2">
+                                    <a href="mailto:{{ complejo.email }}" class="text-decoration-none">{{ complejo.email }}</a>
+                                </span>
+                            </div>
+                        {% endif %}
+                        {% if complejo.sitio_web %}
+                            <div class="list-group-item px-0 border-0">
+                                <span class="material-symbols-rounded text-primary me-2" style="vertical-align: middle;">language</span>
+                                <strong>Sitio Web:</strong><br>
+                                <span class="ms-4 ps-2">
+                                    <a href="{{ complejo.sitio_web }}" target="_blank" class="text-decoration-none">{{ complejo.sitio_web }}</a>
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Canchas -->
     <div class="mb-4">
@@ -134,12 +196,21 @@
                     <span class="material-symbols-rounded" style="vertical-align: middle;">map</span>
                     Ubicación
                 </h4>
-                <div id="map" style="height: 400px; width: 100%; border-radius: 8px;"></div>
+                <p class="text-muted small mb-3">
+                    <span class="material-symbols-rounded" style="font-size: 1rem; vertical-align: middle;">location_on</span>
+                    {{ complejo.direccion }}, {{ complejo.localidad }}, {{ complejo.provincia }}
+                </p>
+                <div id="map" style="height: 400px; width: 100%; border-radius: 8px; border: 1px solid #ddd;"></div>
                 <div class="mt-3 text-center">
                     <a href="https://www.google.com/maps/search/?api=1&query={{ complejo.latitud }},{{ complejo.longitud }}" 
                        target="_blank" class="btn btn-outline-primary">
                         <span class="material-symbols-rounded" style="vertical-align: middle;">open_in_new</span>
                         Abrir en Google Maps
+                    </a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ complejo.latitud }},{{ complejo.longitud }}" 
+                       target="_blank" class="btn btn-outline-secondary">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">directions</span>
+                        Cómo llegar
                     </a>
                 </div>
             </div>
@@ -190,25 +261,5 @@
     window.initMap = initMap;
 </script>
 
-{% if GOOGLE_MAPS_API_KEY %}
 <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap" async defer></script>
-{% else %}
-<script>
-    // Si no hay API key, mostrar mensaje en el mapa
-    document.addEventListener('DOMContentLoaded', function() {
-        const mapDiv = document.getElementById('map');
-        if (mapDiv) {
-            mapDiv.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f8f9fa; border-radius: 8px;">
-                    <div class="text-center p-4">
-                        <span class="material-symbols-rounded" style="font-size: 4rem; color: #6c757d;">map</span>
-                        <p class="text-muted mt-2">Configura GOOGLE_MAPS_API_KEY para ver el mapa</p>
-                        <p class="small">Lat: {{ complejo.latitud }}, Lng: {{ complejo.longitud }}</p>
-                    </div>
-                </div>
-            `;
-        }
-    });
-</script>
-{% endif %}
 {% endblock %}
