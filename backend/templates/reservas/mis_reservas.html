@@ -61,9 +61,9 @@
                             <div class="alert alert-success mb-3 py-2">
                                 <small><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">check_circle</span> Reserva activa - Tu turno está asegurado todas las semanas</small>
                             </div>
-                            <form method="post" action="{% url 'reservas:cancelar_reserva_fija' reserva.id %}" class="d-inline">
+                            <form method="post" action="{% url 'reservas:cancelar_reserva_fija' reserva.id %}" class="d-inline cancelar-reserva-fija-form">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('¿Estás seguro de cancelar esta reserva fija? Perderás el turno permanentemente.')">
+                                <button type="button" class="btn btn-sm btn-outline-danger w-100 btn-cancelar-reserva-fija">
                                     <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">cancel</span>
                                     Cancelar Reserva Fija
                                 </button>
@@ -126,9 +126,9 @@
                                         Ver Detalle
                                     </a>
                                     {% if reserva.estado != 'CANCELADA' %}
-                                    <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="flex-grow-1">
+                                    <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="flex-grow-1 cancelar-reserva-form">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('¿Estás seguro de cancelar esta reserva?')">
+                                        <button type="button" class="btn btn-sm btn-outline-danger w-100 btn-cancelar-reserva">
                                             Cancelar
                                         </button>
                                     </form>
@@ -209,4 +209,54 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Cancelar reserva fija
+document.querySelectorAll('.btn-cancelar-reserva-fija').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const form = this.closest('form');
+        
+        Swal.fire({
+            title: '¿Cancelar reserva fija?',
+            text: 'Perderás el turno permanentemente.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, cancelar',
+            cancelButtonText: 'No, mantener'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+
+// Cancelar reserva regular
+document.querySelectorAll('.btn-cancelar-reserva').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const form = this.closest('form');
+        
+        Swal.fire({
+            title: '¿Cancelar reserva?',
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, cancelar',
+            cancelButtonText: 'No'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

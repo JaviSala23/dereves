@@ -63,7 +63,16 @@ function doAjaxSubmit(e) {
 
     if (contentType === 'multipart/form-data') {
       if (!window.FormData) {
-        alert('Your browser does not support AJAX multipart form submissions');
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: 'Navegador no compatible',
+            text: 'Tu navegador no soporta envío de formularios AJAX multipart',
+            icon: 'error',
+            confirmButtonColor: '#8AE234'
+          });
+        } else {
+          alert('Your browser does not support AJAX multipart form submissions');
+        }
         return;
       }
 

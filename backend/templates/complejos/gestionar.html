@@ -161,9 +161,9 @@
                                             <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
                                         </a>
                                         <a href="{% url 'complejos:toggle_cancha' complejo.slug cancha.id %}" 
-                                           class="btn btn-outline-{% if cancha.activo %}secondary{% else %}success{% endif %}"
+                                           class="btn btn-outline-{% if cancha.activo %}secondary{% else %}success{% endif %} btn-toggle-cancha"
                                            title="{% if cancha.activo %}Desactivar{% else %}Activar{% endif %}"
-                                           onclick="return confirm('¿Confirmar acción?')">
+                                           data-action="{% if cancha.activo %}desactivar{% else %}activar{% endif %}">
                                             <span class="material-symbols-rounded" style="font-size: 16px;">
                                                 {% if cancha.activo %}cancel{% else %}check_circle{% endif %}
                                             </span>
@@ -189,4 +189,32 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle activar/desactivar cancha
+document.querySelectorAll('.btn-toggle-cancha').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const url = this.href;
+        const action = this.dataset.action;
+        
+        Swal.fire({
+            title: `¿${action.charAt(0).toUpperCase() + action.slice(1)} cancha?`,
+            text: `¿Estás seguro de ${action} esta cancha?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: action === 'activar' ? '#198754' : '#6c757d',
+            cancelButtonColor: '#d33',
+            confirmButtonText: `Sí, ${action}`,
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -127,10 +127,9 @@
                                         data-bs-target="#modalEditarReservaFija{{ reserva.id }}">
                                     <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
                                 </button>
-                                <form method="post" action="{% url 'reservas:cancelar_reserva_fija' reserva.id %}" class="d-inline">
+                                <form method="post" action="{% url 'reservas:cancelar_reserva_fija' reserva.id %}" class="d-inline cancelar-reserva-fija-form">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                            onclick="return confirm('¿Cancelar esta reserva fija? El horario quedará liberado.')">
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-cancelar-reserva-fija">
                                         <span class="material-symbols-rounded" style="font-size: 16px;">cancel</span>
                                     </button>
                                 </form>
@@ -415,12 +414,12 @@
                                             <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
                                         </a>
                                         {% if reserva.estado == 'PENDIENTE' %}
-                                            <a href="{% url 'reservas:confirmar' reserva.id %}" 
-                                               class="btn btn-outline-success" 
-                                               title="Confirmar"
-                                               onclick="return confirm('¿Confirmar esta reserva?')">
-                                                <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span>
-                                            </a>
+                                            <form method="post" action="{% url 'reservas:confirmar' reserva.id %}" class="d-inline confirmar-reserva-form" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="button" class="btn btn-outline-success btn-confirmar-reserva" title="Confirmar">
+                                                    <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span>
+                                                </button>
+                                            </form>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -439,4 +438,52 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Confirmar reservas pendientes
+document.querySelectorAll('.btn-confirmar-reserva').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const form = this.closest('form');
+        Swal.fire({
+            title: '¿Confirmar reserva?',
+            text: '¿Deseas confirmar esta reserva pendiente?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, confirmar',
+            cancelButtonText: 'No'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+
+// Cancelar reservas fijas desde el dashboard
+document.querySelectorAll('.btn-cancelar-reserva-fija').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const form = this.closest('form');
+        Swal.fire({
+            title: '¿Cancelar reserva fija?',
+            text: 'El horario quedará liberado.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, cancelar',
+            cancelButtonText: 'No'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
