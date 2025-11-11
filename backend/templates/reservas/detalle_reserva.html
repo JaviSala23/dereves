@@ -27,20 +27,20 @@
                             <div class="mb-2">
                                 <label class="text-muted small">Complejo</label>
                                 <p class="mb-0">
-                                    <strong>{{ reserva.cancha.complejo.nombre }}</strong>
+                                    <strong>{{ reserva.turno.cancha.complejo.nombre }}</strong>
                                 </p>
                             </div>
                             <div class="mb-2">
                                 <label class="text-muted small">Cancha</label>
-                                <p class="mb-0">{{ reserva.cancha.nombre }}</p>
+                                <p class="mb-0">{{ reserva.turno.cancha.nombre }}</p>
                             </div>
                             <div class="mb-2">
                                 <label class="text-muted small">Tipo</label>
-                                <p class="mb-0">{{ reserva.cancha.get_tipo_cancha_display }}</p>
+                                <p class="mb-0">{{ reserva.turno.cancha.get_tipo_display }}</p>
                             </div>
                             <div class="mb-2">
                                 <label class="text-muted small">Ubicación</label>
-                                <p class="mb-0">{{ reserva.cancha.complejo.direccion }}</p>
+                                <p class="mb-0">{{ reserva.turno.cancha.complejo.direccion }}</p>
                             </div>
                         </div>
                         
@@ -50,23 +50,34 @@
                                 <label class="text-muted small">Fecha</label>
                                 <p class="mb-0">
                                     <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
-                                    <strong>{{ reserva.fecha|date:"d/m/Y" }}</strong>
+                                    <strong>{{ reserva.turno.fecha|date:"d/m/Y" }}</strong>
                                 </p>
                             </div>
                             <div class="mb-2">
                                 <label class="text-muted small">Horario</label>
                                 <p class="mb-0">
                                     <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">schedule</span>
-                                    {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}
+                                    {{ reserva.turno.hora_inicio|time:"H:i" }} - {{ reserva.turno.hora_fin|time:"H:i" }}
                                 </p>
                             </div>
                             <div class="mb-2">
-                                <label class="text-muted small">Usuario</label>
-                                <p class="mb-0">{{ reserva.usuario.nombre_real|default:reserva.usuario.username }}</p>
+                                <label class="text-muted small">Cliente/Jugador</label>
+                                <p class="mb-0">
+                                    {% if reserva.reservado_por_dueno %}
+                                        {{ reserva.nombre_cliente_sin_cuenta|default:"Cliente sin nombre" }}
+                                        {% if reserva.telefono_cliente %}
+                                        <br><small class="text-muted">Tel: {{ reserva.telefono_cliente }}</small>
+                                        {% endif %}
+                                    {% elif reserva.jugador %}
+                                        {{ reserva.jugador.alias }}
+                                    {% else %}
+                                        Sin información
+                                    {% endif %}
+                                </p>
                             </div>
                             <div class="mb-2">
                                 <label class="text-muted small">Creada</label>
-                                <p class="mb-0">{{ reserva.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                                <p class="mb-0">{{ reserva.creado_en|date:"d/m/Y H:i" }}</p>
                             </div>
                         </div>
                     </div>
@@ -83,19 +94,25 @@
                             </div>
                             {% endif %}
                             <div class="mb-2">
-                                <label class="text-muted small">Precio por Hora</label>
-                                <p class="mb-0">${{ reserva.cancha.precio_hora }}</p>
+                                <label class="text-muted small">Estado de Pago</label>
+                                <p class="mb-0">
+                                    {% if reserva.pagado %}
+                                        <span class="badge bg-success">Pagado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% endif %}
+                                </p>
                             </div>
                             <div class="mb-2">
                                 <label class="text-muted small">Total</label>
-                                <h4 class="text-success mb-0">${{ reserva.precio_total }}</h4>
+                                <h4 class="text-success mb-0">${{ reserva.precio }}</h4>
                             </div>
                         </div>
                         
                         <div class="col-md-6">
-                            {% if reserva.notas %}
-                            <h6 class="text-muted mb-3">Notas</h6>
-                            <p>{{ reserva.notas }}</p>
+                            {% if reserva.observaciones %}
+                            <h6 class="text-muted mb-3">Observaciones</h6>
+                            <p>{{ reserva.observaciones }}</p>
                             {% endif %}
                         </div>
                     </div>
