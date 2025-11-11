@@ -218,10 +218,10 @@
     {% endif %}
 </div>
 
+{% if complejo.latitud and complejo.longitud %}
 <script>
     // Inicializar Google Maps
     function initMap() {
-        {% if complejo.latitud and complejo.longitud %}
         const position = { lat: {{ complejo.latitud }}, lng: {{ complejo.longitud }} };
         
         const map = new google.maps.Map(document.getElementById("map"), {
@@ -235,16 +235,16 @@
         const marker = new google.maps.Marker({
             position: position,
             map: map,
-            title: "{{ complejo.nombre }}",
+            title: "{{ complejo.nombre|escapejs }}",
             animation: google.maps.Animation.DROP,
         });
         
         const infoWindow = new google.maps.InfoWindow({
             content: `
                 <div style="padding: 10px;">
-                    <h5 class="mb-2">{{ complejo.nombre }}</h5>
-                    <p class="mb-1"><strong>{{ complejo.direccion }}</strong></p>
-                    <p class="mb-0 text-muted">{{ complejo.localidad }}</p>
+                    <h5 class="mb-2">{{ complejo.nombre|escapejs }}</h5>
+                    <p class="mb-1"><strong>{{ complejo.direccion|escapejs }}</strong></p>
+                    <p class="mb-0 text-muted">{{ complejo.localidad|escapejs }}</p>
                 </div>
             `
         });
@@ -255,11 +255,12 @@
         
         // Abrir el info window automáticamente
         infoWindow.open(map, marker);
-        {% endif %}
     }
     
+    // Exponer la función globalmente para el callback de Google Maps
     window.initMap = initMap;
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap&loading=async" async defer></script>
+{% endif %}
 {% endblock %}
