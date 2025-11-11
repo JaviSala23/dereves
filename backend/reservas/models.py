@@ -723,7 +723,7 @@ class JugadorPartido(models.Model):
     jugador = models.ForeignKey(
         'cuentas.PerfilJugador',
         on_delete=models.CASCADE,
-        related_name='partidos_jugados',
+        related_name='participaciones_partidos',
         null=True,
         blank=True
     )
