@@ -80,16 +80,135 @@
     
     <!-- Reservas Fijas Activas -->
     <div class="card mb-4 border-primary">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <span class="material-symbols-rounded" style="vertical-align: middle;">repeat</span>
-                Reservas Fijas ({{ reservas_fijas_activas.count }})
-            </h5>
-            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalCrearReservaFija">
-                <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">add</span>
-                Nueva Reserva Fija
-            </button>
+        <div class="card-header bg-primary text-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <h5 class="mb-0">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">repeat</span>
+                    Reservas Fijas ({{ reservas_fijas_activas.count }})
+                </h5>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalCrearReservaFija">
+                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">add</span>
+                    Nueva Reserva Fija
+                </button>
+                <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalCrearReservaCampeonato">
+                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">emoji_events</span>
+                    Reserva de Campeonato
+                </button>
+                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalCrearReservaSimple">
+                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">add_circle</span>
+                    Reserva Simple
+                </button>
+            </div>
         </div>
+    <!-- Modal Nueva Reserva de Campeonato -->
+    <div class="modal fade" id="modalCrearReservaCampeonato" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'complejos:crear_reserva_campeonato_dashboard' %}">
+                    {% csrf_token %}
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">emoji_events</span>
+                            Nueva Reserva de Campeonato
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Cancha</label>
+                            <select name="cancha_id" class="form-select" required>
+                                <option value="">Seleccione una cancha</option>
+                                {% for cancha in canchas %}
+                                <option value="{{ cancha.id }}">{{ cancha.complejo.nombre }} - {{ cancha.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hora de inicio</label>
+                            <input type="time" name="hora_inicio" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Campeonato</label>
+                            <input type="text" name="nombre_campeonato" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Precio</label>
+                            <input type="number" name="precio" class="form-control" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">save</span>
+                            Crear Reserva de Campeonato
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nueva Reserva Simple -->
+    <div class="modal fade" id="modalCrearReservaSimple" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'complejos:crear_reserva_simple_dashboard' %}">
+                    {% csrf_token %}
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">add_circle</span>
+                            Nueva Reserva Simple
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Cancha</label>
+                            <select name="cancha_id" class="form-select" required>
+                                <option value="">Seleccione una cancha</option>
+                                {% for cancha in canchas %}
+                                <option value="{{ cancha.id }}">{{ cancha.complejo.nombre }} - {{ cancha.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hora de inicio</label>
+                            <input type="time" name="hora_inicio" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Cliente</label>
+                            <input type="text" name="nombre_cliente" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono del Cliente</label>
+                            <input type="tel" name="telefono_cliente" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Precio</label>
+                            <input type="number" name="precio" class="form-control" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">save</span>
+                            Crear Reserva Simple
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
         <div class="card-body">
             {% if reservas_fijas_activas %}
             <div class="table-responsive">
