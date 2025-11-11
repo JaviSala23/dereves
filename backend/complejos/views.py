@@ -758,11 +758,17 @@ def calendario_reservas_dueno(request, complejo_slug):
         turnos = Turno.objects.filter(
             cancha=cancha,
             fecha=fecha
-        ).select_related('reserva').order_by('hora_inicio')
+        ).prefetch_related('reservas').order_by('hora_inicio')
+        
+        # Agregar información de reserva a cada turno
+        turnos_con_info = []
+        for turno in turnos:
+            turno.reserva = turno.reservas.first() if turno.reservas.exists() else None
+            turnos_con_info.append(turno)
         
         turnos_por_cancha[cancha.id] = {
             'cancha': cancha,
-            'turnos': turnos
+            'turnos': turnos_con_info
         }
     
     context = {
