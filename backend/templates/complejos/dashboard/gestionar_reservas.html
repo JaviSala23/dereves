@@ -194,35 +194,33 @@
     <div class="modal fade" id="modalCrearReservaFija" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Nueva Reserva Fija</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">event_repeat</span>
+                        Nueva Reserva Fija
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="post" id="formCrearReservaFija">
+                <form method="post" action="{% url 'complejos:crear_reserva_fija_dashboard' %}">
                     {% csrf_token %}
                     <div class="modal-body">
+                        <div class="alert alert-info">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">info</span>
+                            Los turnos fijos se repiten todas las semanas en el día y horario seleccionado.
+                        </div>
+
                         <div class="mb-3">
                             <label for="cancha_id" class="form-label">Cancha *</label>
                             <select class="form-select" id="cancha_id" name="cancha_id" required>
                                 <option value="">Selecciona una cancha...</option>
                                 {% for cancha in canchas %}
-                                <option value="{{ cancha.id }}" data-duracion="{{ cancha.duracion_turno_minutos }}">
+                                <option value="{{ cancha.id }}">
                                     {{ cancha.complejo.nombre }} - {{ cancha.nombre }} ({{ cancha.get_deporte_display }})
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label for="jugador_id_nuevo" class="form-label">Jugador *</label>
-                            <select class="form-select" id="jugador_id_nuevo" name="jugador_id" required>
-                                <option value="">Selecciona un jugador...</option>
-                                {% for jugador in jugadores %}
-                                <option value="{{ jugador.id }}">
-                                    {{ jugador.usuario.get_full_name }} ({{ jugador.alias }})
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
+
                         <div class="row">
                             <div class="col-6">
                                 <label for="dia_semana" class="form-label">Día de la semana *</label>
@@ -241,40 +239,33 @@
                                 <input type="time" class="form-control" id="hora_inicio" name="hora_inicio" required>
                             </div>
                         </div>
+
                         <div class="mb-3 mt-3">
-                            <label for="fecha_inicio" class="form-label">Válido desde *</label>
-                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required>
+                            <label for="nombre_cliente" class="form-label">Nombre del Cliente *</label>
+                            <input type="text" class="form-control" id="nombre_cliente" name="nombre_cliente" required>
                         </div>
+
                         <div class="mb-3">
-                            <label for="observaciones_nuevo" class="form-label">Observaciones</label>
-                            <textarea class="form-control" id="observaciones_nuevo" name="observaciones" rows="2" 
-                                      placeholder="Ej: Pago mensual adelantado"></textarea>
+                            <label for="telefono_cliente" class="form-label">Teléfono del Cliente *</label>
+                            <input type="tel" class="form-control" id="telefono_cliente" name="telefono_cliente" required>
                         </div>
-                        <div class="alert alert-info mb-0">
-                            <small>
-                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">info</span>
-                                Esta reserva quedará activa inmediatamente y bloqueará el horario todas las semanas.
-                            </small>
+
+                        <div class="mb-3">
+                            <label for="precio" class="form-label">Precio *</label>
+                            <input type="number" class="form-control" id="precio" name="precio" step="0.01" min="0" required>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Crear Reserva Fija</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">save</span>
+                            Crear Turno Fijo
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    
-    <script>
-    // Actualizar la acción del formulario cuando se selecciona la cancha
-    document.getElementById('cancha_id').addEventListener('change', function() {
-        const canchaId = this.value;
-        if (canchaId) {
-            document.getElementById('formCrearReservaFija').action = `/reservas/fijas/cancha/${canchaId}/crear/`;
-        }
-    });
-    </script>
     
     <!-- Filtros de Reservas Comunes -->
     <div class="card border-0 shadow-sm mb-4">

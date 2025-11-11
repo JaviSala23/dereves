@@ -298,3 +298,58 @@ def estadisticas_complejo(request, slug):
     }
     
     return render(request, 'complejos/dashboard/estadisticas_complejo.html', context)
+
+
+@login_required
+def crear_reserva_fija_dashboard(request):
+    """
+    Crear una reserva fija desde el dashboard general.
+    """
+    if request.method != 'POST':
+        return redirect('complejos:gestionar_reservas')
+    
+    if request.user.tipo_usuario != 'DUENIO':
+        messages.error(request, 'Solo los dueños pueden crear turnos fijos.')
+        return redirect('home')
+    
+    try:
+        perfil_dueno = request.user.perfil_dueno
+    except AttributeError:
+        messages.error(request, 'No se encontró tu perfil de dueño.')
+        return redirect('home')
+    
+    # Obtener datos del formulario
+    cancha_id = request.POST.get('cancha_id')
+    dia_semana = request.POST.get('dia_semana')
+    hora_inicio = request.POST.get('hora_inicio')
+    nombre_cliente = request.POST.get('nombre_cliente')
+    telefono_cliente = request.POST.get('telefono_cliente')
+    precio = request.POST.get('precio')
+    
+    # Validar que la cancha pertenezca a un complejo del dueño
+    from django.shortcuts import get_object_or_404
+    cancha = get_object_or_404(Cancha, id=cancha_id, complejo__dueno=perfil_dueno)
+    
+    try:
+        # Crear reserva fija
+        reserva_fija = ReservaFija.objects.create(
+            cancha=cancha,
+            dia_semana=int(dia_semana),
+            hora_inicio=hora_inicio,
+            nombre_cliente=nombre_cliente,
+            telefono_cliente=telefono_cliente,
+            precio=float(precio)
+        )
+        
+        # Mapear día de semana a nombre
+        dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+        dia_nombre = dias_semana[int(dia_semana)]
+        
+        messages.success(
+            request, 
+            f'¡Turno fijo creado! {cancha.nombre} - {dia_nombre}s a las {hora_inicio} para {nombre_cliente}'
+        )
+    except Exception as e:
+        messages.error(request, f'Error al crear turno fijo: {str(e)}')
+    
+    return redirect('complejos:gestionar_reservas')

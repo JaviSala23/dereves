@@ -20,6 +20,7 @@ urlpatterns = [
     path('dashboard/', dashboard_views.dashboard_principal, name='dashboard_principal'),
     path('dashboard/complejos/', dashboard_views.mis_complejos_dashboard, name='mis_complejos_dashboard'),
     path('dashboard/reservas/', dashboard_views.gestionar_reservas, name='gestionar_reservas'),
+    path('dashboard/reservas/fija/crear/', dashboard_views.crear_reserva_fija_dashboard, name='crear_reserva_fija_dashboard'),
     path('dashboard/<slug:slug>/estadisticas/', dashboard_views.estadisticas_complejo, name='estadisticas'),
     
     # Calendario y gestión de reservas para dueños
