@@ -168,17 +168,36 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Agregar nueva localidad
-    btnAgregarLocalidad.addEventListener('click', function() {
+    btnAgregarLocalidad.addEventListener('click', async function() {
         const provincia = provinciaSelect.value;
         
         if (!provincia) {
-            alert('Por favor, primero selecciona una provincia');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Provincia requerida',
+                text: 'Por favor, primero selecciona una provincia',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
         
-        const nombreLocalidad = prompt('Ingresa el nombre de la localidad:');
+        // Mostrar input con SweetAlert2
+        const { value: nombreLocalidad } = await Swal.fire({
+            title: 'Agregar Localidad',
+            text: `Ingresa el nombre de la localidad en ${provincia}:`,
+            input: 'text',
+            inputPlaceholder: 'Ej: Villa María',
+            showCancelButton: true,
+            confirmButtonText: 'Agregar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || value.trim() === '') {
+                    return 'Debes ingresar un nombre';
+                }
+            }
+        });
         
-        if (!nombreLocalidad || nombreLocalidad.trim() === '') {
+        if (!nombreLocalidad) {
             return;
         }
         
@@ -202,7 +221,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(data.mensaje);
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: data.mensaje,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
                 // Recargar la lista de localidades
                 cargarLocalidades(provincia);
                 // Seleccionar la nueva localidad
@@ -210,12 +235,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     localidadSelect.value = data.localidad.nombre;
                 }, 500);
             } else {
-                alert('Error: ' + (data.error || 'No se pudo agregar la localidad'));
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.error || 'No se pudo agregar la localidad',
+                    confirmButtonText: 'Entendido'
+                });
             }
         })
         .catch(error => {
             console.error('Error agregando localidad:', error);
-            alert('Error al agregar la localidad. Intenta nuevamente.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo agregar la localidad. Intenta nuevamente.',
+                confirmButtonText: 'Entendido'
+            });
         })
         .finally(() => {
             // Restaurar botón
