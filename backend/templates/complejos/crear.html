@@ -303,15 +303,18 @@ function initMap() {
     // Geocoding cuando se complete la dirección
     const direccionInput = document.getElementById('direccion');
     const localidadSelect = document.getElementById('localidad');
+    const provinciaSelect = document.getElementById('provincia');
     
     direccionInput.addEventListener('blur', function() {
         geocodeAddress();
     });
     
     localidadSelect.addEventListener('change', function() {
-        if (direccionInput.value) {
-            geocodeAddress();
-        }
+        geocodeAddress();
+    });
+    
+    provinciaSelect.addEventListener('change', function() {
+        geocodeAddress();
     });
 }
 
@@ -331,17 +334,36 @@ function geocodeAddress() {
     const localidad = document.getElementById('localidad').options[document.getElementById('localidad').selectedIndex]?.text || '';
     const provincia = document.getElementById('provincia').value || '';
     
-    if (!direccion) return;
+    // Si no hay provincia, no hacer nada
+    if (!provincia) return;
     
-    const fullAddress = `${direccion}, ${localidad}, ${provincia}, Argentina`;
+    // Construir dirección según lo que tengamos
+    let fullAddress = '';
+    if (direccion && localidad) {
+        fullAddress = `${direccion}, ${localidad}, ${provincia}, Argentina`;
+    } else if (localidad) {
+        fullAddress = `${localidad}, ${provincia}, Argentina`;
+    } else {
+        fullAddress = `${provincia}, Argentina`;
+    }
     
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode({ address: fullAddress }, function(results, status) {
         if (status === 'OK' && results[0]) {
             const location = results[0].geometry.location;
             map.setCenter(location);
-            map.setZoom(16);
-            placeMarker(location);
+            
+            // Ajustar zoom según el nivel de detalle
+            if (direccion && localidad) {
+                map.setZoom(16); // Dirección específica
+                placeMarker(location);
+            } else if (localidad) {
+                map.setZoom(13); // Localidad
+                placeMarker(location);
+            } else {
+                map.setZoom(8); // Provincia
+                // No colocar marcador aún, solo centrar
+            }
         }
     });
 }
