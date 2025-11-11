@@ -51,8 +51,8 @@ class Migration(migrations.Migration):
                 'ordering': ['fecha', 'hora_inicio'],
                 'unique_together': {('cancha', 'fecha', 'hora_inicio')},
                 'indexes': [
-                    models.Index(fields=['cancha', 'fecha']),
-                    models.Index(fields=['fecha', 'estado']),
+                    models.Index(fields=['cancha', 'fecha'], name='turno_cancha_fecha_idx'),
+                    models.Index(fields=['fecha', 'estado'], name='turno_fecha_estado_idx'),
                 ],
             },
         ),
@@ -201,8 +201,8 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': 'Reservas',
                 'ordering': ['-creado_en'],
                 'indexes': [
-                    models.Index(fields=['jugador', 'estado']),
-                    models.Index(fields=['estado', 'creado_en']),
+                    models.Index(fields=['jugador', 'estado'], name='reserva_jugador_estado_idx'),
+                    models.Index(fields=['estado', 'creado_en'], name='reserva_estado_creado_idx'),
                 ],
             },
         ),
