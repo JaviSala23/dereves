@@ -17,10 +17,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Paso 1: Eliminar modelo Reserva antiguo completamente
-        migrations.DeleteModel(name='Reserva'),
-        
-        # Paso 2: Crear modelo Turno
+        # Paso 1: Crear modelo Turno (solo si no existe)
         migrations.CreateModel(
             name='Turno',
             fields=[
@@ -60,7 +57,7 @@ class Migration(migrations.Migration):
             },
         ),
         
-        # Paso 3: Crear modelo Torneo
+        # Paso 2: Crear modelo Torneo
         migrations.CreateModel(
             name='Torneo',
             fields=[
@@ -91,6 +88,12 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': 'Torneos',
                 'ordering': ['-creado_en'],
             },
+        ),
+        
+        # Paso 3: Eliminar modelo Reserva antiguo si existe
+        migrations.RunSQL(
+            "DROP TABLE IF EXISTS `reservas_reserva`",
+            reverse_sql=migrations.RunSQL.noop
         ),
         
         # Paso 4: Crear modelo PartidoAbierto
