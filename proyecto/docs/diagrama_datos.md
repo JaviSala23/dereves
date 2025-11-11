@@ -47,6 +47,28 @@ Campos extra sugeridos:
 - `telefono`
 - `foto_perfil` (opcional)
 
+Notas importantes de identificación y login:
+- `dni` (string, único, opcional/según país) — documento nacional de identidad para identificación real. Debe considerarse dato sensible; validar formato localmente y/o mediante verificación adicional si se requiere (ej.: verificación manual o servicios externos).
+- `nombre_real` (string) — nombre completo real del usuario. Útil para comunicación, facturación y confianza en la plataforma. Puede exigirse en roles `DUENIO` o para pagos/contratos.
+- `username` — el sistema puede soportar un `username` público (alias) para login y menciones; puede ser opcional si se usa el correo/Gmail para login.
+
+Login con cuentas Gmail (Google OAuth2):
+- Soporte recomendado: integrar OAuth2 (ej.: `django-allauth` o `social-auth-app-django`).
+- Campos relacionados que podemos almacenar en `Usuario`:
+  - `google_oauth2_id` (string, opcional) — id del usuario en Google para enlazar cuentas.
+  - `email_verified` (bool) — si el proveedor (Google) verificó el email.
+  - `provider` (choices) — `local`, `google`, `facebook`, etc. (útil para UX y soporte).
+- Flujo sugerido:
+  1. El usuario inicia sesión con Google.
+  2. Si no existe usuario con ese email, crear `Usuario` con `email` y `google_oauth2_id` y marcar `email_verified=True`.
+  3. Si existe un usuario local con el mismo email, pedir al usuario que vincule la cuenta (evitar sobrescribir datos sin consentimiento).
+  4. Al permitir login sólo por Gmail, documentar en la UI que el email de Google será la identidad principal.
+
+Privacidad y cumplimiento:
+- El `dni` es un dato personal sensible en muchos países. Definir políticas de retención y acceso (quién puede ver DNIs). Considerar cifrado en la base de datos (campo encriptado) o almacenamiento en un servicio con mayor control de acceso.
+- Registrar consentimiento explícito si se recolecta DNI y para qué fines (facturación, verificación de identidad, etc.).
+- Al usar Google OAuth, cumplir con las políticas de Google y mostrar la política de privacidad adecuada.
+
 ---
 
 ### 3.2. PerfilJugador
@@ -110,6 +132,18 @@ Relaciones:
 - `subdominio` (ej.: `puntoyreves`, para `puntoyreves.dereves.ar`)
 - `logo` (imagen)
 - `activo` (bool)
+
+Campos y consideraciones para geolocalización (Google Maps):
+- `latitud`, `longitud` (float) — coordenadas en WGS84. Recomendado: llenar siempre para buenas búsquedas y mapas.
+- `google_place_id` (string, opcional) — ID de Place de Google Maps si se obtiene (útil para enlaces directos, actualizaciones y place details).
+- `direccion_formateada` (string) — dirección tal como la devuelve la API de Google (o servicio de geocoding), para mostrar en la ficha pública.
+- `google_maps_url` (string, opcional) — url pública de Google Maps al lugar (para abrir en app/web).
+
+Notas de captura y uso:
+- Durante el alta/edición del complejo, sugerir autocompletar dirección con Places API para asegurar consistencia y obtener `place_id`, `direccion_formateada` y `lat/lng`.
+- `latitud` y `longitud` deben usarse para búsquedas por proximidad, filtros por radio y para centrar mapas en la UI.
+- Si no se usan servicios de Google, documentar la fuente de geocoding (OpenStreetMap / Nominatim) y conservar `direccion_formateada` para coherencia.
+- Privacidad: la localización del complejo es pública por diseño (página pública), pero no almacenar datos sensibles adicionales.
 
 Relaciones:
 - 1:N con `Cancha`
