@@ -2,85 +2,286 @@
 
 {% block title %}Gestionar {{ complejo.nombre }} - DeRevés{% endblock %}
 
-{% block content %}
-<div class="container my-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'complejos:dashboard_principal' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'complejos:mis_complejos_dashboard' %}">Mis Complejos</a></li>
-            <li class="breadcrumb-item active">{{ complejo.nombre }}</li>
-        </ol>
-    </nav>
+{% block extra_css %}
+<style>
+    .sport-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
     
-    <div class="row mb-4">
-        <div class="col">
-            <h2>{{ complejo.nombre }}</h2>
-            <p class="text-muted">Gestionar complejo, canchas y servicios</p>
+    .sport-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    
+    .sport-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .sport-card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.25rem;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .portada-preview {
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .portada-preview img {
+        transition: transform 0.3s ease;
+    }
+    
+    .portada-preview:hover img {
+        transform: scale(1.05);
+    }
+    
+    .servicio-item {
+        transition: all 0.2s ease;
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+    
+    .servicio-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .servicio-item input[type="checkbox"]:checked + label {
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .cancha-row {
+        transition: background-color 0.2s ease;
+    }
+    
+    .cancha-row:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .cancha-img {
+        border-radius: 8px;
+        transition: transform 0.2s ease;
+    }
+    
+    .cancha-img:hover {
+        transform: scale(1.1);
+    }
+    
+    .badge-sport {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    
+    .btn-sport-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 0.6rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-sport-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-sport-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border: none;
+        color: white;
+        padding: 0.6rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-sport-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        color: white;
+    }
+    
+    .empty-state {
+        padding: 4rem 2rem;
+        text-align: center;
+        color: #6c757d;
+    }
+    
+    .empty-state .material-symbols-rounded {
+        font-size: 120px;
+        opacity: 0.3;
+        display: block;
+        margin-bottom: 1rem;
+    }
+    
+    .stats-badge {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Sport Header -->
+<div class="sport-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent mb-3">
+                <li class="breadcrumb-item"><a href="{% url 'complejos:dashboard_principal' %}" class="text-white">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'complejos:mis_complejos_dashboard' %}" class="text-white">Mis Complejos</a></li>
+                <li class="breadcrumb-item active text-white-50">{{ complejo.nombre }}</li>
+            </ol>
+        </nav>
+        
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="mb-2">
+                    <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 2.5rem;">sports_soccer</span>
+                    {{ complejo.nombre }}
+                </h1>
+                <p class="mb-0 opacity-75">
+                    <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 1.2rem;">location_on</span>
+                    {{ complejo.direccion }}, {{ complejo.localidad }}
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{% url 'complejos:detalle' complejo.slug %}" class="btn btn-light btn-lg">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">visibility</span>
+                    Ver Página Pública
+                </a>
+            </div>
         </div>
-        <div class="col-auto">
-            <a href="{% url 'complejos:detalle' complejo.slug %}" class="btn btn-outline-primary">
-                <span class="material-symbols-rounded">visibility</span>
-                Ver Complejo Público
-            </a>
+        
+        <!-- Quick Stats -->
+        <div class="row mt-4 g-3">
+            <div class="col-md-4">
+                <div class="stats-badge">
+                    <h3 class="mb-1 text-primary">{{ canchas.count }}</h3>
+                    <small class="text-muted">Canchas</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-badge">
+                    <h3 class="mb-1 text-success">{{ servicios_actuales|length }}</h3>
+                    <small class="text-muted">Servicios</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-badge">
+                    <h3 class="mb-1 text-info">{% if complejo.logo %}✓{% else %}✗{% endif %}</h3>
+                    <small class="text-muted">Portada</small>
+                </div>
+            </div>
         </div>
     </div>
+</div>
+
+<div class="container my-4">
     
     <!-- Logo del Complejo -->
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Logo del Complejo</h5>
+        <div class="col-lg-4 mb-4 mb-lg-0">
+            <div class="sport-card">
+                <div class="sport-card-header">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">photo_camera</span>
+                    Portada del Complejo
                 </div>
-                <div class="card-body text-center">
-                    {% if complejo.logo %}
-                        <img src="{{ complejo.logo.url }}" alt="{{ complejo.nombre }}" class="img-fluid mb-3" style="max-height: 200px;">
-                    {% else %}
-                        <div class="bg-light rounded p-5 mb-3">
-                            <span class="material-symbols-rounded text-muted" style="font-size: 80px;">add_photo_alternate</span>
-                            <p class="text-muted mt-2">Sin logo</p>
-                        </div>
-                    {% endif %}
+                <div class="card-body text-center p-4">
+                    <div class="portada-preview mb-3">
+                        {% if complejo.logo %}
+                            <img src="{{ complejo.logo.url }}" alt="{{ complejo.nombre }}" class="img-fluid" style="max-height: 250px; border-radius: 10px;">
+                        {% else %}
+                            <div class="bg-light rounded p-5">
+                                <span class="material-symbols-rounded text-muted" style="font-size: 100px;">add_photo_alternate</span>
+                                <p class="text-muted mt-3 mb-0">Sin portada</p>
+                                <small class="text-muted">Recomendado: 1200x600px</small>
+                            </div>
+                        {% endif %}
+                    </div>
                     
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        <input type="file" name="logo" id="logo" class="form-control mb-2" accept="image/*">
-                        <button type="submit" name="subir_logo" class="btn btn-primary w-100">
-                            <span class="material-symbols-rounded">upload</span>
-                            Subir Logo
+                        <div class="mb-3">
+                            <label for="logo" class="form-label">
+                                <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 1rem;">upload_file</span>
+                                Seleccionar imagen
+                            </label>
+                            <input type="file" name="logo" id="logo" class="form-control" accept="image/*">
+                            <small class="text-muted">JPG, PNG o WebP - Máx. 5MB</small>
+                        </div>
+                        <button type="submit" name="subir_logo" class="btn btn-sport-primary w-100">
+                            <span class="material-symbols-rounded" style="vertical-align: middle;">upload</span>
+                            Subir Portada
                         </button>
                     </form>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Servicios y Comodidades</h5>
+        <div class="col-lg-8">
+            <div class="sport-card">
+                <div class="sport-card-header">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">emoji_events</span>
+                    Servicios y Comodidades
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <form method="post">
                         {% csrf_token %}
                         <div class="row g-3">
                             {% for codigo, nombre in servicios_disponibles %}
-                            <div class="col-md-6 col-lg-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" 
-                                           name="servicios" value="{{ codigo }}" 
-                                           id="servicio_{{ codigo }}"
-                                           {% if codigo in servicios_actuales %}checked{% endif %}>
-                                    <label class="form-check-label" for="servicio_{{ codigo }}">
-                                        <strong>{{ nombre }}</strong>
-                                    </label>
+                            <div class="col-md-6">
+                                <div class="servicio-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="servicios" value="{{ codigo }}" 
+                                               id="servicio_{{ codigo }}"
+                                               {% if codigo in servicios_actuales %}checked{% endif %}>
+                                        <label class="form-check-label" for="servicio_{{ codigo }}">
+                                            <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 1.2rem; margin-right: 0.3rem;">
+                                                {% if codigo == 'ESTACIONAMIENTO' %}local_parking
+                                                {% elif codigo == 'VESTUARIOS' %}checkroom
+                                                {% elif codigo == 'DUCHAS' %}shower
+                                                {% elif codigo == 'BUFFET' %}restaurant
+                                                {% elif codigo == 'WIFI' %}wifi
+                                                {% elif codigo == 'PARRILLA' %}outdoor_grill
+                                                {% elif codigo == 'AIRE_ACONDICIONADO' %}ac_unit
+                                                {% elif codigo == 'SEGURIDAD' %}security
+                                                {% else %}check_circle{% endif %}
+                                            </span>
+                                            {{ nombre }}
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
-                        <button type="submit" name="gestionar_servicios" class="btn btn-success mt-3">
-                            <span class="material-symbols-rounded">save</span>
-                            Guardar Servicios
-                        </button>
+                        <div class="mt-4 pt-3 border-top">
+                            <button type="submit" name="gestionar_servicios" class="btn btn-sport-success">
+                                <span class="material-symbols-rounded" style="vertical-align: middle;">save</span>
+                                Guardar Servicios
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -88,84 +289,113 @@
     </div>
     
     <!-- Canchas -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Canchas</h5>
-            <a href="{% url 'complejos:agregar_cancha' complejo.slug %}" class="btn btn-primary">
-                <span class="material-symbols-rounded">add</span>
+    <div class="sport-card">
+        <div class="sport-card-header d-flex justify-content-between align-items-center">
+            <span>
+                <span class="material-symbols-rounded" style="vertical-align: middle;">sports</span>
+                Canchas Deportivas
+            </span>
+            <a href="{% url 'complejos:agregar_cancha' complejo.slug %}" class="btn btn-light btn-sm">
+                <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 1.2rem;">add_circle</span>
                 Agregar Cancha
             </a>
         </div>
         <div class="card-body p-0">
             {% if canchas %}
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="bg-light">
                             <tr>
-                                <th style="width: 80px;">Foto</th>
-                                <th>Nombre</th>
+                                <th style="width: 100px;" class="ps-4">Imagen</th>
+                                <th>Cancha</th>
                                 <th>Deporte</th>
                                 <th>Superficie</th>
                                 <th>Características</th>
-                                <th>Precio/Hora</th>
+                                <th>Precio</th>
                                 <th>Horario</th>
                                 <th>Estado</th>
-                                <th>Acciones</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for cancha in canchas %}
-                            <tr>
-                                <td>
+                            <tr class="cancha-row">
+                                <td class="ps-4">
                                     {% if cancha.foto %}
                                         <img src="{{ cancha.foto.url }}" alt="{{ cancha.nombre }}" 
-                                             class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
+                                             class="cancha-img shadow-sm" style="width: 70px; height: 70px; object-fit: cover;">
                                     {% else %}
-                                        <div class="bg-light rounded d-flex align-items-center justify-content-center" 
-                                             style="width: 60px; height: 60px;">
-                                            <span class="material-symbols-rounded text-muted">sports_soccer</span>
+                                        <div class="bg-gradient rounded d-flex align-items-center justify-content-center shadow-sm" 
+                                             style="width: 70px; height: 70px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                            <span class="material-symbols-rounded text-white">sports_soccer</span>
                                         </div>
                                     {% endif %}
                                 </td>
-                                <td><strong>{{ cancha.nombre }}</strong></td>
                                 <td>
-                                    <span class="badge bg-info">{{ cancha.get_deporte_display }}</span>
+                                    <strong class="d-block">{{ cancha.nombre }}</strong>
+                                    <small class="text-muted">{{ cancha.descripcion|truncatewords:5|default:"" }}</small>
                                 </td>
-                                <td>{{ cancha.tipo_superficie|default:"No especificado" }}</td>
+                                <td>
+                                    <span class="badge badge-sport" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 1rem;">sports</span>
+                                        {{ cancha.get_deporte_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ cancha.tipo_superficie|default:"Sintético" }}</span>
+                                </td>
                                 <td>
                                     {% if cancha.techada %}
-                                        <span class="badge bg-primary me-1">Techada</span>
+                                        <span class="badge bg-primary me-1">
+                                            <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 0.9rem;">roofing</span>
+                                            Techada
+                                        </span>
                                     {% endif %}
                                     {% if cancha.iluminacion %}
-                                        <span class="badge bg-warning">Iluminada</span>
+                                        <span class="badge bg-warning text-dark">
+                                            <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 0.9rem;">lightbulb</span>
+                                            Iluminada
+                                        </span>
                                     {% endif %}
                                     {% if not cancha.techada and not cancha.iluminacion %}
-                                        <span class="text-muted">-</span>
+                                        <span class="text-muted">Básica</span>
                                     {% endif %}
                                 </td>
-                                <td><strong>${{ cancha.precio_hora }}</strong></td>
                                 <td>
-                                    <small>{{ cancha.horario_apertura|time:"H:i" }} - {{ cancha.horario_cierre|time:"H:i" }}</small>
+                                    <strong class="text-success" style="font-size: 1.1rem;">${{ cancha.precio_hora }}</strong>
+                                    <small class="text-muted d-block">por hora</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 0.9rem;">schedule</span>
+                                        {{ cancha.horario_apertura|time:"H:i" }} - {{ cancha.horario_cierre|time:"H:i" }}
+                                    </small>
                                 </td>
                                 <td>
                                     {% if cancha.activo %}
-                                        <span class="badge bg-success">Activa</span>
+                                        <span class="badge bg-success">
+                                            <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 0.9rem;">check_circle</span>
+                                            Activa
+                                        </span>
                                     {% else %}
-                                        <span class="badge bg-secondary">Inactiva</span>
+                                        <span class="badge bg-secondary">
+                                            <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 0.9rem;">cancel</span>
+                                            Inactiva
+                                        </span>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <div class="btn-group btn-group-sm">
                                         <a href="{% url 'complejos:editar_cancha' complejo.slug cancha.id %}" 
                                            class="btn btn-outline-primary" title="Editar">
-                                            <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
+                                            <span class="material-symbols-rounded" style="font-size: 18px;">edit</span>
                                         </a>
                                         <a href="{% url 'complejos:toggle_cancha' complejo.slug cancha.id %}" 
-                                           class="btn btn-outline-{% if cancha.activo %}secondary{% else %}success{% endif %} btn-toggle-cancha"
+                                           class="btn btn-outline-{% if cancha.activo %}danger{% else %}success{% endif %} btn-toggle-cancha"
                                            title="{% if cancha.activo %}Desactivar{% else %}Activar{% endif %}"
                                            data-action="{% if cancha.activo %}desactivar{% else %}activar{% endif %}">
-                                            <span class="material-symbols-rounded" style="font-size: 16px;">
-                                                {% if cancha.activo %}cancel{% else %}check_circle{% endif %}
+                                            <span class="material-symbols-rounded" style="font-size: 18px;">
+                                                {% if cancha.activo %}block{% else %}check_circle{% endif %}
                                             </span>
                                         </a>
                                     </div>
@@ -176,12 +406,12 @@
                     </table>
                 </div>
             {% else %}
-                <div class="text-center py-5">
-                    <span class="material-symbols-rounded text-muted" style="font-size: 100px;">sports_soccer</span>
-                    <h5 class="mt-3">No hay canchas registradas</h5>
-                    <p class="text-muted">Agrega tu primera cancha para empezar a recibir reservas</p>
-                    <a href="{% url 'complejos:agregar_cancha' complejo.slug %}" class="btn btn-primary mt-2">
-                        <span class="material-symbols-rounded">add</span>
+                <div class="empty-state">
+                    <span class="material-symbols-rounded">sports_soccer</span>
+                    <h4 class="mb-3">No hay canchas registradas</h4>
+                    <p class="text-muted mb-4">Agrega tu primera cancha para empezar a recibir reservas<br>y gestionar tu complejo deportivo</p>
+                    <a href="{% url 'complejos:agregar_cancha' complejo.slug %}" class="btn btn-sport-primary btn-lg">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">add_circle</span>
                         Agregar Primera Cancha
                     </a>
                 </div>

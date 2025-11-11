@@ -267,7 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places"></script>
 <script>
 let map;
 let marker;
@@ -368,9 +367,9 @@ function geocodeAddress() {
     });
 }
 
-// Inicializar el mapa cuando cargue la página
-window.addEventListener('load', function() {
-    initMap();
-});
+// Exponer initMap globalmente para el callback de Google Maps
+window.initMap = initMap;
 </script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places&callback=initMap" async defer></script>
 {% endblock %}
