@@ -88,10 +88,25 @@ class Reserva(models.Model):
         ('COMPLETADA', 'Completada'),
     ]
     
+    TIPO_RESERVA_CHOICES = [
+        ('CLIENTE', 'Reserva de Cliente'),
+        ('ADMINISTRATIVA', 'Reserva Administrativa'),
+        ('BLOQUEADA', 'Horario Bloqueado'),
+        ('MANTENIMIENTO', 'Mantenimiento'),
+    ]
+    
     turno = models.OneToOneField(
         Turno,
         on_delete=models.CASCADE,
         related_name='reserva'
+    )
+    
+    # Tipo de reserva
+    tipo_reserva = models.CharField(
+        max_length=20,
+        choices=TIPO_RESERVA_CHOICES,
+        default='CLIENTE',
+        help_text='Tipo de reserva: cliente normal, administrativa (dueño), bloqueada o mantenimiento'
     )
     
     # Jugador que realizó la reserva (puede ser null si fue reservado por el dueño para un cliente sin cuenta)

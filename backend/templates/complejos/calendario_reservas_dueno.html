@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+
+{% block title %}Calendario de Reservas - {{ complejo.nombre }} - DeRevés{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sport-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .calendario-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+    }
+    
+    .horario-slot {
+        padding: 0.75rem;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .horario-slot:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    }
+    
+    .horario-slot.disponible {
+        background: #f8f9fa;
+        border-color: #28a745;
+    }
+    
+    .horario-slot.reservado {
+        background: #fff3cd;
+        border-color: #ffc107;
+    }
+    
+    .horario-slot.bloqueado {
+        background: #f8d7da;
+        border-color: #dc3545;
+    }
+    
+    .horario-slot.fijo {
+        background: #d1ecf1;
+        border-color: #0dcaf0;
+    }
+    
+    .btn-sport {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-sport:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Sport Header -->
+<div class="sport-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent mb-3">
+                <li class="breadcrumb-item"><a href="{% url 'complejos:dashboard_principal' %}" class="text-white">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'complejos:gestionar' complejo.slug %}" class="text-white">{{ complejo.nombre }}</a></li>
+                <li class="breadcrumb-item active text-white-50">Calendario de Reservas</li>
+            </ol>
+        </nav>
+        
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="mb-2">
+                    <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 2.5rem;">calendar_today</span>
+                    Calendario de Reservas
+                </h1>
+                <p class="mb-0 opacity-75">{{ complejo.nombre }} - Gestión de turnos y bloqueos</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <button type="button" class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaReserva">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">add_circle</span>
+                    Nueva Reserva/Bloqueo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-4">
+    <!-- Navegación de fechas -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="?fecha={{ fecha_anterior.isoformat }}" class="btn btn-outline-primary">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">chevron_left</span>
+                    Anterior
+                </a>
+                
+                <div class="text-center">
+                    <h3 class="mb-0">{{ fecha|date:"l, d \d\e F \d\e Y" }}</h3>
+                    <form method="get" class="mt-2">
+                        <input type="date" name="fecha" value="{{ fecha.isoformat }}" 
+                               class="form-control d-inline-block" style="width: auto;"
+                               onchange="this.form.submit()">
+                    </form>
+                </div>
+                
+                <a href="?fecha={{ fecha_siguiente.isoformat }}" class="btn btn-outline-primary">
+                    Siguiente
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">chevron_right</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leyenda -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="calendario-card">
+                <div class="card-body">
+                    <h6 class="mb-3">Leyenda:</h6>
+                    <div class="row">
+                        <div class="col-auto">
+                            <span class="badge" style="background: #28a745;">Disponible</span>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge" style="background: #ffc107; color: #000;">Cliente</span>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge" style="background: #dc3545;">Bloqueado</span>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge" style="background: #0dcaf0; color: #000;">Turno Fijo</span>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge" style="background: #6c757d;">Administrativa</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Calendario por cancha -->
+    {% for cancha_id, data in turnos_por_cancha.items %}
+    <div class="calendario-card">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h5 class="mb-0">
+                <span class="material-symbols-rounded" style="vertical-align: middle;">sports</span>
+                {{ data.cancha.nombre }}
+                <span class="badge bg-light text-dark ms-2">{{ data.cancha.get_deporte_display }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if data.turnos %}
+                <div class="row">
+                    {% for turno in data.turnos %}
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="horario-slot {% if turno.estado == 'DISPONIBLE' %}disponible{% elif turno.estado == 'RESERVADO' %}reservado{% elif turno.estado == 'FIJO' %}fijo{% else %}bloqueado{% endif %}"
+                             data-turno-id="{{ turno.id }}"
+                             data-cancha-id="{{ data.cancha.id }}"
+                             data-hora="{{ turno.hora_inicio|time:'H:i' }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>{{ turno.hora_inicio|time:"H:i" }} - {{ turno.hora_fin|time:"H:i" }}</strong>
+                                <span class="material-symbols-rounded">
+                                    {% if turno.estado == 'DISPONIBLE' %}check_circle
+                                    {% elif turno.estado == 'FIJO' %}event_repeat
+                                    {% else %}block{% endif %}
+                                </span>
+                            </div>
+                            
+                            {% if turno.reserva %}
+                            <small class="text-muted d-block mt-1">
+                                {% if turno.reserva.nombre_cliente_sin_cuenta %}
+                                    {{ turno.reserva.nombre_cliente_sin_cuenta }}
+                                {% elif turno.reserva.jugador %}
+                                    {{ turno.reserva.jugador.alias }}
+                                {% else %}
+                                    {{ turno.reserva.get_tipo_reserva_display }}
+                                {% endif %}
+                            </small>
+                            
+                            {% if turno.reserva.observaciones %}
+                            <small class="text-muted d-block">{{ turno.reserva.observaciones|truncatewords:5 }}</small>
+                            {% endif %}
+                            
+                            <div class="mt-2">
+                                <span class="badge {% if turno.reserva.tipo_reserva == 'CLIENTE' %}bg-warning{% elif turno.reserva.tipo_reserva == 'BLOQUEADA' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ turno.reserva.get_tipo_reserva_display }}
+                                </span>
+                                
+                                <button type="button" class="btn btn-sm btn-outline-danger float-end"
+                                        onclick="cancelarReserva({{ turno.reserva.id }}, '{{ turno.hora_inicio|time:"H:i" }}')">
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">close</span>
+                                </button>
+                            </div>
+                            {% else %}
+                            <small class="text-success d-block mt-1">Disponible</small>
+                            <button type="button" class="btn btn-sm btn-sport mt-2 w-100"
+                                    onclick="abrirModalReserva('{{ data.cancha.id }}', '{{ data.cancha.nombre }}', '{{ turno.hora_inicio|time:"H:i" }}')">
+                                Reservar
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No hay turnos configurados para este día.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">
+        <span class="material-symbols-rounded">info</span>
+        No hay canchas activas en este complejo.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Nueva Reserva/Bloqueo -->
+<div class="modal fade" id="modalNuevaReserva" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'complejos:crear_reserva_dueno' complejo.slug %}">
+                {% csrf_token %}
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title">Nueva Reserva/Bloqueo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="fecha" id="fecha_reserva" value="{{ fecha.isoformat }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Cancha</label>
+                        <select name="cancha_id" id="cancha_reserva" class="form-select" required>
+                            <option value="">Seleccionar cancha...</option>
+                            {% for cancha in canchas %}
+                            <option value="{{ cancha.id }}">{{ cancha.nombre }} - {{ cancha.get_deporte_display }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Hora</label>
+                        <input type="time" name="hora_inicio" id="hora_reserva" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipo_reserva" id="tipo_reserva" class="form-select" required onchange="toggleCamposCliente()">
+                            <option value="CLIENTE">Reserva de Cliente</option>
+                            <option value="ADMINISTRATIVA">Reserva Administrativa</option>
+                            <option value="BLOQUEADA">Bloqueo de Horario</option>
+                            <option value="MANTENIMIENTO">Mantenimiento</option>
+                        </select>
+                    </div>
+                    
+                    <div id="campos_cliente">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Cliente</label>
+                            <input type="text" name="nombre_cliente" class="form-control" placeholder="Nombre completo">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" name="telefono_cliente" class="form-control" placeholder="Ej: 351-1234567">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Precio</label>
+                            <input type="number" name="precio" class="form-control" step="0.01" placeholder="Dejar vacío para usar precio default">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Notas adicionales..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sport">
+                        <span class="material-symbols-rounded" style="vertical-align: middle;">save</span>
+                        Crear
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function abrirModalReserva(canchaId, canchaNombre, hora) {
+    document.getElementById('cancha_reserva').value = canchaId;
+    document.getElementById('hora_reserva').value = hora;
+    document.getElementById('fecha_reserva').value = '{{ fecha.isoformat }}';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalNuevaReserva'));
+    modal.show();
+}
+
+function toggleCamposCliente() {
+    const tipo = document.getElementById('tipo_reserva').value;
+    const campos = document.getElementById('campos_cliente');
+    
+    if (tipo === 'CLIENTE') {
+        campos.style.display = 'block';
+    } else {
+        campos.style.display = 'none';
+    }
+}
+
+function cancelarReserva(reservaId, hora) {
+    Swal.fire({
+        title: '¿Cancelar reserva?',
+        text: `Reserva de las ${hora}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText: 'No'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Crear formulario y enviar
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `{% url 'complejos:cancelar_reserva_dueno' complejo.slug 0 %}`.replace('0', reservaId);
+            
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrfmiddlewaretoken';
+            csrf.value = '{{ csrf_token }}';
+            form.appendChild(csrf);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCamposCliente();
+});
+</script>
+{% endblock %}

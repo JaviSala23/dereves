@@ -259,6 +259,7 @@ def crear_reserva(request, cancha_id):
     # Crear la reserva
     reserva = Reserva.objects.create(
         turno=turno,
+        tipo_reserva='CLIENTE',  # Reservas desde calendario de jugadores son siempre de cliente
         jugador=perfil_jugador if not es_dueno else None,
         reservado_por_dueno=reservado_por_dueno,
         nombre_cliente_sin_cuenta=nombre_cliente,
@@ -266,7 +267,8 @@ def crear_reserva(request, cancha_id):
         email_cliente=email_cliente,
         precio=turno.precio,
         metodo_pago=metodo_pago,
-        estado='CONFIRMADA' if es_dueno else 'PENDIENTE'
+        estado='CONFIRMADA' if es_dueno else 'PENDIENTE',
+        creado_por=request.user
     )
     
     # Actualizar estado del turno

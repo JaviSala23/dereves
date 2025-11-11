@@ -713,3 +713,209 @@ def agregar_localidad(request):
         return JsonResponse({
             'error': f'Error al agregar localidad: {str(e)}'
         }, status=500)
+
+
+# ========== VISTAS DE RESERVAS PARA DUEÑOS ==========
+
+@login_required
+def calendario_reservas_dueno(request, complejo_slug):
+    """
+    Vista del calendario de reservas desde el panel del dueño.
+    Permite ver todas las canchas y crear reservas administrativas/bloqueos.
+    """
+    complejo = get_object_or_404(Complejo, slug=complejo_slug)
+    
+    # Verificar que sea el dueño
+    if request.user.tipo_usuario != 'DUENIO':
+        messages.error(request, 'Solo los dueños pueden acceder al panel de reservas.')
+        return redirect('complejos:detalle', slug=complejo_slug)
+    
+    try:
+        perfil_dueno = request.user.perfil_dueno
+        if complejo.dueno != perfil_dueno:
+            messages.error(request, 'No tienes permiso para gestionar este complejo.')
+            return redirect('complejos:dashboard_principal')
+    except AttributeError:
+        messages.error(request, 'No se encontró tu perfil de dueño.')
+        return redirect('home')
+    
+    # Obtener fecha desde parámetros o usar hoy
+    fecha_str = request.GET.get('fecha', timezone.now().date().isoformat())
+    try:
+        fecha = datetime.fromisoformat(fecha_str).date()
+    except ValueError:
+        fecha = timezone.now().date()
+    
+    # Obtener canchas del complejo
+    canchas = complejo.canchas.filter(activo=True).order_by('nombre')
+    
+    # Importar modelos de reservas
+    from reservas.models import Turno, Reserva
+    
+    # Obtener turnos y reservas del día
+    turnos_por_cancha = {}
+    for cancha in canchas:
+        turnos = Turno.objects.filter(
+            cancha=cancha,
+            fecha=fecha
+        ).select_related('reserva').order_by('hora_inicio')
+        
+        turnos_por_cancha[cancha.id] = {
+            'cancha': cancha,
+            'turnos': turnos
+        }
+    
+    context = {
+        'complejo': complejo,
+        'fecha': fecha,
+        'fecha_anterior': fecha - timedelta(days=1),
+        'fecha_siguiente': fecha + timedelta(days=1),
+        'canchas': canchas,
+        'turnos_por_cancha': turnos_por_cancha,
+    }
+    return render(request, 'complejos/calendario_reservas_dueno.html', context)
+
+
+@login_required
+def crear_reserva_dueno(request, complejo_slug):
+    """
+    Crear reserva desde el panel del dueño.
+    Puede ser para cliente, administrativa o bloqueo.
+    """
+    if request.method != 'POST':
+        return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+    
+    complejo = get_object_or_404(Complejo, slug=complejo_slug)
+    
+    # Verificar que sea el dueño
+    if request.user.tipo_usuario != 'DUENIO':
+        messages.error(request, 'Solo los dueños pueden crear reservas administrativas.')
+        return redirect('complejos:detalle', slug=complejo_slug)
+    
+    try:
+        perfil_dueno = request.user.perfil_dueno
+        if complejo.dueno != perfil_dueno:
+            messages.error(request, 'No tienes permiso para gestionar este complejo.')
+            return redirect('complejos:dashboard_principal')
+    except AttributeError:
+        messages.error(request, 'No se encontró tu perfil de dueño.')
+        return redirect('home')
+    
+    # Obtener datos del formulario
+    cancha_id = request.POST.get('cancha_id')
+    fecha_str = request.POST.get('fecha')
+    hora_inicio_str = request.POST.get('hora_inicio')
+    tipo_reserva = request.POST.get('tipo_reserva', 'ADMINISTRATIVA')
+    nombre_cliente = request.POST.get('nombre_cliente', '')
+    telefono_cliente = request.POST.get('telefono_cliente', '')
+    observaciones = request.POST.get('observaciones', '')
+    precio_str = request.POST.get('precio', '')
+    
+    try:
+        cancha = Cancha.objects.get(id=cancha_id, complejo=complejo)
+        fecha = datetime.fromisoformat(fecha_str).date()
+        hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M').time()
+        
+        # Calcular hora fin
+        duracion_minutos = cancha.duracion_turno_minutos or 90
+        hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=duracion_minutos)).time()
+        
+        # Precio
+        if precio_str:
+            precio = float(precio_str)
+        else:
+            precio = cancha.precio_hora if tipo_reserva == 'CLIENTE' else 0
+        
+    except (ValueError, TypeError, Cancha.DoesNotExist) as e:
+        messages.error(request, f'Datos inválidos: {str(e)}')
+        return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+    
+    # Importar modelos de reservas
+    from reservas.models import Turno, Reserva
+    
+    # Buscar o crear el turno
+    turno, created = Turno.objects.get_or_create(
+        cancha=cancha,
+        fecha=fecha,
+        hora_inicio=hora_inicio,
+        defaults={
+            'hora_fin': hora_fin,
+            'precio': precio,
+            'estado': 'DISPONIBLE'
+        }
+    )
+    
+    # Verificar si el turno ya tiene reserva
+    if hasattr(turno, 'reserva'):
+        messages.error(request, f'Ya existe una reserva para este horario.')
+        return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+    
+    # Crear la reserva
+    reserva = Reserva.objects.create(
+        turno=turno,
+        tipo_reserva=tipo_reserva,
+        jugador=None,
+        reservado_por_dueno=True,
+        nombre_cliente_sin_cuenta=nombre_cliente,
+        telefono_cliente=telefono_cliente,
+        precio=precio,
+        estado='CONFIRMADA',
+        observaciones=observaciones,
+        creado_por=request.user,
+        pagado=(tipo_reserva != 'CLIENTE')  # Bloqueos y administrativas se marcan como pagadas
+    )
+    
+    # Actualizar estado del turno
+    if tipo_reserva == 'BLOQUEADA' or tipo_reserva == 'MANTENIMIENTO':
+        turno.estado = 'BLOQUEADO_TORNEO'  # Reutilizamos este estado
+    else:
+        turno.estado = 'RESERVADO'
+    turno.save()
+    
+    tipo_texto = dict(Reserva.TIPO_RESERVA_CHOICES).get(tipo_reserva, 'Reserva')
+    messages.success(request, f'{tipo_texto} creada exitosamente.')
+    
+    return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+
+
+@login_required
+def cancelar_reserva_dueno(request, complejo_slug, reserva_id):
+    """
+    Cancelar una reserva desde el panel del dueño.
+    """
+    if request.method != 'POST':
+        return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+    
+    complejo = get_object_or_404(Complejo, slug=complejo_slug)
+    
+    # Verificar que sea el dueño
+    if request.user.tipo_usuario != 'DUENIO':
+        messages.error(request, 'Solo los dueños pueden cancelar reservas.')
+        return redirect('complejos:detalle', slug=complejo_slug)
+    
+    try:
+        perfil_dueno = request.user.perfil_dueno
+        if complejo.dueno != perfil_dueno:
+            messages.error(request, 'No tienes permiso para gestionar este complejo.')
+            return redirect('complejos:dashboard_principal')
+    except AttributeError:
+        messages.error(request, 'No se encontró tu perfil de dueño.')
+        return redirect('home')
+    
+    # Importar modelo
+    from reservas.models import Reserva
+    
+    # Obtener reserva
+    reserva = get_object_or_404(Reserva, id=reserva_id)
+    
+    # Verificar que la reserva sea de una cancha del complejo
+    if reserva.turno.cancha.complejo != complejo:
+        messages.error(request, 'Esta reserva no pertenece a tu complejo.')
+        return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+    
+    # Cancelar
+    reserva.cancelar()
+    
+    messages.success(request, 'Reserva cancelada exitosamente.')
+    return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
+

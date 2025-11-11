@@ -155,7 +155,7 @@
         </nav>
         
         <div class="row align-items-center">
-            <div class="col-lg-8">
+            <div class="col-lg-6">
                 <h1 class="mb-2">
                     <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 2.5rem;">sports_soccer</span>
                     {{ complejo.nombre }}
@@ -165,8 +165,12 @@
                     {{ complejo.direccion }}, {{ complejo.localidad }}
                 </p>
             </div>
-            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                <a href="{% url 'complejos:detalle' complejo.slug %}" class="btn btn-light btn-lg">
+            <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
+                <a href="{% url 'complejos:calendario_reservas_dueno' complejo.slug %}" class="btn btn-light btn-lg me-2">
+                    <span class="material-symbols-rounded" style="vertical-align: middle;">calendar_today</span>
+                    Gestionar Reservas
+                </a>
+                <a href="{% url 'complejos:detalle' complejo.slug %}" class="btn btn-outline-light btn-lg">
                     <span class="material-symbols-rounded" style="vertical-align: middle;">visibility</span>
                     Ver Página Pública
                 </a>
