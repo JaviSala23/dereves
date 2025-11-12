@@ -95,7 +95,9 @@ class Reserva(models.Model):
     jugador_principal = models.ForeignKey(
         'cuentas.PerfilJugador',
         on_delete=models.CASCADE,
-        related_name='reservas'
+        related_name='reservas',
+        null=True,
+        blank=True
     )
     fecha = models.DateField()
     hora_inicio = models.TimeField()

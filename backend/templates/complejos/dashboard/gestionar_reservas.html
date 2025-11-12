@@ -88,8 +88,8 @@
                 </h5>
             </div>
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalCrearReservaFija">
-                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">add</span>
+                <button type="button" class="btn btn-warning btn-sm" onclick="abrirSwalReservaFija()">
+                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">event_repeat</span>
                     Nueva Reserva Fija
                 </button>
                 <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalCrearReservaCampeonato">
@@ -209,6 +209,8 @@
     </div>
     
     <!-- MODALES ELIMINADOS POR USO DE SWEETALERT2 -->
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Filtros de Reservas Comunes -->
     <div class="card border-0 shadow-sm mb-4">
