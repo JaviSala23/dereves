@@ -25,7 +25,8 @@ def buscar_jugador(request):
                 'id': j.id,
                 'nombre': f"{j.usuario.first_name} {j.usuario.last_name}",
                 'usuario': j.usuario.username,
-                'dni': j.usuario.dni or ''
+                'dni': j.usuario.dni or '',
+                'nombre_real': j.usuario.nombre_real or ''
             })
     return JsonResponse(resultados, safe=False)
 from django.views.decorators.http import require_GET

@@ -573,6 +573,13 @@ function abrirSwalReservaFija() {
                         item.onclick = () => {
                             jugadorInput.value = `${j.nombre} (@${j.usuario})`;
                             jugadorIdInput.value = j.id;
+                            // Autocompletar nombre_cliente si existe
+                            const nombreClienteInput = document.querySelector("input[name='nombre_cliente']");
+                            if (nombreClienteInput && j.nombre_real) {
+                                nombreClienteInput.value = j.nombre_real;
+                            } else if (nombreClienteInput) {
+                                nombreClienteInput.value = j.nombre;
+                            }
                             list.innerHTML = '';
                         };
                         list.appendChild(item);
