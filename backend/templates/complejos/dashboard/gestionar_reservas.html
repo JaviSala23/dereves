@@ -88,7 +88,7 @@
                 </h5>
             </div>
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-warning btn-sm" onclick="abrirSwalReservaFija()">
+                <button type="button" class="btn btn btn-sm" onclick="abrirSwalReservaFija()">
                     <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">event_repeat</span>
                     Nueva Reserva Fija
                 </button>
@@ -344,7 +344,7 @@
                                 <td><strong>${{ reserva.precio }}</strong></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'reservas:detalle' reserva.id %}" 
+                                        <a href="{% url 'reservas:detalle_reserva' reserva.id %}" 
                                            class="btn btn-outline-primary" 
                                            title="Ver detalle">
                                             <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
