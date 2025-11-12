@@ -472,6 +472,7 @@ function renderHorarios(cancha, ocupados, inputId) {
 
 // Renderiza los horarios como grid de botones (igual que en reserva fija)
 function renderHorariosFija(cancha, ocupados, inputId) {
+    if (!Array.isArray(ocupados)) ocupados = [];
     let horarios = cancha.turnos;
     // Si no hay turnos, generarlos en JS
     if (!horarios || horarios.length === 0) {
