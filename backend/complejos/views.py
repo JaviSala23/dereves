@@ -7,22 +7,25 @@ def buscar_jugador(request):
     q = request.GET.get('q', '').strip()
     resultados = []
     if q:
-        if q.startswith('@'):
+        if q.isdigit():
+            jugadores = PerfilJugador.objects.filter(
+                usuario__dni=q
+            ).select_related('usuario')[:10]
+        elif q.startswith('@'):
             jugadores = PerfilJugador.objects.filter(
                 Q(usuario__username__icontains=q[1:])
             ).select_related('usuario')[:10]
         else:
             jugadores = PerfilJugador.objects.filter(
                 Q(usuario__first_name__icontains=q) |
-                Q(usuario__last_name__icontains=q) |
-                Q(usuario__dni__icontains=q)
+                Q(usuario__last_name__icontains=q)
             ).select_related('usuario')[:10]
         for j in jugadores:
             resultados.append({
                 'id': j.id,
                 'nombre': f"{j.usuario.first_name} {j.usuario.last_name}",
                 'usuario': j.usuario.username,
-                'dni': j.dni or ''
+                'dni': j.usuario.dni or ''
             })
     return JsonResponse(resultados, safe=False)
 from django.views.decorators.http import require_GET
