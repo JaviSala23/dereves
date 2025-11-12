@@ -796,15 +796,7 @@ function abrirSwalReservaSimple() {
                 const q = this.value.trim();
                 if (q.length < 2) return;
                 timeout = setTimeout(async () => {
-                    let url;
-                    const canchaId = canchaSelect.value;
-                    const fecha = fechaInput.value;
-                    const hora = horaInput.value;
-                    if (canchaId && fecha && hora) {
-                        url = `/complejos/api/buscar_jugador_turno/?cancha_id=${encodeURIComponent(canchaId)}&fecha=${encodeURIComponent(fecha)}&hora_inicio=${encodeURIComponent(hora)}&q=${encodeURIComponent(q)}`;
-                    } else {
-                        url = `/complejos/api/buscar_jugador/?q=${encodeURIComponent(q)}`;
-                    }
+                    const url = `/complejos/api/buscar_jugador/?q=${encodeURIComponent(q)}`;
                     const resp = await fetch(url);
                     if (!resp.ok) return;
                     const resultados = await resp.json();
