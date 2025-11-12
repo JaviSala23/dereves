@@ -472,8 +472,22 @@ function renderHorarios(cancha, ocupados, inputId) {
 
 // Renderiza los horarios como grid de botones (igual que en reserva fija)
 function renderHorariosFija(cancha, ocupados, inputId) {
+    let horarios = cancha.turnos;
+    // Si no hay turnos, generarlos en JS
+    if (!horarios || horarios.length === 0) {
+        horarios = [];
+        if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
+            const [hA, mA] = cancha.horario_apertura.split(':').map(Number);
+            const [hC, mC] = cancha.horario_cierre.split(':').map(Number);
+            let h = hA, m = mA;
+            while (h < hC || (h === hC && m <= mC - cancha.duracion_turno_minutos)) {
+                horarios.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+                m += cancha.duracion_turno_minutos;
+                if (m >= 60) { h += Math.floor(m / 60); m = m % 60; }
+            }
+        }
+    }
     let html = '<div class="row">';
-    const horarios = cancha.turnos || [];
     horarios.forEach((h, idx) => {
         const ocupado = ocupados.includes(h);
         html += `<div class='col-4 mb-2'><button type='button' class='btn btn-sm ${ocupado ? 'btn-outline-danger' : 'btn-outline-primary'} w-100' data-hora='${h}' ${ocupado ? 'disabled' : ''}>${h}</button></div>`;
