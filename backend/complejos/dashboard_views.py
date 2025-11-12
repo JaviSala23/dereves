@@ -11,6 +11,7 @@ import json
 from .models import Complejo, Cancha
 from reservas.models import Reserva, ReservaFija
 from cuentas.models import PerfilDueno
+from django.http import JsonResponse
 
 
 @login_required
@@ -302,90 +303,49 @@ def estadisticas_complejo(request, slug):
 
 @login_required
 def crear_reserva_fija_dashboard(request):
-    """
-    Crear una reserva fija desde el dashboard general.
-    """
     if request.method != 'POST':
-        return redirect('complejos:gestionar_reservas')
-    
-    if request.user.tipo_usuario != 'DUENIO':
-        messages.error(request, 'Solo los dueños pueden crear turnos fijos.')
-        return redirect('home')
-    
+        return JsonResponse({'success': False, 'message': 'Método no permitido'})
     try:
+        data = json.loads(request.body.decode())
         perfil_dueno = request.user.perfil_dueno
-    except AttributeError:
-        messages.error(request, 'No se encontró tu perfil de dueño.')
-        return redirect('home')
-    
-    # Obtener datos del formulario
-    cancha_id = request.POST.get('cancha_id')
-    dia_semana = request.POST.get('dia_semana')
-    hora_inicio = request.POST.get('hora_inicio')
-    nombre_cliente = request.POST.get('nombre_cliente')
-    telefono_cliente = request.POST.get('telefono_cliente')
-    precio = request.POST.get('precio')
-    
-    # Validar que la cancha pertenezca a un complejo del dueño
-    from django.shortcuts import get_object_or_404
-    cancha = get_object_or_404(Cancha, id=cancha_id, complejo__dueno=perfil_dueno)
-    
-    try:
-        from datetime import datetime
-        
-        # Calcular hora_fin basado en la duración del turno
+        cancha = Cancha.objects.get(id=data['cancha_id'], complejo__dueno=perfil_dueno)
+        from datetime import datetime, timedelta
+        hora_inicio = data['hora_inicio']
+        dia_semana = int(data['dia_semana'])
+        nombre_cliente = data.get('nombre_cliente', '')
+        telefono_cliente = data.get('telefono_cliente', '')
+        precio = float(data['precio'])
+        # Calcular hora_fin
         hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
-        hora_inicio_dt = datetime.combine(timezone.now().date(), hora_inicio_obj)
-        hora_fin_dt = hora_inicio_dt + timedelta(minutes=cancha.duracion_turno_minutos)
+        hora_fin_dt = datetime.combine(timezone.now().date(), hora_inicio_obj) + timedelta(minutes=cancha.duracion_turno_minutos)
         hora_fin = hora_fin_dt.time()
-        
-        # Crear reserva fija
         reserva_fija = ReservaFija.objects.create(
             cancha=cancha,
-            dia_semana=int(dia_semana),
+            dia_semana=dia_semana,
             hora_inicio=hora_inicio,
             hora_fin=hora_fin,
             fecha_inicio=timezone.now().date(),
             nombre_cliente=nombre_cliente,
             telefono_cliente=telefono_cliente,
-            precio=float(precio),
+            precio=precio,
             creada_por=perfil_dueno
         )
-        
-        # Mapear día de semana a nombre
-        dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-        dia_nombre = dias_semana[int(dia_semana)]
-        
-        messages.success(
-            request, 
-            f'¡Turno fijo creado! {cancha.nombre} - {dia_nombre}s a las {hora_inicio} para {nombre_cliente}'
-        )
+        return JsonResponse({'success': True, 'message': 'Turno fijo creado correctamente.'})
     except Exception as e:
-        messages.error(request, f'Error al crear turno fijo: {str(e)}')
-    
-    return redirect('complejos:gestionar_reservas')
+        return JsonResponse({'success': False, 'message': f'Error: {e}'})
 
 
 @login_required
 def crear_reserva_campeonato_dashboard(request):
-    """
-    Crear una reserva de campeonato desde el dashboard.
-    """
     if request.method != 'POST':
-        return redirect('complejos:gestionar_reservas')
-    
-    perfil_dueno = request.user.perfil_dueno
-    cancha_id = request.POST.get('cancha_id')
-    fecha = request.POST.get('fecha')
-    hora_inicio = request.POST.get('hora_inicio')
-    nombre_campeonato = request.POST.get('nombre_campeonato')
-    precio = request.POST.get('precio')
-    
+        return JsonResponse({'success': False, 'message': 'Método no permitido'})
     try:
-        cancha = Cancha.objects.get(id=cancha_id, complejo__dueno=perfil_dueno)
+        data = json.loads(request.body.decode())
+        perfil_dueno = request.user.perfil_dueno
+        cancha = Cancha.objects.get(id=data['cancha_id'], complejo__dueno=perfil_dueno)
         from datetime import datetime, timedelta
-        fecha_dt = datetime.fromisoformat(fecha).date()
-        hora_inicio_dt = datetime.strptime(hora_inicio, '%H:%M').time()
+        fecha_dt = datetime.fromisoformat(data['fecha']).date()
+        hora_inicio_dt = datetime.strptime(data['hora_inicio'], '%H:%M').time()
         duracion_minutos = cancha.duracion_turno_minutos or 90
         hora_fin = (datetime.combine(fecha_dt, hora_inicio_dt) + timedelta(minutes=duracion_minutos)).time()
         from reservas.models import Turno, Reserva
@@ -395,48 +355,36 @@ def crear_reserva_campeonato_dashboard(request):
             hora_inicio=hora_inicio_dt,
             defaults={
                 'hora_fin': hora_fin,
-                'precio': precio,
+                'precio': data['precio'],
                 'estado': 'RESERVADO'
             }
         )
         if hasattr(turno, 'reserva'):
-            messages.error(request, 'Ya existe una reserva para este horario.')
-            return redirect('complejos:gestionar_reservas')
+            return JsonResponse({'success': False, 'message': 'Ya existe una reserva para este horario.'})
         Reserva.objects.create(
             turno=turno,
             tipo_reserva='BLOQUEADA',
-            observaciones=f'Reserva de campeonato: {nombre_campeonato}',
-            precio=precio,
+            observaciones=f"Reserva de campeonato: {data['nombre_campeonato']}",
+            precio=data['precio'],
             reservado_por_dueno=True,
             creado_por=request.user
         )
-        messages.success(request, 'Reserva de campeonato creada correctamente.')
+        return JsonResponse({'success': True, 'message': 'Reserva de campeonato creada correctamente.'})
     except Exception as e:
-        messages.error(request, f'Error: {e}')
-    return redirect('complejos:gestionar_reservas')
+        return JsonResponse({'success': False, 'message': f'Error: {e}'})
 
 
 @login_required
 def crear_reserva_simple_dashboard(request):
-    """
-    Crear una reserva simple desde el dashboard.
-    """
     if request.method != 'POST':
-        return redirect('complejos:gestionar_reservas')
-    
-    perfil_dueno = request.user.perfil_dueno
-    cancha_id = request.POST.get('cancha_id')
-    fecha = request.POST.get('fecha')
-    hora_inicio = request.POST.get('hora_inicio')
-    nombre_cliente = request.POST.get('nombre_cliente')
-    telefono_cliente = request.POST.get('telefono_cliente')
-    precio = request.POST.get('precio')
-    
+        return JsonResponse({'success': False, 'message': 'Método no permitido'})
     try:
-        cancha = Cancha.objects.get(id=cancha_id, complejo__dueno=perfil_dueno)
+        data = json.loads(request.body.decode())
+        perfil_dueno = request.user.perfil_dueno
+        cancha = Cancha.objects.get(id=data['cancha_id'], complejo__dueno=perfil_dueno)
         from datetime import datetime, timedelta
-        fecha_dt = datetime.fromisoformat(fecha).date()
-        hora_inicio_dt = datetime.strptime(hora_inicio, '%H:%M').time()
+        fecha_dt = datetime.fromisoformat(data['fecha']).date()
+        hora_inicio_dt = datetime.strptime(data['hora_inicio'], '%H:%M').time()
         duracion_minutos = cancha.duracion_turno_minutos or 90
         hora_fin = (datetime.combine(fecha_dt, hora_inicio_dt) + timedelta(minutes=duracion_minutos)).time()
         from reservas.models import Turno, Reserva
@@ -446,23 +394,21 @@ def crear_reserva_simple_dashboard(request):
             hora_inicio=hora_inicio_dt,
             defaults={
                 'hora_fin': hora_fin,
-                'precio': precio,
+                'precio': data['precio'],
                 'estado': 'RESERVADO'
             }
         )
         if hasattr(turno, 'reserva'):
-            messages.error(request, 'Ya existe una reserva para este horario.')
-            return redirect('complejos:gestionar_reservas')
+            return JsonResponse({'success': False, 'message': 'Ya existe una reserva para este horario.'})
         Reserva.objects.create(
             turno=turno,
             tipo_reserva='ADMINISTRATIVA',
-            nombre_cliente_sin_cuenta=nombre_cliente,
-            telefono_cliente=telefono_cliente,
-            precio=precio,
+            nombre_cliente_sin_cuenta=data.get('nombre_cliente', ''),
+            telefono_cliente=data.get('telefono_cliente', ''),
+            precio=data['precio'],
             reservado_por_dueno=True,
             creado_por=request.user
         )
-        messages.success(request, 'Reserva simple creada correctamente.')
+        return JsonResponse({'success': True, 'message': 'Reserva simple creada correctamente.'})
     except Exception as e:
-        messages.error(request, f'Error: {e}')
-    return redirect('complejos:gestionar_reservas')
+        return JsonResponse({'success': False, 'message': f'Error: {e}'})
