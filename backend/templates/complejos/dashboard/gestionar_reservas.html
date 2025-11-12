@@ -846,12 +846,12 @@ function abrirSwalReservaSimple() {
             canchaSelect.addEventListener('change', updateFlatpickr);
             updateFlatpickr();
             async function updateHorarios() {
-                horariosBox.innerHTML = '';
+                horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
                 horaInput.value = '';
                 const canchaId = canchaSelect.value;
-                if (!canchaId || !fechaInput.value) return;
+                if (!canchaId || !fechaInput.value) { horariosBox.innerHTML = ''; return; }
                 const cancha = canchasData.find(c => c.id == canchaId);
-                if (!cancha) return;
+                if (!cancha) { horariosBox.innerHTML = ''; return; }
                 // Autocompletar precio
                 if (precioInput && cancha.precio_base) {
                     precioInput.value = cancha.precio_base;
@@ -859,7 +859,6 @@ function abrirSwalReservaSimple() {
                 // Pedir turnos ocupados para esa fecha/cancha
                 const resp = await fetch(`/complejos/api/canchas/${canchaId}/horarios/?fecha=${fechaInput.value}`);
                 const horariosResp = await resp.json();
-                // ocupados: array de strings 'HH:MM' que están ocupados (no disponibles)
                 let ocupados = [];
                 if (Array.isArray(horariosResp.horarios)) {
                     ocupados = horariosResp.horarios.filter(h => h.ocupado).map(h => h.hora_inicio);
