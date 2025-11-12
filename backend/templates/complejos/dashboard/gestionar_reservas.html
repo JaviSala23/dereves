@@ -595,5 +595,167 @@ document.querySelectorAll('.btn-cancelar-reserva-fija').forEach(btn => {
         });
     });
 });
+
+// Utilidad para armar selects de canchas
+const canchasOptions = `
+<option value="">Seleccione una cancha</option>
+{% for cancha in canchas %}
+<option value="{{ cancha.id }}">{{ cancha.complejo.nombre }} - {{ cancha.nombre }}</option>
+{% endfor %}`;
+
+// RESERVA FIJA
+function abrirSwalReservaFija() {
+    Swal.fire({
+        title: 'Nueva Reserva Fija',
+        html: `
+            <form id='formSwalFija'>
+                <div class='mb-2'><label>Cancha</label><select name='cancha_id' class='form-select' required>${canchasOptions}</select></div>
+                <div class='mb-2'><label>Día</label><select name='dia_semana' class='form-select' required>
+                    <option value='0'>Lunes</option><option value='1'>Martes</option><option value='2'>Miércoles</option><option value='3'>Jueves</option><option value='4'>Viernes</option><option value='5'>Sábado</option><option value='6'>Domingo</option>
+                </select></div>
+                <div class='mb-2'><label>Hora de inicio</label><input type='time' name='hora_inicio' class='form-control' required></div>
+                <div class='mb-2'><label>Nombre Cliente</label><input type='text' name='nombre_cliente' class='form-control'></div>
+                <div class='mb-2'><label>Teléfono</label><input type='tel' name='telefono_cliente' class='form-control'></div>
+                <div class='mb-2'><label>Precio</label><input type='number' name='precio' class='form-control' step='0.01' min='0' required></div>
+            </form>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Crear',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const form = document.getElementById('formSwalFija');
+            const data = Object.fromEntries(new FormData(form));
+            if (!data.cancha_id || !data.dia_semana || !data.hora_inicio || !data.precio) {
+                Swal.showValidationMessage('Complete todos los campos obligatorios');
+                return false;
+            }
+            return data;
+        }
+    }).then(result => {
+        if (result.isConfirmed) {
+            fetch("{% url 'complejos:crear_reserva_fija_dashboard' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(result.value)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('¡Listo!', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(() => Swal.fire('Error', 'No se pudo crear la reserva.', 'error'));
+        }
+    });
+}
+
+// RESERVA CAMPEONATO
+function abrirSwalReservaCampeonato() {
+    Swal.fire({
+        title: 'Reserva de Campeonato',
+        html: `
+            <form id='formSwalCamp'>
+                <div class='mb-2'><label>Cancha</label><select name='cancha_id' class='form-select' required>${canchasOptions}</select></div>
+                <div class='mb-2'><label>Fecha</label><input type='date' name='fecha' class='form-control' required></div>
+                <div class='mb-2'><label>Hora de inicio</label><input type='time' name='hora_inicio' class='form-control' required></div>
+                <div class='mb-2'><label>Nombre Campeonato</label><input type='text' name='nombre_campeonato' class='form-control' required></div>
+                <div class='mb-2'><label>Precio</label><input type='number' name='precio' class='form-control' step='0.01' min='0' required></div>
+            </form>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Crear',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const form = document.getElementById('formSwalCamp');
+            const data = Object.fromEntries(new FormData(form));
+            if (!data.cancha_id || !data.fecha || !data.hora_inicio || !data.nombre_campeonato || !data.precio) {
+                Swal.showValidationMessage('Complete todos los campos obligatorios');
+                return false;
+            }
+            return data;
+        }
+    }).then(result => {
+        if (result.isConfirmed) {
+            fetch("{% url 'complejos:crear_reserva_campeonato_dashboard' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(result.value)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('¡Listo!', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(() => Swal.fire('Error', 'No se pudo crear la reserva.', 'error'));
+        }
+    });
+}
+
+// RESERVA SIMPLE
+function abrirSwalReservaSimple() {
+    Swal.fire({
+        title: 'Reserva Simple',
+        html: `
+            <form id='formSwalSimple'>
+                <div class='mb-2'><label>Cancha</label><select name='cancha_id' class='form-select' required>${canchasOptions}</select></div>
+                <div class='mb-2'><label>Fecha</label><input type='date' name='fecha' class='form-control' required></div>
+                <div class='mb-2'><label>Hora de inicio</label><input type='time' name='hora_inicio' class='form-control' required></div>
+                <div class='mb-2'><label>Nombre Cliente</label><input type='text' name='nombre_cliente' class='form-control'></div>
+                <div class='mb-2'><label>Teléfono</label><input type='tel' name='telefono_cliente' class='form-control'></div>
+                <div class='mb-2'><label>Precio</label><input type='number' name='precio' class='form-control' step='0.01' min='0' required></div>
+            </form>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Crear',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const form = document.getElementById('formSwalSimple');
+            const data = Object.fromEntries(new FormData(form));
+            if (!data.cancha_id || !data.fecha || !data.hora_inicio || !data.precio) {
+                Swal.showValidationMessage('Complete todos los campos obligatorios');
+                return false;
+            }
+            return data;
+        }
+    }).then(result => {
+        if (result.isConfirmed) {
+            fetch("{% url 'complejos:crear_reserva_simple_dashboard' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(result.value)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('¡Listo!', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(() => Swal.fire('Error', 'No se pudo crear la reserva.', 'error'));
+        }
+    });
+}
+
+// Asignar handlers a los botones
+window.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('[data-bs-target="#modalCrearReservaFija"]').onclick = abrirSwalReservaFija;
+    document.querySelector('[data-bs-target="#modalCrearReservaCampeonato"]').onclick = abrirSwalReservaCampeonato;
+    document.querySelector('[data-bs-target="#modalCrearReservaSimple"]').onclick = abrirSwalReservaSimple;
+});
 </script>
 {% endblock %}
