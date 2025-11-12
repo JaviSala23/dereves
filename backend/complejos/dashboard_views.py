@@ -415,27 +415,33 @@ def crear_reserva_simple_dashboard(request):
         duracion_minutos = cancha.duracion_turno_minutos or 90
         hora_fin = (datetime.combine(fecha_dt, hora_inicio_dt) + timedelta(minutes=duracion_minutos)).time()
         from reservas.models import Turno, Reserva
-        turno, created = Turno.objects.get_or_create(
-            cancha=cancha,
-            fecha=fecha_dt,
-            hora_inicio=hora_inicio_dt,
-            defaults={
-                'hora_fin': hora_fin,
-                'precio': data['precio'],
-                'estado': 'RESERVADO'
-            }
-        )
+        try:
+            turno, created = Turno.objects.get_or_create(
+                cancha=cancha,
+                fecha=fecha_dt,
+                hora_inicio=hora_inicio_dt,
+                defaults={
+                    'hora_fin': hora_fin,
+                    'precio': data['precio'],
+                    'estado': 'RESERVADO'
+                }
+            )
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Error creando Turno: {e}'})
         if hasattr(turno, 'reserva'):
             return JsonResponse({'success': False, 'message': 'Ya existe una reserva para este horario.'})
-        Reserva.objects.create(
-            turno=turno,
-            tipo_reserva='ADMINISTRATIVA',
-            nombre_cliente_sin_cuenta=data.get('nombre_cliente', ''),
-            telefono_cliente=data.get('telefono_cliente', ''),
-            precio=data['precio'],
-            reservado_por_dueno=True,
-            creado_por=request.user
-        )
+        try:
+            Reserva.objects.create(
+                turno=turno,
+                tipo_reserva='ADMINISTRATIVA',
+                nombre_cliente_sin_cuenta=data.get('nombre_cliente', ''),
+                telefono_cliente=data.get('telefono_cliente', ''),
+                precio=data['precio'],
+                reservado_por_dueno=True,
+                creado_por=request.user
+            )
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Error creando Reserva: {e}'})
         return JsonResponse({'success': True, 'message': 'Reserva simple creada correctamente.'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'Error: {e}'})
