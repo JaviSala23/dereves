@@ -520,7 +520,7 @@ function abrirSwalReservaFija() {
                 const cancha = canchasData.find(c => c.id == canchaId);
                 if (!cancha) { horariosBox.innerHTML = ''; return; }
                 // Pedir turnos fijos ocupados para ese día/cancha
-                const resp = await fetch(`/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`);
+                const resp = await fetch(`/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`);
                 const ocupados = await resp.json(); // array de strings 'HH:MM'
                 horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-fija-hora');
                 // Marcar botón seleccionado
