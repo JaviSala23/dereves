@@ -5,6 +5,8 @@ from . import dashboard_views
 app_name = 'complejos'
 
 urlpatterns = [
+    # API para validar si ya existe un turno fijo para ese día, cancha y hora
+    path('api/validar_reserva_fija/', views.validar_reserva_fija, name='validar_reserva_fija'),
     path('', views.lista_complejos, name='lista'),
     path('crear/', views.crear_complejo, name='crear'),
     

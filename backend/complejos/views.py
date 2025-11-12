@@ -1,3 +1,20 @@
+from django.views.decorators.http import require_GET
+# API para validar si ya existe un turno fijo para ese día, cancha y hora
+@require_GET
+def validar_reserva_fija(request):
+    from reservas.models import ReservaFija
+    cancha_id = request.GET.get('cancha_id')
+    dia_semana = request.GET.get('dia_semana')
+    hora_inicio = request.GET.get('hora_inicio')
+    existe = False
+    if cancha_id and dia_semana is not None and hora_inicio:
+        existe = ReservaFija.objects.filter(
+            cancha_id=cancha_id,
+            dia_semana=dia_semana,
+            hora_inicio=hora_inicio,
+            estado='ACTIVA'
+        ).exists()
+    return JsonResponse({'yafijo': existe})
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages

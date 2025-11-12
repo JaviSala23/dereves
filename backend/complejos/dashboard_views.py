@@ -319,6 +319,15 @@ def crear_reserva_fija_dashboard(request):
         hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
         hora_fin_dt = datetime.combine(timezone.now().date(), hora_inicio_obj) + timedelta(minutes=cancha.duracion_turno_minutos)
         hora_fin = hora_fin_dt.time()
+        # Verificar si ya existe una reserva fija activa para ese día, cancha y hora
+        existe = ReservaFija.objects.filter(
+            cancha=cancha,
+            dia_semana=dia_semana,
+            hora_inicio=hora_inicio,
+            estado='ACTIVA'
+        ).exists()
+        if existe:
+            return JsonResponse({'success': False, 'message': 'Ya existe un turno fijo para ese día y horario en esta cancha.'})
         reserva_fija = ReservaFija.objects.create(
             cancha=cancha,
             dia_semana=dia_semana,
