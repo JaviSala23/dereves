@@ -11,7 +11,7 @@ def buscar_jugador(request):
             Q(usuario__username__icontains=q) |
             Q(usuario__first_name__icontains=q) |
             Q(usuario__last_name__icontains=q) |
-            Q(dni__icontains=q)
+            Q(usuario__dni__icontains=q)
         ).select_related('usuario')[:10]
         for j in jugadores:
             resultados.append({
