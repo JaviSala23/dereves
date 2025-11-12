@@ -500,6 +500,10 @@ function abrirSwalReservaFija() {
                 </select></div>
                 <div class='mb-2'><label>Horario</label><div id='swal-fija-horarios-box'></div></div>
                 <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
+                <div class='mb-2'><label>Jugador (opcional)</label>
+                    <input type='text' id='swal-fija-jugador' class='form-control' placeholder='Buscar por nombre, @usuario o DNI'>
+                    <input type='hidden' name='jugador_id' id='swal-fija-jugador-id'>
+                </div>
                 <div class='mb-2'><label>Nombre Cliente</label><input type='text' name='nombre_cliente' class='form-control'></div>
                 <div class='mb-2'><label>Teléfono</label><input type='tel' name='telefono_cliente' class='form-control'></div>
                 <div class='mb-2'><label>Precio</label><input type='number' id='swal-fija-precio' name='precio' class='form-control' step='0.01' min='0' required></div>
@@ -511,7 +515,11 @@ function abrirSwalReservaFija() {
             const horariosBox = document.getElementById('swal-fija-horarios-box');
             const horaInput = document.getElementById('swal-fija-hora');
             const precioInput = document.getElementById('swal-fija-precio');
+            const jugadorInput = document.getElementById('swal-fija-jugador');
+            const jugadorIdInput = document.getElementById('swal-fija-jugador-id');
             const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
+            let timeout = null;
+            
             async function updateHorarios() {
                 horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
                 horaInput.value = '';
@@ -539,6 +547,43 @@ function abrirSwalReservaFija() {
             }
             canchaSelect.addEventListener('change', updateHorarios);
             diaSelect.addEventListener('change', updateHorarios);
+            
+            // Autocompletar jugador
+            jugadorInput.addEventListener('input', function() {
+                clearTimeout(timeout);
+                const q = this.value.trim();
+                if (q.length < 2) return;
+                timeout = setTimeout(async () => {
+                    const resp = await fetch(`/complejos/api/buscar_jugador/?q=${encodeURIComponent(q)}`);
+                    if (!resp.ok) return;
+                    const resultados = await resp.json();
+                    let list = document.getElementById('swal-fija-jugador-list');
+                    if (!list) {
+                        list = document.createElement('div');
+                        list.id = 'swal-fija-jugador-list';
+                        list.className = 'list-group position-absolute w-100';
+                        jugadorInput.parentNode.appendChild(list);
+                    }
+                    list.innerHTML = '';
+                    resultados.forEach(j => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'list-group-item list-group-item-action';
+                        item.textContent = `${j.nombre} (@${j.usuario}) - DNI: ${j.dni}`;
+                        item.onclick = () => {
+                            jugadorInput.value = `${j.nombre} (@${j.usuario})`;
+                            jugadorIdInput.value = j.id;
+                            list.innerHTML = '';
+                        };
+                        list.appendChild(item);
+                    });
+                }, 300);
+            });
+            document.addEventListener('click', function(e) {
+                const list = document.getElementById('swal-fija-jugador-list');
+                if (list && !jugadorInput.contains(e.target)) list.innerHTML = '';
+            });
+            
             updateHorarios();
         },
         showCancelButton: true,

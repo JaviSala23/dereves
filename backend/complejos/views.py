@@ -1,4 +1,27 @@
 from django.views.decorators.http import require_GET
+# API: buscar jugador por nombre, usuario o DNI
+@require_GET
+def buscar_jugador(request):
+    from cuentas.models import PerfilJugador
+    from django.db.models import Q
+    q = request.GET.get('q', '').strip()
+    resultados = []
+    if q:
+        jugadores = PerfilJugador.objects.filter(
+            Q(usuario__username__icontains=q) |
+            Q(usuario__first_name__icontains=q) |
+            Q(usuario__last_name__icontains=q) |
+            Q(dni__icontains=q)
+        ).select_related('usuario')[:10]
+        for j in jugadores:
+            resultados.append({
+                'id': j.id,
+                'nombre': f"{j.usuario.first_name} {j.usuario.last_name}",
+                'usuario': j.usuario.username,
+                'dni': j.dni or ''
+            })
+    return JsonResponse(resultados, safe=False)
+from django.views.decorators.http import require_GET
 # API: horarios ocupados de reservas fijas para una cancha y día de semana
 @require_GET
 def turnos_fijos_ocupados(request):

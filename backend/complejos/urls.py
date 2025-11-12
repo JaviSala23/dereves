@@ -21,6 +21,9 @@ urlpatterns = [
     path('api/localidades/', views.obtener_localidades, name='api_localidades'),
     path('api/localidades/agregar/', views.agregar_localidad, name='api_agregar_localidad'),
     
+    # API para buscar jugadores por nombre, usuario o DNI
+    path('api/buscar_jugador/', views.buscar_jugador, name='buscar_jugador'),
+
     # Dashboard para dueños
     path('dashboard/', dashboard_views.dashboard_principal, name='dashboard_principal'),
     path('dashboard/complejos/', dashboard_views.mis_complejos_dashboard, name='mis_complejos_dashboard'),
