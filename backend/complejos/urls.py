@@ -10,6 +10,7 @@ urlpatterns = [
     
     # API para horarios disponibles
     path('api/canchas/<int:cancha_id>/horarios/', views.obtener_horarios_disponibles, name='api_horarios'),
+    path('api/canchas/<int:cancha_id>/fechas_ocupadas/', views.fechas_ocupadas_cancha, name='api_fechas_ocupadas'),
     
     # API para provincias y localidades
     path('api/provincias/', views.obtener_provincias, name='api_provincias'),

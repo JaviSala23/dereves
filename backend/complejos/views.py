@@ -1008,3 +1008,17 @@ def crear_reserva_fija_dueno(request, complejo_slug):
     return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
 
 
+from django.http import JsonResponse
+
+@login_required
+def fechas_ocupadas_cancha(request, cancha_id):
+    from reservas.models import Turno
+    # Solo fechas futuras/reservadas
+    turnos = Turno.objects.filter(cancha_id=cancha_id, fecha__gte=timezone.now().date())
+    ocupadas = set()
+    for t in turnos:
+        if hasattr(t, 'reserva'):
+            ocupadas.add(t.fecha.isoformat())
+    return JsonResponse(list(ocupadas), safe=False)
+
+
