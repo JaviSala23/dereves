@@ -1072,6 +1072,44 @@ def crear_reserva_fija_dueno(request, complejo_slug):
     return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
 
 
+# API: buscar jugador por cancha, fecha y hora (reserva simple)
+from django.http import JsonResponse
+from reservas.models import Reserva
+@require_GET
+def buscar_jugador_turno(request):
+    from cuentas.models import PerfilJugador
+    from django.db.models import Q
+    cancha_id = request.GET.get('cancha_id')
+    fecha = request.GET.get('fecha')
+    hora = request.GET.get('hora_inicio')
+    q = request.GET.get('q', '').strip()
+    resultados = []
+    if cancha_id and fecha and hora and q:
+        reservas = Reserva.objects.filter(
+            turno__cancha_id=cancha_id,
+            turno__fecha=fecha,
+            turno__hora_inicio=hora
+        ).select_related('jugador__usuario')
+        if q.isdigit():
+            reservas = reservas.filter(jugador__usuario__dni=q)
+        elif q.startswith('@'):
+            reservas = reservas.filter(jugador__usuario__username__icontains=q[1:])
+        else:
+            reservas = reservas.filter(
+                Q(jugador__usuario__first_name__icontains=q) |
+                Q(jugador__usuario__last_name__icontains=q)
+            )
+        for r in reservas:
+            j = r.jugador
+            if j:
+                resultados.append({
+                    'id': j.id,
+                    'nombre': f"{j.usuario.first_name} {j.usuario.last_name}",
+                    'usuario': j.usuario.username,
+                    'dni': j.usuario.dni or '',
+                    'nombre_real': j.usuario.nombre_real or ''
+                })
+    return JsonResponse(resultados, safe=False)
 from django.http import JsonResponse
 
 @login_required

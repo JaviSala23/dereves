@@ -23,6 +23,7 @@ urlpatterns = [
     
     # API para buscar jugadores por nombre, usuario o DNI
     path('api/buscar_jugador/', views.buscar_jugador, name='buscar_jugador'),
+    path('api/buscar_jugador_turno/', views.buscar_jugador_turno, name='buscar_jugador_turno'),
 
     # Dashboard para dueños
     path('dashboard/', dashboard_views.dashboard_principal, name='dashboard_principal'),
