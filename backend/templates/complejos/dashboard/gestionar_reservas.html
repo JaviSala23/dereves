@@ -428,6 +428,53 @@ async function obtenerFechasOcupadas(canchaId) {
     return await resp.json(); // array de strings 'YYYY-MM-DD'
 }
 
+// Utilidad para obtener horarios posibles de una cancha
+function generarHorarios(cancha) {
+    const horarios = [];
+    const apertura = cancha.horario_apertura.split(":");
+    const cierre = cancha.horario_cierre.split(":");
+    let hora = parseInt(apertura[0]);
+    let minuto = parseInt(apertura[1]);
+    const finHora = parseInt(cierre[0]);
+    const finMinuto = parseInt(cierre[1]);
+    const duracion = cancha.duracion_turno_minutos;
+    while (hora < finHora || (hora === finHora && minuto <= finMinuto - duracion)) {
+        const h = hora.toString().padStart(2, '0');
+        const m = minuto.toString().padStart(2, '0');
+        horarios.push(`${h}:${m}`);
+        minuto += duracion;
+        if (minuto >= 60) {
+            hora += Math.floor(minuto / 60);
+            minuto = minuto % 60;
+        }
+    }
+    return horarios;
+}
+
+// Renderiza los horarios como botones (disponibles/ocupados)
+function renderHorarios(cancha, ocupados, inputId) {
+    const horarios = generarHorarios(cancha);
+    let html = '<div class="d-flex flex-wrap gap-2">';
+    horarios.forEach(hora => {
+        const ocupado = ocupados.includes(hora);
+        html += `<button type="button" class="btn btn-sm ${ocupado ? 'btn-secondary' : 'btn-primary'}" style="min-width:70px;" ${ocupado ? 'disabled' : ''} onclick="document.getElementById('${inputId}').value='${hora}';this.blur();">${hora}</button>`;
+    });
+    html += '</div>';
+    return html;
+}
+
+// Asegurar que flatpickr y el locale están cargados antes de usar
+function safeFlatpickr(input, opts) {
+    if (typeof flatpickr === 'undefined') {
+        alert('flatpickr no está cargado.');
+        return null;
+    }
+    if (window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.es) {
+        opts.locale = window.flatpickr.l10ns.es;
+    }
+    return flatpickr(input, opts);
+}
+
 // RESERVA FIJA (con flatpickr para elegir primer fecha válida)
 function abrirSwalReservaFija() {
     Swal.fire({
@@ -457,7 +504,7 @@ function abrirSwalReservaFija() {
                 const ocupadas = await obtenerFechasOcupadas(canchaSelect.value);
                 // Solo habilitar el día de semana elegido
                 const diaSemana = parseInt(diaSelect.value);
-                fp = flatpickr(fechaInput, {
+                fp = safeFlatpickr(fechaInput, {
                     minDate: 'today',
                     disable: ocupadas,
                     dateFormat: 'Y-m-d',
@@ -531,7 +578,7 @@ function abrirSwalReservaCampeonato() {
                 if (fp) fp.destroy();
                 if (!this.value) return;
                 const ocupadas = await obtenerFechasOcupadas(this.value);
-                fp = flatpickr(fechaInput, {
+                fp = safeFlatpickr(fechaInput, {
                     minDate: 'today',
                     disable: ocupadas,
                     dateFormat: 'Y-m-d',
@@ -596,7 +643,7 @@ function abrirSwalReservaSimple() {
                 if (fp) fp.destroy();
                 if (!this.value) return;
                 const ocupadas = await obtenerFechasOcupadas(this.value);
-                fp = flatpickr(fechaInput, {
+                fp = safeFlatpickr(fechaInput, {
                     minDate: 'today',
                     disable: ocupadas,
                     dateFormat: 'Y-m-d',
@@ -659,4 +706,6 @@ flatpickr("[name='fecha_desde'], [name='fecha_hasta'], input[type='date']", {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <!-- Flatpickr JS -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- Flatpickr Spanish locale -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 {% endblock %}
