@@ -847,7 +847,12 @@ function abrirSwalReservaSimple() {
                 }
                 // Pedir turnos ocupados para esa fecha/cancha
                 const resp = await fetch(`/complejos/api/canchas/${canchaId}/horarios/?fecha=${fechaInput.value}`);
-                const ocupados = await resp.json(); // array de strings 'HH:MM'
+                const horariosResp = await resp.json();
+                // ocupados: array de strings 'HH:MM' que están ocupados (no disponibles)
+                let ocupados = [];
+                if (Array.isArray(horariosResp.horarios)) {
+                    ocupados = horariosResp.horarios.filter(h => h.ocupado).map(h => h.hora_inicio);
+                }
 
                 // Pedir horarios fijos bloqueados para ese día de semana
                 const fechaObj = new Date(fechaInput.value);
