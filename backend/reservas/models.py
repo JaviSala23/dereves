@@ -77,8 +77,7 @@ class Turno(models.Model):
 
 class Reserva(models.Model):
     """
-    Modelo para reservas de turnos.
-    Una reserva vincula un turno con un jugador o cliente.
+    Modelo para reservas de canchas.
     """
     ESTADO_CHOICES = [
         ('PENDIENTE', 'Pendiente'),
@@ -88,57 +87,19 @@ class Reserva(models.Model):
         ('COMPLETADA', 'Completada'),
     ]
     
-    TIPO_RESERVA_CHOICES = [
-        ('CLIENTE', 'Reserva de Cliente'),
-        ('ADMINISTRATIVA', 'Reserva Administrativa'),
-        ('BLOQUEADA', 'Horario Bloqueado'),
-        ('MANTENIMIENTO', 'Mantenimiento'),
-    ]
-    
-    turno = models.OneToOneField(
-        Turno,
+    cancha = models.ForeignKey(
+        'complejos.Cancha',
         on_delete=models.CASCADE,
-        related_name='reserva'
+        related_name='reservas'
     )
-    
-    # Tipo de reserva
-    tipo_reserva = models.CharField(
-        max_length=20,
-        choices=TIPO_RESERVA_CHOICES,
-        default='CLIENTE',
-        help_text='Tipo de reserva: cliente normal, administrativa (dueño), bloqueada o mantenimiento'
-    )
-    
-    # Jugador que realizó la reserva (puede ser null si fue reservado por el dueño para un cliente sin cuenta)
-    jugador = models.ForeignKey(
+    jugador_principal = models.ForeignKey(
         'cuentas.PerfilJugador',
         on_delete=models.CASCADE,
-        related_name='reservas',
-        null=True,
-        blank=True
+        related_name='reservas'
     )
-    
-    # Campos para reservas hechas por el dueño en nombre de clientes sin cuenta
-    reservado_por_dueno = models.BooleanField(
-        default=False,
-        help_text='Indica si la reserva fue hecha por el dueño en nombre de un cliente'
-    )
-    nombre_cliente_sin_cuenta = models.CharField(
-        max_length=200,
-        blank=True,
-        help_text='Nombre del cliente que no tiene cuenta en la plataforma'
-    )
-    telefono_cliente = models.CharField(
-        max_length=20,
-        blank=True,
-        help_text='Teléfono de contacto del cliente sin cuenta'
-    )
-    email_cliente = models.EmailField(
-        blank=True,
-        help_text='Email opcional del cliente sin cuenta'
-    )
-    
-    # Datos de la reserva
+    fecha = models.DateField()
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.CharField(
         max_length=20,
@@ -154,79 +115,18 @@ class Reserva(models.Model):
     pagado = models.BooleanField(default=False)
     observaciones = models.TextField(blank=True)
     
-    # Auditoría
-    creado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='reservas_creadas',
-        help_text='Usuario que creó la reserva (jugador o dueño)'
-    )
+    # Campos de auditoría
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name = 'Reserva'
         verbose_name_plural = 'Reservas'
-        ordering = ['-creado_en']
-        indexes = [
-            models.Index(fields=['jugador', 'estado']),
-            models.Index(fields=['estado', 'creado_en']),
-        ]
+        ordering = ['-fecha', '-hora_inicio']
+        unique_together = ['cancha', 'fecha', 'hora_inicio']
     
     def __str__(self):
-        if self.jugador:
-            return f"Reserva de {self.jugador.alias} - {self.turno}"
-        return f"Reserva sin cuenta ({self.nombre_cliente_sin_cuenta}) - {self.turno}"
-    
-    def puede_ser_cancelada(self, horas_minimas=2):
-        """
-        Verifica si la reserva puede ser cancelada.
-        Por defecto requiere X horas de anticipación.
-        """
-        if self.estado in ['CANCELADA', 'COMPLETADA']:
-            return False
-        
-        from datetime import datetime, time
-        ahora = timezone.now()
-        fecha_hora_turno = datetime.combine(self.turno.fecha, self.turno.hora_inicio)
-        fecha_hora_turno = timezone.make_aware(fecha_hora_turno)
-        
-        diferencia = fecha_hora_turno - ahora
-        return diferencia.total_seconds() / 3600 >= horas_minimas
-    
-    def cancelar(self):
-        """Cancela la reserva y libera el turno."""
-        self.estado = 'CANCELADA'
-        self.save()
-        # Liberar el turno si no es un turno fijo o bloqueado
-        if self.turno.estado == 'RESERVADO':
-            self.turno.estado = 'DISPONIBLE'
-            self.turno.save()
-    
-    def confirmar(self):
-        """Confirma la reserva."""
-        self.estado = 'CONFIRMADA'
-        self.turno.estado = 'RESERVADO'
-        self.turno.save()
-        self.save()
-    
-    @property
-    def cancha(self):
-        return self.turno.cancha
-    
-    @property
-    def fecha(self):
-        return self.turno.fecha
-    
-    @property
-    def hora_inicio(self):
-        return self.turno.hora_inicio
-    
-    @property
-    def hora_fin(self):
-        return self.turno.hora_fin
+        return f"{self.cancha} - {self.fecha} {self.hora_inicio}"
 
 
 class ReservaFija(models.Model):
