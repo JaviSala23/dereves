@@ -219,8 +219,19 @@ def gestionar_reservas(request):
     jugadores = PerfilJugador.objects.filter(usuario__is_active=True).select_related('usuario').order_by('usuario__first_name')
     
     # Obtener canchas del dueño para el modal
-    canchas = Cancha.objects.filter(complejo__in=complejos, activo=True).select_related('complejo')
-    
+    canchas_qs = Cancha.objects.filter(complejo__in=complejos, activo=True).select_related('complejo')
+    canchas = [
+        {
+            'id': cancha.id,
+            'nombre': cancha.nombre,
+            'complejo': str(cancha.complejo),
+            'horario_apertura': cancha.horario_apertura.strftime('%H:%M'),
+            'horario_cierre': cancha.horario_cierre.strftime('%H:%M'),
+            'duracion_turno_minutos': cancha.duracion_turno_minutos,
+        }
+        for cancha in canchas_qs
+    ]
+
     context = {
         'reservas': reservas[:100],  # Limitar a 100 para performance
         'complejos': complejos,
