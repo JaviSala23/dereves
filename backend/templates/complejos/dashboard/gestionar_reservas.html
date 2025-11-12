@@ -869,6 +869,7 @@ function abrirSwalReservaSimple() {
 
                 horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora', horariosFijos);
                 horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
+                    if (btn.disabled) return; // No permitir seleccionar horarios deshabilitados
                     btn.addEventListener('click', function() {
                         horariosBox.querySelectorAll('button[data-hora]').forEach(b => b.classList.remove('btn-success'));
                         this.classList.add('btn-success');
