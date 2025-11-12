@@ -434,6 +434,7 @@ def crear_reserva_simple_dashboard(request):
                 metodo_pago=None,
                 pagado=True,
                 observaciones='',
+                nombre_cliente=data.get('nombre_cliente', ''),
             )
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Error creando Reserva: {e}'})

@@ -116,6 +116,8 @@ class Reserva(models.Model):
     )
     pagado = models.BooleanField(default=False)
     observaciones = models.TextField(blank=True)
+    # Permitir nombre de cliente no registrado (para reservas simples)
+    nombre_cliente = models.CharField(max_length=200, blank=True, help_text='Nombre del cliente si no es jugador registrado')
     
     # Campos de auditoría
     creado_en = models.DateTimeField(auto_now_add=True)
