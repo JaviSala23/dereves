@@ -547,7 +547,7 @@ function abrirSwalReservaFija() {
                 return false;
             }
             // Validar si ya existe un turno fijo para ese día, cancha y hora
-            const resp = await fetch("/api/validar_reserva_fija/?cancha_id=" + data.cancha_id + "&dia_semana=" + data.dia_semana + "&hora_inicio=" + data.hora_inicio);
+            const resp = await fetch("/complejos/api/validar_reserva_fija/?cancha_id=" + data.cancha_id + "&dia_semana=" + data.dia_semana + "&hora_inicio=" + data.hora_inicio);
             const existe = await resp.json();
             if (existe.yafijo) {
                 Swal.showValidationMessage('Ya existe un turno fijo para ese día y horario en esta cancha.');
