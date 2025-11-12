@@ -228,6 +228,13 @@ def gestionar_reservas(request):
             'horario_apertura': cancha.horario_apertura.strftime('%H:%M'),
             'horario_cierre': cancha.horario_cierre.strftime('%H:%M'),
             'duracion_turno_minutos': cancha.duracion_turno_minutos,
+            'precio_base': float(cancha.precio_base) if hasattr(cancha, 'precio_base') else 0,
+            'turnos': [
+                f"{h:02d}:{m:02d}"
+                for h in range(int(cancha.horario_apertura.hour), int(cancha.horario_cierre.hour) + 1)
+                for m in range(0, 60, cancha.duracion_turno_minutos)
+                if (h < cancha.horario_cierre.hour or (h == cancha.horario_cierre.hour and m <= cancha.horario_cierre.minute - cancha.duracion_turno_minutos))
+            ]
         }
         for cancha in canchas_qs
     ]
