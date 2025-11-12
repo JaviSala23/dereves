@@ -369,6 +369,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ canchas|json_script:"canchas-data" }}
 <script>
 // Confirmar reservas pendientes
 document.querySelectorAll('.btn-confirmar-reserva').forEach(btn => {
@@ -485,35 +486,35 @@ function abrirSwalReservaFija() {
                 <div class='mb-2'><label>Día</label><select id='swal-fija-dia' name='dia_semana' class='form-select' required>
                     <option value='0'>Lunes</option><option value='1'>Martes</option><option value='2'>Miércoles</option><option value='3'>Jueves</option><option value='4'>Viernes</option><option value='5'>Sábado</option><option value='6'>Domingo</option>
                 </select></div>
-                <div class='mb-2'><label>Primera fecha</label><input type='text' id='swal-fija-fecha' name='fecha_inicio' class='form-control' required readonly></div>
-                <div class='mb-2'><label>Hora de inicio</label><input type='time' id='swal-fija-hora' name='hora_inicio' class='form-control' required></div>
+                <div class='mb-2' id='swal-fija-horarios-box'></div>
+                <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
                 <div class='mb-2'><label>Nombre Cliente</label><input type='text' name='nombre_cliente' class='form-control'></div>
                 <div class='mb-2'><label>Teléfono</label><input type='tel' name='telefono_cliente' class='form-control'></div>
                 <div class='mb-2'><label>Precio</label><input type='number' name='precio' class='form-control' step='0.01' min='0' required></div>
             </form>
         `,
-        didOpen: () => {
+        didOpen: async () => {
             const canchaSelect = document.getElementById('swal-fija-cancha');
             const diaSelect = document.getElementById('swal-fija-dia');
-            const fechaInput = document.getElementById('swal-fija-fecha');
+            const horariosBox = document.getElementById('swal-fija-horarios-box');
             const horaInput = document.getElementById('swal-fija-hora');
-            let fp = null;
-            async function updateFlatpickr() {
-                if (fp) fp.destroy();
-                if (!canchaSelect.value) return;
-                const ocupadas = await obtenerFechasOcupadas(canchaSelect.value);
-                // Solo habilitar el día de semana elegido
+            const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
+            async function updateHorarios() {
+                horariosBox.innerHTML = '';
+                horaInput.value = '';
+                const canchaId = canchaSelect.value;
                 const diaSemana = parseInt(diaSelect.value);
-                fp = safeFlatpickr(fechaInput, {
-                    minDate: 'today',
-                    disable: ocupadas,
-                    dateFormat: 'Y-m-d',
-                    locale: 'es',
-                    enable: [date => date.getDay() === diaSemana]
-                });
+                if (!canchaId) return;
+                const cancha = canchasData.find(c => c.id == canchaId);
+                if (!cancha) return;
+                // Pedir turnos fijos ocupados para ese día/cancha
+                const resp = await fetch(`/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`);
+                const ocupados = await resp.json(); // array de strings 'HH:MM'
+                horariosBox.innerHTML = renderHorarios(cancha, ocupados, 'swal-fija-hora');
             }
-            canchaSelect.addEventListener('change', updateFlatpickr);
-            diaSelect.addEventListener('change', updateFlatpickr);
+            canchaSelect.addEventListener('change', updateHorarios);
+            diaSelect.addEventListener('change', updateHorarios);
+            updateHorarios();
         },
         showCancelButton: true,
         confirmButtonText: 'Crear',
@@ -521,7 +522,7 @@ function abrirSwalReservaFija() {
         preConfirm: async () => {
             const form = document.getElementById('formSwalFija');
             const data = Object.fromEntries(new FormData(form));
-            if (!data.cancha_id || !data.dia_semana || !data.hora_inicio || !data.precio || !data.fecha_inicio) {
+            if (!data.cancha_id || !data.dia_semana || !data.hora_inicio || !data.precio) {
                 Swal.showValidationMessage('Complete todos los campos obligatorios');
                 return false;
             }
