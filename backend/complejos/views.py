@@ -1086,9 +1086,9 @@ def buscar_jugador_turno(request):
     resultados = []
     if cancha_id and fecha and hora and q:
         reservas = Reserva.objects.filter(
-            turno__cancha_id=cancha_id,
-            turno__fecha=fecha,
-            turno__hora_inicio=hora
+            cancha_id=cancha_id,
+            fecha=fecha,
+            hora_inicio=hora
         ).select_related('jugador__usuario')
         if q.isdigit():
             reservas = reservas.filter(jugador__usuario__dni=q)
