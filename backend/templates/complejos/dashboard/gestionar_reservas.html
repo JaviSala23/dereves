@@ -271,7 +271,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             {% if reservas %}
-                <div class="table-responsive">
+                <div class="d-none d-md-block table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
@@ -373,6 +373,49 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+                <!-- Vista móvil -->
+                <div class="d-block d-md-none">
+                    {% for reserva in reservas %}
+                    <div class="card mb-2 shadow-sm">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">#{{ reserva.id }}</span>
+                                <span class="badge {% if reserva.estado == 'CONFIRMADA' %}bg-success{% elif reserva.estado == 'PENDIENTE' %}bg-warning{% elif reserva.estado == 'CANCELADA' %}bg-danger{% elif reserva.estado == 'RECHAZADA' %}bg-secondary{% else %}bg-info{% endif %}">
+                                    {{ reserva.get_estado_display }}
+                                </span>
+                            </div>
+                            <div class="mb-1"><strong>{{ reserva.cancha.nombre }}</strong> <span class="text-muted small">({{ reserva.cancha.get_deporte_display }})</span></div>
+                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">calendar_today</span> {{ reserva.fecha|date:"d/m/Y" }}</div>
+                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">schedule</span> {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}</div>
+                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">location_on</span> {{ reserva.cancha.complejo.nombre }}</div>
+                            <div class="mb-1">
+                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">person</span>
+                                {% if reserva.jugador_principal %}
+                                    {{ reserva.jugador_principal.alias }}
+                                {% elif reserva.nombre_cliente %}
+                                    {{ reserva.nombre_cliente }} <span class="text-muted small">(No registrado)</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">payments</span> <strong>${{ reserva.precio }}</strong></div>
+                            <div class="d-flex gap-2 mt-2">
+                                <a href="{% url 'reservas:detalle_reserva' reserva.id %}" class="btn btn-outline-primary btn-sm flex-fill" title="Ver detalle">
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
+                                </a>
+                                {% if reserva.estado == 'PENDIENTE' %}
+                                    <form method="post" action="{% url 'reservas:confirmar' reserva.id %}" class="d-inline confirmar-reserva-form flex-fill">
+                                        {% csrf_token %}
+                                        <button type="button" class="btn btn-outline-success btn-sm btn-confirmar-reserva w-100" title="Confirmar">
+                                            <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             {% else %}
                 <div class="text-center py-5">

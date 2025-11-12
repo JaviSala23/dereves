@@ -430,9 +430,9 @@ def crear_reserva_simple_dashboard(request):
                 hora_inicio=hora_inicio_dt,
                 hora_fin=hora_fin,
                 precio=data['precio'],
-                estado='CONFIRMADA',
+                estado='PENDIENTE',
                 metodo_pago=None,
-                pagado=True,
+                pagado=False,
                 observaciones='',
                 nombre_cliente=data.get('nombre_cliente', ''),
             )
