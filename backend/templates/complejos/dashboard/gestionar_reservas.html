@@ -464,6 +464,18 @@ function renderHorarios(cancha, ocupados, inputId) {
     return html;
 }
 
+// Renderiza los horarios como botones para reserva fija
+function renderHorariosFija(cancha, ocupados, inputId) {
+    const horarios = generarHorarios(cancha);
+    let html = '<div class="d-flex flex-wrap gap-2">';
+    horarios.forEach(hora => {
+        const ocupado = ocupados.includes(hora);
+        html += `<button type="button" class="btn btn-sm ${ocupado ? 'btn-secondary' : 'btn-outline-primary'}" style="min-width:70px;" data-hora="${hora}" ${ocupado ? 'disabled' : ''}>${hora}</button>`;
+    });
+    html += '</div>';
+    return html;
+}
+
 // Asegurar que flatpickr y el locale están cargados antes de usar
 function safeFlatpickr(input, opts) {
     if (typeof flatpickr === 'undefined') {
@@ -486,7 +498,7 @@ function abrirSwalReservaFija() {
                 <div class='mb-2'><label>Día</label><select id='swal-fija-dia' name='dia_semana' class='form-select' required>
                     <option value='0'>Lunes</option><option value='1'>Martes</option><option value='2'>Miércoles</option><option value='3'>Jueves</option><option value='4'>Viernes</option><option value='5'>Sábado</option><option value='6'>Domingo</option>
                 </select></div>
-                <div class='mb-2' id='swal-fija-horarios-box'></div>
+                <div class='mb-2'><label>Horario</label><div id='swal-fija-horarios-box'></div></div>
                 <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
                 <div class='mb-2'><label>Nombre Cliente</label><input type='text' name='nombre_cliente' class='form-control'></div>
                 <div class='mb-2'><label>Teléfono</label><input type='tel' name='telefono_cliente' class='form-control'></div>
@@ -500,17 +512,25 @@ function abrirSwalReservaFija() {
             const horaInput = document.getElementById('swal-fija-hora');
             const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
             async function updateHorarios() {
-                horariosBox.innerHTML = '';
+                horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
                 horaInput.value = '';
                 const canchaId = canchaSelect.value;
                 const diaSemana = parseInt(diaSelect.value);
-                if (!canchaId) return;
+                if (!canchaId) { horariosBox.innerHTML = ''; return; }
                 const cancha = canchasData.find(c => c.id == canchaId);
-                if (!cancha) return;
+                if (!cancha) { horariosBox.innerHTML = ''; return; }
                 // Pedir turnos fijos ocupados para ese día/cancha
                 const resp = await fetch(`/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`);
                 const ocupados = await resp.json(); // array de strings 'HH:MM'
-                horariosBox.innerHTML = renderHorarios(cancha, ocupados, 'swal-fija-hora');
+                horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-fija-hora');
+                // Marcar botón seleccionado
+                horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        horariosBox.querySelectorAll('button[data-hora]').forEach(b => b.classList.remove('btn-success'));
+                        this.classList.add('btn-success');
+                        horaInput.value = this.dataset.hora;
+                    });
+                });
             }
             canchaSelect.addEventListener('change', updateHorarios);
             diaSelect.addEventListener('change', updateHorarios);
