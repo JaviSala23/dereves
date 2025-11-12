@@ -7,6 +7,8 @@ app_name = 'complejos'
 urlpatterns = [
     # API para validar si ya existe un turno fijo para ese día, cancha y hora
     path('api/validar_reserva_fija/', views.validar_reserva_fija, name='validar_reserva_fija'),
+    # API para obtener horarios ocupados de reservas fijas
+    path('api/turnos_fijos_ocupados/', views.turnos_fijos_ocupados, name='turnos_fijos_ocupados'),
     path('', views.lista_complejos, name='lista'),
     path('crear/', views.crear_complejo, name='crear'),
     
