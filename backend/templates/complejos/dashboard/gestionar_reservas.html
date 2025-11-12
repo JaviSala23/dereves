@@ -124,7 +124,7 @@
                         <tr>
                             <td>{{ reserva.cancha.complejo.nombre }}</td>
                             <td>{{ reserva.cancha.nombre }}</td>
-                            <td><strong>{{ reserva.get_dia_semana_display }}s</strong></td>
+                            <td><strong>{{ reserva.get_dia_semana_display }}</strong></td>
                             <td>{{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}</td>
                             <td>
                                 {% if reserva.jugador %}
@@ -168,7 +168,7 @@
                                         <div class="modal-body">
                                             <div class="mb-3">
                                                 <label class="form-label"><strong>Cancha:</strong> {{ reserva.cancha.nombre }}</label>
-                                                <br><label class="form-label"><strong>Horario:</strong> {{ reserva.get_dia_semana_display }}s {{ reserva.hora_inicio|time:"H:i" }}</label>
+                                                <br><label class="form-label"><strong>Horario:</strong> {{ reserva.get_dia_semana_display }} {{ reserva.hora_inicio|time:"H:i" }}</label>
                                             </div>
                                             <div class="mb-3">
                                                 <label for="jugador_id_{{ reserva.id }}" class="form-label">Jugador *</label>
