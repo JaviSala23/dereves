@@ -502,7 +502,7 @@ function abrirSwalReservaFija() {
                 <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
                 <div class='mb-2'><label>Nombre Cliente</label><input type='text' name='nombre_cliente' class='form-control'></div>
                 <div class='mb-2'><label>Teléfono</label><input type='tel' name='telefono_cliente' class='form-control'></div>
-                <div class='mb-2'><label>Precio</label><input type='number' name='precio' class='form-control' step='0.01' min='0' required></div>
+                <div class='mb-2'><label>Precio</label><input type='number' id='swal-fija-precio' name='precio' class='form-control' step='0.01' min='0' required></div>
             </form>
         `,
         didOpen: async () => {
@@ -510,6 +510,7 @@ function abrirSwalReservaFija() {
             const diaSelect = document.getElementById('swal-fija-dia');
             const horariosBox = document.getElementById('swal-fija-horarios-box');
             const horaInput = document.getElementById('swal-fija-hora');
+            const precioInput = document.getElementById('swal-fija-precio');
             const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
             async function updateHorarios() {
                 horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
@@ -519,6 +520,10 @@ function abrirSwalReservaFija() {
                 if (!canchaId) { horariosBox.innerHTML = ''; return; }
                 const cancha = canchasData.find(c => c.id == canchaId);
                 if (!cancha) { horariosBox.innerHTML = ''; return; }
+                // Autocompletar precio
+                if (precioInput && cancha.precio_base) {
+                    precioInput.value = cancha.precio_base;
+                }
                 // Pedir turnos fijos ocupados para ese día/cancha
                 const resp = await fetch(`/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`);
                 const ocupados = await resp.json(); // array de strings 'HH:MM'
