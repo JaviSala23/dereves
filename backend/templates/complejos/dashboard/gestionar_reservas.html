@@ -483,8 +483,10 @@ function renderHorarios(cancha, ocupados, inputId) {
 }
 
 // Renderiza los horarios como grid de botones (igual que en reserva fija)
-function renderHorariosFija(cancha, ocupados, inputId) {
+// Modificado: permite deshabilitar horarios fijos con color y tooltip
+function renderHorariosFija(cancha, ocupados, inputId, horariosFijos=[]) {
     if (!Array.isArray(ocupados)) ocupados = [];
+    if (!Array.isArray(horariosFijos)) horariosFijos = [];
     let horarios = cancha.turnos;
     // Si no hay turnos, generarlos en JS
     if (!horarios || horarios.length === 0) {
@@ -503,7 +505,20 @@ function renderHorariosFija(cancha, ocupados, inputId) {
     let html = '<div class="row">';
     horarios.forEach((h, idx) => {
         const ocupado = ocupados.includes(h);
-        html += `<div class='col-4 mb-2'><button type='button' class='btn btn-sm ${ocupado ? 'btn-outline-danger' : 'btn-outline-primary'} w-100' data-hora='${h}' ${ocupado ? 'disabled' : ''}>${h}</button></div>`;
+        const fijo = horariosFijos.includes(h);
+        let btnClass = 'btn-outline-primary';
+        let disabled = '';
+        let tooltip = '';
+        if (fijo) {
+            btnClass = 'btn-secondary';
+            disabled = 'disabled';
+            tooltip = 'data-bs-toggle="tooltip" title="Horario bloqueado por reserva fija"';
+        } else if (ocupado) {
+            btnClass = 'btn-outline-danger';
+            disabled = 'disabled';
+            tooltip = 'data-bs-toggle="tooltip" title="Horario ocupado"';
+        }
+        html += `<div class='col-4 mb-2'><button type='button' class='btn btn-sm ${btnClass} w-100' data-hora='${h}' ${disabled} ${tooltip}>${h}</button></div>`;
         if ((idx + 1) % 3 === 0) html += '</div><div class="row">';
     });
     html += '</div>';
