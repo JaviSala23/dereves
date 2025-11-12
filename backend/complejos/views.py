@@ -7,12 +7,16 @@ def buscar_jugador(request):
     q = request.GET.get('q', '').strip()
     resultados = []
     if q:
-        jugadores = PerfilJugador.objects.filter(
-            Q(usuario__username__icontains=q) |
-            Q(usuario__first_name__icontains=q) |
-            Q(usuario__last_name__icontains=q) |
-            Q(usuario__dni__icontains=q)
-        ).select_related('usuario')[:10]
+        if q.startswith('@'):
+            jugadores = PerfilJugador.objects.filter(
+                Q(usuario__username__icontains=q[1:])
+            ).select_related('usuario')[:10]
+        else:
+            jugadores = PerfilJugador.objects.filter(
+                Q(usuario__first_name__icontains=q) |
+                Q(usuario__last_name__icontains=q) |
+                Q(usuario__dni__icontains=q)
+            ).select_related('usuario')[:10]
         for j in jugadores:
             resultados.append({
                 'id': j.id,
