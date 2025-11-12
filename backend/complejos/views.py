@@ -1089,18 +1089,18 @@ def buscar_jugador_turno(request):
             cancha_id=cancha_id,
             fecha=fecha,
             hora_inicio=hora
-        ).select_related('jugador__usuario')
+        ).select_related('jugador_principal__usuario')
         if q.isdigit():
-            reservas = reservas.filter(jugador__usuario__dni=q)
+            reservas = reservas.filter(jugador_principal__usuario__dni=q)
         elif q.startswith('@'):
-            reservas = reservas.filter(jugador__usuario__username__icontains=q[1:])
+            reservas = reservas.filter(jugador_principal__usuario__username__icontains=q[1:])
         else:
             reservas = reservas.filter(
-                Q(jugador__usuario__first_name__icontains=q) |
-                Q(jugador__usuario__last_name__icontains=q)
+                Q(jugador_principal__usuario__first_name__icontains=q) |
+                Q(jugador_principal__usuario__last_name__icontains=q)
             )
         for r in reservas:
-            j = r.jugador
+            j = r.jugador_principal
             if j:
                 resultados.append({
                     'id': j.id,
