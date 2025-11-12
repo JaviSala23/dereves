@@ -848,7 +848,21 @@ function abrirSwalReservaSimple() {
                 // Pedir turnos ocupados para esa fecha/cancha
                 const resp = await fetch(`/complejos/api/canchas/${canchaId}/horarios/?fecha=${fechaInput.value}`);
                 const ocupados = await resp.json(); // array de strings 'HH:MM'
-                horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora');
+
+                // Pedir horarios fijos bloqueados para ese día de semana
+                const fechaObj = new Date(fechaInput.value);
+                const diaSemana = fechaObj.getDay(); // 0=Domingo, 1=Lunes...
+                // En backend: 0=Lunes, 6=Domingo, en JS: 0=Domingo, 1=Lunes...
+                const diaSemanaApi = diaSemana === 0 ? 6 : diaSemana - 1;
+                let horariosFijos = [];
+                try {
+                    const respFija = await fetch(`/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemanaApi}`);
+                    if (respFija.ok) {
+                        horariosFijos = await respFija.json();
+                    }
+                } catch (e) {}
+
+                horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora', horariosFijos);
                 horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
                     btn.addEventListener('click', function() {
                         horariosBox.querySelectorAll('button[data-hora]').forEach(b => b.classList.remove('btn-success'));

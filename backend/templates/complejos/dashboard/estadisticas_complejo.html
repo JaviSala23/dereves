@@ -146,7 +146,7 @@
         </div>
         <div class="card-body p-0">
             {% if stats_canchas %}
-                <div class="table-responsive">
+                <div class="d-none d-md-block table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
@@ -189,6 +189,35 @@
                             </tr>
                         </tfoot>
                     </table>
+                </div>
+                <!-- Vista móvil -->
+                <div class="d-block d-md-none">
+                    {% for stat in stats_canchas %}
+                    <div class="card mb-2 shadow-sm">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong>{{ stat.cancha.nombre }}</strong>
+                                <span class="badge bg-info">{{ stat.cancha.get_deporte_display }}</span>
+                            </div>
+                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">payments</span> ${{ stat.cancha.precio_hora|default:stat.cancha.precio_base }}</div>
+                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">event</span> {{ stat.total_reservas }} reservas</div>
+                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">check_circle</span> <span class="badge bg-success">{{ stat.confirmadas }} confirmadas</span></div>
+                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">attach_money</span> <strong class="text-success">${{ stat.ingresos|floatformat:0 }}</strong></div>
+                            <div class="mb-1">
+                                {% if stat.cancha.activo %}
+                                    <span class="badge bg-success">Activa</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactiva</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="card mb-2 shadow-sm bg-light">
+                        <div class="card-body p-2 text-end">
+                            <span class="text-muted">Total ingresos:</span> <strong class="text-success">${{ ingresos_total|floatformat:0 }}</strong>
+                        </div>
+                    </div>
                 </div>
             {% else %}
                 <div class="text-center py-5">
