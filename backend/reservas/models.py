@@ -145,8 +145,26 @@ class Reserva(models.Model):
         ordering = ['-fecha', '-hora_inicio']
         unique_together = ['cancha', 'fecha', 'hora_inicio']
     
+
     def __str__(self):
         return f"{self.cancha} - {self.fecha} {self.hora_inicio}"
+
+    def confirmar(self):
+        """
+        Marca la reserva como pagada y confirmada (solo dueños).
+        Si ya está pagada, no hace nada.
+        Devuelve True si se modificó, False si ya estaba pagada.
+        """
+        modificado = False
+        if not self.pagado:
+            self.pagado = True
+            modificado = True
+        if self.estado != 'CONFIRMADA':
+            self.estado = 'CONFIRMADA'
+            modificado = True
+        if modificado:
+            self.save(update_fields=['pagado', 'estado', 'actualizado_en'])
+        return modificado
 
 
 class ReservaFija(models.Model):
