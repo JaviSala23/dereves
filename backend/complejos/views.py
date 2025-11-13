@@ -672,9 +672,10 @@ def obtener_horarios_disponibles(request, cancha_id):
         estado__in=['PENDIENTE', 'CONFIRMADA']
     )
 
-    reservas_simples_horas = {
-        r.hora_inicio.strftime('%H:%M') for r in reservas_simples
-    }
+    # Guardar los rangos de cada reserva simple
+    reservas_simples_rangos = [
+        (r.hora_inicio, r.hora_fin) for r in reservas_simples
+    ]
 
     # Reservas fijas activas
     dia_semana = fecha.weekday()
@@ -701,8 +702,8 @@ def obtener_horarios_disponibles(request, cancha_id):
     hora_actual = cancha.horario_apertura
     duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
 
-    while hora_actual < cancha.horario_cierre:
 
+    while hora_actual < cancha.horario_cierre:
         hora_fin = (datetime.combine(fecha, hora_actual) + duracion).time()
         if hora_fin > cancha.horario_cierre:
             break
@@ -714,32 +715,33 @@ def obtener_horarios_disponibles(request, cancha_id):
         precio = float(cancha.precio_hora)
 
         if not hora_pasada:
-
             # 1) Turno generado
             turno = turnos_dict.get(hora_actual)
             if turno and turno.estado != 'DISPONIBLE':
                 ocupado = True
                 precio = float(turno.precio)
 
-            # 2) Reserva simple
-            elif hora_actual.strftime('%H:%M') in reservas_simples_horas:
-                ocupado = True
-
-            # 3) Reserva fija activa que inicia exactamente en este horario
+            # 2) Reserva simple (solapamiento de rangos)
             else:
                 inicio_turno = datetime.combine(fecha, hora_actual)
-
-                for rf in reservas_fijas:
-                    if rf.id in liberaciones:
-                        continue
-
-                    inicio_rf = datetime.combine(fecha, rf.hora_inicio)
-
-                    # CORRECCIÓN IMPORTANTE:
-                    # Solo ocupa si la reserva fija empieza EXACTAMENTE en este turno.
-                    if inicio_turno == inicio_rf:
+                fin_turno = datetime.combine(fecha, hora_fin)
+                for r_inicio, r_fin in reservas_simples_rangos:
+                    inicio_res = datetime.combine(fecha, r_inicio)
+                    fin_res = datetime.combine(fecha, r_fin)
+                    # Si hay solapamiento
+                    if inicio_turno < fin_res and fin_turno > inicio_res:
                         ocupado = True
                         break
+
+                # 3) Reserva fija activa que inicia exactamente en este horario
+                if not ocupado:
+                    for rf in reservas_fijas:
+                        if rf.id in liberaciones:
+                            continue
+                        inicio_rf = datetime.combine(fecha, rf.hora_inicio)
+                        if inicio_turno == inicio_rf:
+                            ocupado = True
+                            break
 
         horarios.append({
             'hora_inicio': hora_actual.strftime('%H:%M'),
