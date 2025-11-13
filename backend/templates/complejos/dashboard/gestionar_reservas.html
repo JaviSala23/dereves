@@ -541,7 +541,8 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             const [hC, mC] = cancha.horario_cierre.split(':').map(Number);
             let totalMinApertura = hA * 60 + mA;
             let totalMinCierre = hC * 60 + mC;
-            let duracion = parseInt(cancha.duracion_turno_minutos);
+            let duracion = Number(cancha.duracion_turno_minutos);
+            if (isNaN(duracion) || duracion <= 0) duracion = 90;
             let actual = totalMinApertura;
             while (actual + duracion <= totalMinCierre) {
                 let h = Math.floor(actual / 60);
