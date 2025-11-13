@@ -246,18 +246,17 @@ def crear_reserva(request, cancha_id):
             'estado': 'DISPONIBLE'
         }
     )
-    
-    # Verificar que el turno esté disponible
-    if not es_dueno:
-        # Jugadores solo pueden reservar turnos disponibles
-        if not turno.puede_ser_reservado_por_jugador():
-            messages.error(request, f'Este turno no está disponible. Estado: {turno.get_estado_display()}')
-            return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
-    else:
-        # Dueños pueden reservar sobre turnos disponibles
-        if turno.estado != 'DISPONIBLE':
-            messages.error(request, f'Este turno ya está ocupado. Estado: {turno.get_estado_display()}')
-            return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
+
+    # Permitir reservar si no hay otra reserva activa (no CANCELADA ni PAUSADA) para ese turno
+    reserva_existente = Reserva.objects.filter(
+        cancha=cancha,
+        fecha=fecha,
+        hora_inicio=hora_inicio
+    ).exclude(estado__in=['CANCELADA', 'PAUSADA']).first()
+
+    if reserva_existente:
+        messages.error(request, 'Ya existe una reserva para este horario.')
+        return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
     
     # Crear la reserva
     reserva = Reserva.objects.create(
