@@ -146,7 +146,7 @@ def calendario_cancha(request, cancha_id):
                 horarios.append({
                     'hora': hora_actual.strftime('%H:%M'),
                     'hora_fin': hora_fin.strftime('%H:%M'),
-                    'estado': 'DISPONIBLE',
+                    'estado': 'DISPONIBLE',})
                 # Eliminar la reserva directamente
                 reserva.delete()
                 messages.success(request, 'Reserva eliminada exitosamente.')
