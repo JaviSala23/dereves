@@ -440,6 +440,28 @@ const canchasOptions = `
 <option value="{{ cancha.id }}">{{ cancha.complejo.nombre }} - {{ cancha.nombre }}</option>
 {% endfor %}`;
 
+
+// ================= FUNCIONES AUXILIARES ===================
+// Devuelve un array de fechas (YYYY-MM-DD) en las que la cancha está completamente ocupada (no hay horarios disponibles para reserva simple)
+async function obtenerFechasOcupadas(canchaId) {
+    // Endpoint esperado: /complejos/api/canchas/<cancha_id>/fechas_ocupadas/
+    // Debe devolver un array de strings con fechas ocupadas: ["2025-11-13", ...]
+    try {
+        const resp = await fetch(`/complejos/api/canchas/${canchaId}/fechas_ocupadas/`);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        if (Array.isArray(data.fechas)) {
+            return data.fechas;
+        } else if (Array.isArray(data)) {
+            return data;
+        }
+        return [];
+    } catch (e) {
+        console.error('Error obteniendo fechas ocupadas:', e);
+        return [];
+    }
+}
+
 // ================= FUNCIONES MEJORADAS ===================
 
 // Función mejorada para renderizar horarios de reserva fija
