@@ -355,11 +355,19 @@
                                 <td><strong>${{ reserva.precio }}</strong></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'reservas:detalle_reserva' reserva.id %}" 
-                                           class="btn btn-outline-primary" 
+                                        <a href="{% url 'reservas:detalle_reserva' reserva.id %}"
+                                           class="btn btn-outline-primary"
                                            title="Ver detalle">
                                             <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
                                         </a>
+                                        {% if reserva.estado == 'PENDIENTE' and not reserva.pagado %}
+                                            <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline confirmar-reserva-form" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="button" class="btn btn-outline-primary btn-confirmar-reserva" title="Confirmar">
+                                                    <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span>
+                                                </button>
+                                            </form>
+                                        {% endif %}
                                         {% if reserva.estado in 'PENDIENTE,CONFIRMADA' and not reserva.pagado %}
                                             <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline pagar-reserva-form" style="display: inline;">
                                                 {% csrf_token %}

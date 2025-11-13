@@ -348,7 +348,7 @@ def cancelar_reserva(request, reserva_id):
     # Eliminar la reserva directamente
     reserva.delete()
     messages.success(request, 'Reserva eliminada exitosamente.')
-    return redirect('reservas:gestionar_reservas')
+    return redirect('complejos:gestionar_reservas')
 
 
 @login_required
