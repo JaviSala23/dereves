@@ -653,17 +653,6 @@ class PartidoAbierto(models.Model):
             self.save()
     
     @property
-    def cancha(self):
-        return self.turno.cancha
-    
-    @property
-    def fecha(self):
-        return self.turno.fecha
-    
-    @property
-    def hora_inicio(self):
-        return self.turno.hora_inicio
-    
     @property
     def hora_fin(self):
         return self.turno.hora_fin
