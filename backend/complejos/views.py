@@ -672,10 +672,24 @@ def obtener_horarios_disponibles(request, cancha_id):
         estado__in=['PENDIENTE', 'CONFIRMADA']
     )
 
-    # Guardar los rangos de cada reserva simple
-    reservas_simples_rangos = [
-        (r.hora_inicio, r.hora_fin) for r in reservas_simples
-    ]
+    # Guardar los rangos de cada reserva simple (asegurando tipo datetime.time)
+    reservas_simples_rangos = []
+    for r in reservas_simples:
+        hora_inicio = r.hora_inicio
+        hora_fin = r.hora_fin
+        # Si por algún motivo hora_inicio o hora_fin no es time, convertir
+        if hasattr(hora_inicio, 'hour') and hasattr(hora_fin, 'hour'):
+            reservas_simples_rangos.append((hora_inicio, hora_fin))
+        else:
+            # fallback: intentar parsear
+            from datetime import time
+            if isinstance(hora_inicio, str):
+                h, m = map(int, hora_inicio.split(':'))
+                hora_inicio = time(h, m)
+            if isinstance(hora_fin, str):
+                h, m = map(int, hora_fin.split(':'))
+                hora_fin = time(h, m)
+            reservas_simples_rangos.append((hora_inicio, hora_fin))
 
     # Reservas fijas activas
     dia_semana = fecha.weekday()
