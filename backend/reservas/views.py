@@ -469,12 +469,10 @@ def detalle_reserva(request, reserva_id):
     from django.db.models import Q
     from datetime import datetime, timedelta, time
     from .models import ReservaFija, ReservaFijaLiberacion, Turno
-    from .models import (
-        Reserva, MetodoPago, PartidoAbierto, JugadorPartido, Torneo, BloqueoTorneo
-    )
+    from .models import Reserva, MetodoPago, PartidoAbierto, JugadorPartido, Torneo, BloqueoTorneo
     from django.db import models
     from complejos.models import Cancha, Complejo
-    )
+    reserva = get_object_or_404(Reserva, id=reserva_id)
     
     # Verificar que sea del usuario o del dueño del complejo
     es_dueno = False
