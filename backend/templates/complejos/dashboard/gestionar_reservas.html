@@ -530,13 +530,18 @@ function renderHorarios(cancha, ocupados, inputId) {
 function renderHorariosFija(cancha, ocupados, inputId, horariosFijos=[]) {
     if (!Array.isArray(ocupados)) ocupados = [];
     if (!Array.isArray(horariosFijos)) horariosFijos = [];
-    // Normalizar a formato HH:MM
-    horariosFijos = horariosFijos.map(h => {
-        const [hh, mm] = h.split(':');
-        return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
-    });
+    // Si el backend devuelve objetos {hora_inicio, hora_fin}, usar ese formato para solapamiento
+    let rangosFijos = [];
+    if (horariosFijos.length > 0 && typeof horariosFijos[0] === 'object' && horariosFijos[0].hora_inicio) {
+        rangosFijos = horariosFijos.map(f => ({
+            inicio: f.hora_inicio,
+            fin: f.hora_fin
+        }));
+    } else {
+        // fallback: solo hora exacta
+        rangosFijos = horariosFijos.map(h => ({inicio: h, fin: h}));
+    }
     let horarios = cancha.turnos;
-    // Si no hay turnos, generarlos en JS
     if (!horarios || horarios.length === 0) {
         horarios = [];
         if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
@@ -559,7 +564,14 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos=[]) {
             hNorm = `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
         }
         const ocupado = ocupados.includes(hNorm);
-        const fijo = horariosFijos.includes(hNorm);
+        // Chequear solapamiento con algún rango fijo
+        let fijo = false;
+        for (const rf of rangosFijos) {
+            if (horaSolapa(hNorm, cancha.duracion_turno_minutos, rf.inicio, rf.fin)) {
+                fijo = true;
+                break;
+            }
+        }
         let btnClass = 'btn-outline-primary';
         let disabled = '';
         let tooltip = '';
@@ -577,6 +589,20 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos=[]) {
     });
     html += '</div>';
     return html;
+}
+
+// Devuelve true si el horario de inicio y duración solapa con el rango fijo
+function horaSolapa(hora, duracionMin, inicioFijo, finFijo) {
+    // hora, inicioFijo, finFijo en formato 'HH:MM'
+    const [h, m] = hora.split(':').map(Number);
+    const [hi, mi] = inicioFijo.split(':').map(Number);
+    const [hf, mf] = finFijo.split(':').map(Number);
+    const inicio = h * 60 + m;
+    const fin = inicio + duracionMin;
+    const inicioF = hi * 60 + mi;
+    const finF = hf * 60 + mf;
+    // Solapan si inicio < finF y fin > inicioF
+    return inicio < finF && fin > inicioF;
 }
 
 // Asegurar que flatpickr y el locale están cargados antes de usar
