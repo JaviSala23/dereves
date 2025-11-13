@@ -96,22 +96,23 @@ class Reserva(models.Model):
     class Meta:
         verbose_name = 'Reserva'
         verbose_name_plural = 'Reservas'
-        ordering = ['-fecha', '-hora_inicio']
-        unique_together = ['cancha', 'fecha', 'hora_inicio']
-    
+        ordering = ['-id']
+        unique_together = ['turno']
 
     def __str__(self):
-        return f"{self.cancha} - {self.fecha} {self.hora_inicio}"
+        if hasattr(self, 'turno') and self.turno:
+            return f"{self.turno.cancha} - {self.turno.fecha} {self.turno.hora_inicio}"
+        return super().__str__()
+
     def clean(self):
         from django.core.exceptions import ValidationError
-        # Solo bloquear si ya existe otra reserva para ese horario que no esté CANCELADA ni PAUSADA
-        existe = Reserva.objects.filter(
-            cancha=self.cancha,
-            fecha=self.fecha,
-            hora_inicio=self.hora_inicio
-        ).exclude(id=self.id).exclude(estado__in=['CANCELADA', 'PAUSADA']).exists()
-        if existe:
-            raise ValidationError('Ya existe una reserva para este horario.')
+        # Solo bloquear si ya existe otra reserva para ese turno que no esté CANCELADA ni PAUSADA
+        if self.turno_id:
+            existe = Reserva.objects.filter(
+                turno=self.turno
+            ).exclude(id=self.id).exclude(estado__in=['CANCELADA', 'PAUSADA']).exists()
+            if existe:
+                raise ValidationError('Ya existe una reserva para este horario.')
 
     def cancelar(self):
         """
