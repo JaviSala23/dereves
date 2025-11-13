@@ -653,7 +653,7 @@ class PartidoAbierto(models.Model):
             self.save()
     
     @property
-    @property
+
     def hora_fin(self):
         return self.turno.hora_fin
 
