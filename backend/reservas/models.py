@@ -107,6 +107,7 @@ class Reserva(models.Model):
         verbose_name_plural = 'Reservas'
         ordering = ['-id']
         unique_together = ['turno']
+        
 
     def __str__(self):
         if hasattr(self, 'turno') and self.turno:
