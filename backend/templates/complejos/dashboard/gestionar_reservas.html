@@ -533,23 +533,20 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
         }
         return null;
     }).filter(Boolean);
-    let horarios = cancha.turnos || [];
-    if (!horarios || horarios.length === 0) {
-        horarios = [];
-        if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
-            const [hA, mA] = cancha.horario_apertura.split(':').map(Number);
-            const [hC, mC] = cancha.horario_cierre.split(':').map(Number);
-            let totalMinApertura = hA * 60 + mA;
-            let totalMinCierre = hC * 60 + mC;
-            let duracion = Number(cancha.duracion_turno_minutos);
-            if (isNaN(duracion) || duracion <= 0) duracion = 90;
-            let actual = totalMinApertura;
-            while (actual + duracion <= totalMinCierre) {
-                let h = Math.floor(actual / 60);
-                let m = actual % 60;
-                horarios.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-                actual += duracion;
-            }
+    let horarios = [];
+    if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
+        const [hA, mA] = cancha.horario_apertura.split(':').map(Number);
+        const [hC, mC] = cancha.horario_cierre.split(':').map(Number);
+        let totalMinApertura = hA * 60 + mA;
+        let totalMinCierre = hC * 60 + mC;
+        let duracion = Number(cancha.duracion_turno_minutos);
+        if (isNaN(duracion) || duracion <= 0) duracion = 90;
+        let actual = totalMinApertura;
+        while (actual + duracion <= totalMinCierre) {
+            let h = Math.floor(actual / 60);
+            let m = actual % 60;
+            horarios.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+            actual += duracion;
         }
     }
     let html = '<div class="row g-2">';
