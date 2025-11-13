@@ -45,12 +45,14 @@ def turnos_fijos_ocupados(request):
             estado='ACTIVA'
         )
         for r in reservas:
-            # Si se pasa fecha, chequear si está liberada
             liberado = False
             if fecha:
                 liberado = ReservaFijaLiberacion.objects.filter(reserva_fija=r, fecha=fecha).exists()
             if not liberado:
-                horarios.append(r.hora_inicio.strftime('%H:%M'))
+                horarios.append({
+                    'hora_inicio': r.hora_inicio.strftime('%H:%M'),
+                    'hora_fin': r.hora_fin.strftime('%H:%M')
+                })
     return JsonResponse(horarios, safe=False)
 from django.views.decorators.http import require_GET
 # API para validar si ya existe un turno fijo para ese día, cancha y hora
