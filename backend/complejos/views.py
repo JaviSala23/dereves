@@ -675,6 +675,7 @@ def obtener_horarios_disponibles(request, cancha_id):
     # Guardar los rangos de cada reserva simple (asegurando tipo datetime.time)
     reservas_simples_rangos = []
     from datetime import time
+    print('--- DEBUG RESERVAS SIMPLES ---')
     for r in reservas_simples:
         hora_inicio = r.hora_inicio
         hora_fin = r.hora_fin
@@ -686,6 +687,7 @@ def obtener_horarios_disponibles(request, cancha_id):
             h, m = map(int, hora_fin.split(':'))
             hora_fin = time(h, m)
         reservas_simples_rangos.append((hora_inicio, hora_fin))
+        print(f"Reserva simple: {hora_inicio} - {hora_fin}")
 
     # Reservas fijas activas
     dia_semana = fecha.weekday()
@@ -735,13 +737,14 @@ def obtener_horarios_disponibles(request, cancha_id):
                 inicio_turno = datetime.combine(fecha, hora_actual)
                 fin_turno = datetime.combine(fecha, hora_fin)
                 for r_inicio, r_fin in reservas_simples_rangos:
-                    # Asegurar que r_inicio y r_fin sean time
                     if not (hasattr(r_inicio, 'hour') and hasattr(r_fin, 'hour')):
                         continue
                     inicio_res = datetime.combine(fecha, r_inicio)
                     fin_res = datetime.combine(fecha, r_fin)
+                    print(f"Comparando turno {hora_actual}-{hora_fin} con reserva {r_inicio}-{r_fin}")
                     # Solapamiento: inicio_turno < fin_res y fin_turno > inicio_res
                     if inicio_turno < fin_res and fin_turno > inicio_res:
+                        print(f"OCUPADO por reserva simple: {hora_actual}-{hora_fin} solapa con {r_inicio}-{r_fin}")
                         ocupado = True
                         break
                 # 3) Reserva fija activa que inicia exactamente en este horario
