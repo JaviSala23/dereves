@@ -1,3 +1,14 @@
+// ========== CONFIRMAR RESERVA SIMPLE ========== //
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-confirmar-reserva').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = btn.closest('form.confirmar-reserva-form');
+            if (!form) return;
+            form.submit();
+        });
+    });
+});
 {% extends 'base.html' %}
 
 {% block title %}Gestionar Reservas - Dashboard - DeRevés{% endblock %}
