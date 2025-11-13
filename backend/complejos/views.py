@@ -715,10 +715,8 @@ def obtener_horarios_disponibles(request, cancha_id):
     duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
 
 
-    while hora_actual < cancha.horario_cierre:
+    while (datetime.combine(fecha, hora_actual) + duracion) <= datetime.combine(fecha, cancha.horario_cierre):
         hora_fin = (datetime.combine(fecha, hora_actual) + duracion).time()
-        if hora_fin > cancha.horario_cierre:
-            break
 
         es_hoy = fecha == timezone.now().date()
         hora_pasada = es_hoy and hora_actual < timezone.now().time()
