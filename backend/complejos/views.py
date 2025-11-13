@@ -36,23 +36,31 @@ def turnos_fijos_ocupados(request):
     from reservas.models import ReservaFija, ReservaFijaLiberacion
     cancha_id = request.GET.get('cancha_id')
     dia_semana = request.GET.get('dia_semana')
-    fecha = request.GET.get('fecha')  # formato YYYY-MM-DD
+    fecha_str = request.GET.get('fecha')  # formato YYYY-MM-DD
+    from datetime import datetime
+    from django.db import models
     horarios = []
-    if cancha_id and dia_semana is not None:
-        reservas = ReservaFija.objects.filter(
-            cancha_id=cancha_id,
-            dia_semana=dia_semana,
-            estado='ACTIVA'
-        )
-        for r in reservas:
-            liberado = False
-            if fecha:
+    if cancha_id and dia_semana is not None and fecha_str:
+        try:
+            fecha = datetime.fromisoformat(fecha_str).date()
+        except Exception:
+            fecha = None
+        if fecha:
+            reservas = ReservaFija.objects.filter(
+                cancha_id=cancha_id,
+                dia_semana=dia_semana,
+                estado='ACTIVA',
+                fecha_inicio__lte=fecha
+            ).filter(
+                models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
+            )
+            for r in reservas:
                 liberado = ReservaFijaLiberacion.objects.filter(reserva_fija=r, fecha=fecha).exists()
-            if not liberado:
-                horarios.append({
-                    'hora_inicio': r.hora_inicio.strftime('%H:%M'),
-                    'hora_fin': r.hora_fin.strftime('%H:%M')
-                })
+                if not liberado:
+                    horarios.append({
+                        'hora_inicio': r.hora_inicio.strftime('%H:%M'),
+                        'hora_fin': r.hora_fin.strftime('%H:%M')
+                    })
     return JsonResponse(horarios, safe=False)
 from django.views.decorators.http import require_GET
 # API para validar si ya existe un turno fijo para ese día, cancha y hora
