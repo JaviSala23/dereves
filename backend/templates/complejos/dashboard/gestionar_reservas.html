@@ -442,6 +442,14 @@ const canchasOptions = `
 
 
 // ================= FUNCIONES AUXILIARES ===================
+// Inicializa flatpickr de forma segura, destruyendo instancias previas si existen
+function safeFlatpickr(element, options) {
+    if (!element) return null;
+    if (element._flatpickr) {
+        element._flatpickr.destroy();
+    }
+    return flatpickr(element, options);
+}
 // Devuelve un array de fechas (YYYY-MM-DD) en las que la cancha está completamente ocupada (no hay horarios disponibles para reserva simple)
 async function obtenerFechasOcupadas(canchaId) {
     // Endpoint esperado: /complejos/api/canchas/<cancha_id>/fechas_ocupadas/
