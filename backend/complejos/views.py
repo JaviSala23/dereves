@@ -1342,19 +1342,21 @@ def fechas_ocupadas_cancha(request, cancha_id):
                 ).filter(
                     Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=fecha)
                 )
-                liberada = False
+                ocupado_fijo = False
                 for rf in reservas_fijas:
+                    # Si está liberada, no bloquear
                     if ReservaFijaLiberacion.objects.filter(reserva_fija=rf, fecha=fecha).exists():
-                        liberada = True
                         continue
-                    # Chequear solapamiento
+                    # Chequear solapamiento exacto de horarios
                     inicio_fijo = rf.hora_inicio
                     fin_fijo = rf.hora_fin
                     inicio = hora_actual.time()
                     fin = (hora_actual + duracion).time()
                     if (inicio < fin_fijo and fin > inicio_fijo):
-                        ocupado = True
+                        ocupado_fijo = True
                         break
+                if ocupado_fijo:
+                    ocupado = True
             if not ocupado:
                 todos_ocupados = False
                 break
