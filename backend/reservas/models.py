@@ -92,6 +92,15 @@ class Turno(models.Model):
 
 
 class Reserva(models.Model):
+    def delete(self, *args, **kwargs):
+        # Eliminar el turno asociado si existe
+        from .models import Turno
+        Turno.objects.filter(
+            cancha=self.cancha,
+            fecha=self.fecha,
+            hora_inicio=self.hora_inicio
+        ).delete()
+        super().delete(*args, **kwargs)
     
     class Meta:
         verbose_name = 'Reserva'
@@ -136,8 +145,8 @@ class Reserva(models.Model):
         ('COMPLETADA', 'Completada'),
     ]
     
-    turno = models.ForeignKey(
-        'Turno',
+    cancha = models.ForeignKey(
+        'complejos.Cancha',
         on_delete=models.CASCADE,
         related_name='reservas'
     )
@@ -148,6 +157,63 @@ class Reserva(models.Model):
         null=True,
         blank=True
     )
+    fecha = models.DateField()
+    class Meta:
+        verbose_name = 'Reserva'
+        verbose_name_plural = 'Reservas'
+        ordering = ['-fecha', '-hora_inicio']
+        unique_together = ['cancha', 'fecha', 'hora_inicio']
+
+    def __str__(self):
+        return f"{self.cancha} - {self.fecha} {self.hora_inicio}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        # Solo bloquear si ya existe otra reserva para ese horario que no esté CANCELADA ni PAUSADA
+        existe = Reserva.objects.filter(
+            cancha=self.cancha,
+            fecha=self.fecha,
+            hora_inicio=self.hora_inicio
+        ).exclude(id=self.id).exclude(estado__in=['CANCELADA', 'PAUSADA']).exists()
+        if existe:
+            raise ValidationError('Ya existe una reserva para este horario.')
+
+    def cancelar(self):
+        """
+        Cancela la reserva si está pendiente o confirmada y no está pagada.
+        Cambia el estado a CANCELADA y guarda.
+        Devuelve True si se modificó, False si ya estaba cancelada o pagada.
+        """
+        if self.estado in ['PENDIENTE', 'CONFIRMADA'] and not self.pagado:
+            self.estado = 'CANCELADA'
+            self.save(update_fields=['estado', 'actualizado_en'])
+            return True
+        return False
+
+    ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('CONFIRMADA', 'Confirmada'),
+        ('CANCELADA', 'Cancelada'),
+        ('NO_ASISTIO', 'No Asistió'),
+        ('COMPLETADA', 'Completada'),
+    ]
+
+    cancha = models.ForeignKey(
+        'complejos.Cancha',
+        on_delete=models.CASCADE,
+        related_name='reservas'
+    )
+    jugador_principal = models.ForeignKey(
+        'cuentas.PerfilJugador',
+        on_delete=models.CASCADE,
+        related_name='reservas',
+        null=True,
+        blank=True
+    )
+    fecha = models.DateField()
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.CharField(
         max_length=20,
         choices=ESTADO_CHOICES,
@@ -166,71 +232,16 @@ class Reserva(models.Model):
     # Campos de auditoría
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
-    
-    def confirmar(self):
-        """
-        Marca la reserva como pagada y confirmada (solo dueños).
-        Si ya está pagada, no hace nada.
-        Devuelve True si se modificó, False si ya estaba pagada.
-        """
-        modificado = False
-        if not self.pagado:
-            self.pagado = True
-            modificado = True
-        if self.estado != 'CONFIRMADA':
-            self.estado = 'CONFIRMADA'
-            modificado = True
-        if modificado:
-            self.save(update_fields=['pagado', 'estado', 'actualizado_en'])
-        return modificado
 
-
-class ReservaFija(models.Model):
-    """
-    Modelo para reservas recurrentes/fijas que se repiten automáticamente.
-    Solo el dueño del complejo puede crearlas y asignarlas a jugadores.
-    Los turnos fijos quedan bloqueados automáticamente y no pueden ser reservados por otros.
-    """
-    
-    ESTADO_CHOICES = [
-        ('ACTIVA', 'Activa'),
-        ('CANCELADA', 'Cancelada'),
-        ('PAUSADA', 'Pausada'),
-    ]
-    
-    cancha = models.ForeignKey(
-        'complejos.Cancha',
-        on_delete=models.CASCADE,
-        related_name='reservas_fijas'
-    )
-    
-    # Jugador asignado al turno fijo (puede ser null si es reserva del dueño para cliente sin cuenta)
-    jugador = models.ForeignKey(
-        'cuentas.PerfilJugador',
-        on_delete=models.CASCADE,
-        related_name='reservas_fijas',
-        null=True,
-        blank=True
-    )
-    
-    # Campos para turnos fijos de clientes sin cuenta
-    nombre_cliente = models.CharField(
-        max_length=200,
-        blank=True,
-        help_text='Nombre del cliente que tiene el turno fijo'
-    )
-    telefono_cliente = models.CharField(max_length=20, blank=True)
-    
-    # Configuración del turno fijo
-    dia_semana = models.IntegerField(
-        choices=[
-            (0, 'Lunes'),
-            (1, 'Martes'),
-            (2, 'Miércoles'),
-            (3, 'Jueves'),
-            (4, 'Viernes'),
-            (5, 'Sábado'),
-            (6, 'Domingo'),
+    def delete(self, *args, **kwargs):
+        # Eliminar el turno asociado si existe
+        from .models import Turno
+        Turno.objects.filter(
+            cancha=self.cancha,
+            fecha=self.fecha,
+            hora_inicio=self.hora_inicio
+        ).delete()
+        super().delete(*args, **kwargs)
         ],
         help_text='0=Lunes, 6=Domingo'
     )
