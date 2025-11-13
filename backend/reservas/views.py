@@ -459,15 +459,15 @@ def crear_reserva_fija(request, cancha_id):
         messages.error(request, f'Datos inválidos: {str(e)}')
         return redirect('complejos:gestionar', slug=cancha.complejo.slug)
     
-    # Verificar si ya existe una reserva fija para ese horario
-    existe_fija = ReservaFija.objects.filter(
+    # Verificar si ya existe una reserva fija ACTIVA para ese horario
+    existe_fija_activa = ReservaFija.objects.filter(
         cancha=cancha,
         dia_semana=dia_semana,
         hora_inicio=hora_inicio,
         estado='ACTIVA'
     ).exists()
-    
-    if existe_fija:
+
+    if existe_fija_activa:
         messages.error(request, 'Ya existe una reserva fija activa para este horario.')
         return redirect('complejos:gestionar', slug=cancha.complejo.slug)
     
