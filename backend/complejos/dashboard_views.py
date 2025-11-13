@@ -1,11 +1,6 @@
 from django.views.decorators.http import require_POST
 from django.urls import reverse
-# Stub para confirmar reserva desde dashboard (solo redirige por ahora)
-@login_required
-@require_POST
-def confirmar(request, reserva_id):
-    # Aquí se implementará la lógica de confirmación
-    return redirect(reverse('complejos:gestionar_reservas'))
+
 """
 Vistas del dashboard para dueños de complejos.
 """
@@ -449,3 +444,10 @@ def crear_reserva_simple_dashboard(request):
         return JsonResponse({'success': True, 'message': 'Reserva simple creada correctamente.'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'Error: {e}'})
+
+# Stub para confirmar reserva desde dashboard (solo redirige por ahora)
+@login_required
+@require_POST
+def confirmar(request, reserva_id):
+    # Aquí se implementará la lógica de confirmación
+    return redirect(reverse('complejos:gestionar_reservas'))
