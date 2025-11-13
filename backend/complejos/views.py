@@ -105,52 +105,75 @@ def lista_complejos(request):
     if pais:
         complejos = complejos.filter(pais__icontains=pais)
     
-    # Obtener fecha seleccionada o usar hoy
-    fecha_str = request.GET.get('fecha', timezone.now().date().isoformat())
-    try:
-        from datetime import datetime
-        fecha = datetime.fromisoformat(fecha_str).date()
-    except ValueError:
-        fecha = timezone.now().date()
-    
-    # No permitir fechas pasadas
-    if fecha < timezone.now().date():
-        fecha = timezone.now().date()
-    
-    # Preparar datos de complejos con sus canchas y disponibilidad
-    complejos_data = []
-    for complejo in complejos:
-        canchas = complejo.canchas.filter(activo=True)
-        
-        if deporte:
-            canchas = canchas.filter(deporte=deporte)
-        
-        if canchas.exists():
-            complejos_data.append({
-                'complejo': complejo,
-                'canchas': canchas,
-            })
-    
-    # Obtener deportes para filtro
-    from complejos.models import Cancha
-    deportes = Cancha.DEPORTE_CHOICES
-    
-    # Obtener listas únicas de provincias y países para los filtros
-    provincias = Complejo.objects.filter(activo=True).values_list('provincia', flat=True).distinct().order_by('provincia')
-    paises = Complejo.objects.filter(activo=True).values_list('pais', flat=True).distinct().order_by('pais')
-    
-    # Agrupar complejos por país y provincia
-    complejos_agrupados = {}
-    for item in complejos_data:
-        complejo = item['complejo']
-        pais_key = complejo.pais
-        provincia_key = complejo.provincia
-        
-        if pais_key not in complejos_agrupados:
-            complejos_agrupados[pais_key] = {}
-        
-        if provincia_key not in complejos_agrupados[pais_key]:
-            complejos_agrupados[pais_key][provincia_key] = []
+        from reservas.models import ReservaFija, ReservaFijaLiberacion, Reserva
+        # Obtener turnos del día
+        turnos = Turno.objects.filter(
+            cancha=cancha,
+            fecha=fecha
+        ).order_by('hora_inicio')
+        turnos_dict = {turno.hora_inicio: turno for turno in turnos}
+
+        # Obtener reservas simples del día
+        reservas_simples = Reserva.objects.filter(
+            cancha=cancha,
+            fecha=fecha,
+            estado__in=['PENDIENTE', 'CONFIRMADA']
+        )
+        reservas_simples_horas = set(r.hora_inicio.strftime('%H:%M') for r in reservas_simples)
+
+        # Obtener reservas fijas activas para ese día de semana
+        dia_semana = fecha.weekday()  # 0=Lunes
+        reservas_fijas = ReservaFija.objects.filter(
+            cancha=cancha,
+            dia_semana=dia_semana,
+            estado='ACTIVA'
+        )
+
+        # Crear lista de horarios
+        horarios = []
+        hora_actual = cancha.horario_apertura
+        duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
+
+        while hora_actual < cancha.horario_cierre:
+            hora_fin = (datetime.combine(fecha, hora_actual) + duracion).time()
+            if hora_fin > cancha.horario_cierre:
+                break
+            es_hoy = fecha == timezone.now().date()
+            hora_pasada = es_hoy and hora_actual < timezone.now().time()
+            ocupado = False
+            precio = float(cancha.precio_hora)
+            if not hora_pasada:
+                # 1. Si existe un turno y no está disponible
+                turno = turnos_dict.get(hora_actual)
+                if turno and turno.estado != 'DISPONIBLE':
+                    ocupado = True
+                    precio = float(turno.precio)
+                # 2. Si hay una reserva simple para ese horario
+                elif hora_actual.strftime('%H:%M') in reservas_simples_horas:
+                    ocupado = True
+                else:
+                    # 3. Si hay una reserva fija activa y no liberada que solape
+                    for rf in reservas_fijas:
+                        # Chequear si está liberada para esta fecha
+                        if ReservaFijaLiberacion.objects.filter(reserva_fija=rf, fecha=fecha).exists():
+                            continue
+                        # Chequear solapamiento
+                        inicio_fijo = rf.hora_inicio
+                        fin_fijo = rf.hora_fin
+                        inicio = hora_actual
+                        fin = hora_fin
+                        if (inicio < fin_fijo and fin > inicio_fijo):
+                            ocupado = True
+                            break
+                horarios.append({
+                    'hora_inicio': hora_actual.strftime('%H:%M'),
+                    'hora_fin': hora_fin.strftime('%H:%M'),
+                    'ocupado': ocupado,
+                    'precio': precio,
+                })
+            hora_actual = (datetime.combine(fecha, hora_actual) + duracion).time()
+            if hora_actual <= (datetime.combine(fecha, hora_actual) - duracion).time():
+                break
         
         complejos_agrupados[pais_key][provincia_key].append(item)
     
