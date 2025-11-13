@@ -639,13 +639,11 @@ def toggle_cancha(request, slug, cancha_id):
 def obtener_horarios_disponibles(request, cancha_id):
     from reservas.models import ReservaFija, ReservaFijaLiberacion, Reserva, Turno
     from django.db import models
-    """
-    API endpoint para obtener horarios disponibles de una cancha en una fecha.
-    Actualizado para usar el sistema de Turnos y bloquear por reservas fijas activas no liberadas.
-    """
+
     cancha = get_object_or_404(Cancha, id=cancha_id, activo=True)
     fecha_str = request.GET.get('fecha', timezone.now().date().isoformat())
 
+    # Parseo de fecha
     try:
         fecha = datetime.fromisoformat(fecha_str).date()
     except ValueError:
@@ -655,27 +653,32 @@ def obtener_horarios_disponibles(request, cancha_id):
     if fecha < timezone.now().date():
         return JsonResponse({'error': 'No se puede reservar en fechas pasadas'}, status=400)
 
-    # Verificar que la cancha tenga horarios configurados
+    # Debe tener horarios configurados
     if not cancha.horario_apertura or not cancha.horario_cierre:
         return JsonResponse({'error': 'Esta cancha no tiene horarios configurados'}, status=400)
 
-    # Obtener turnos del día
+    # Obtener turnos generados para ese día
     turnos = Turno.objects.filter(
         cancha=cancha,
         fecha=fecha
     ).order_by('hora_inicio')
-    turnos_dict = {turno.hora_inicio: turno for turno in turnos}
 
-    # Obtener reservas simples del día
+    turnos_dict = {t.hora_inicio: t for t in turnos}
+
+    # Reservas simples
     reservas_simples = Reserva.objects.filter(
         cancha=cancha,
         fecha=fecha,
         estado__in=['PENDIENTE', 'CONFIRMADA']
     )
-    reservas_simples_horas = set(r.hora_inicio.strftime('%H:%M') for r in reservas_simples)
 
-    # Obtener reservas fijas activas para ese día de semana
+    reservas_simples_horas = {
+        r.hora_inicio.strftime('%H:%M') for r in reservas_simples
+    }
+
+    # Reservas fijas activas
     dia_semana = fecha.weekday()
+
     reservas_fijas = ReservaFija.objects.filter(
         cancha=cancha,
         dia_semana=dia_semana,
@@ -685,7 +688,7 @@ def obtener_horarios_disponibles(request, cancha_id):
         models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
     )
 
-    # Obtener liberaciones de reservas fijas para esa fecha
+    # Liberaciones de reserva fija en esa fecha
     liberaciones = set(
         ReservaFijaLiberacion.objects.filter(
             reserva_fija__cancha=cancha,
@@ -693,13 +696,13 @@ def obtener_horarios_disponibles(request, cancha_id):
         ).values_list('reserva_fija_id', flat=True)
     )
 
-    # Crear lista de horarios
+    # Generar horarios del día
     horarios = []
     hora_actual = cancha.horario_apertura
     duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
 
-
     while hora_actual < cancha.horario_cierre:
+
         hora_fin = (datetime.combine(fecha, hora_actual) + duracion).time()
         if hora_fin > cancha.horario_cierre:
             break
@@ -711,34 +714,44 @@ def obtener_horarios_disponibles(request, cancha_id):
         precio = float(cancha.precio_hora)
 
         if not hora_pasada:
-            # 1. Si existe un turno y no está disponible
+
+            # 1) Turno generado
             turno = turnos_dict.get(hora_actual)
             if turno and turno.estado != 'DISPONIBLE':
                 ocupado = True
                 precio = float(turno.precio)
-            # 2. Si hay una reserva simple para ese horario
+
+            # 2) Reserva simple
             elif hora_actual.strftime('%H:%M') in reservas_simples_horas:
                 ocupado = True
+
+            # 3) Reserva fija activa que inicia exactamente en este horario
             else:
-                # 3. Si hay una reserva fija activa y no liberada que INICIA en este horario
+                inicio_turno = datetime.combine(fecha, hora_actual)
+
                 for rf in reservas_fijas:
                     if rf.id in liberaciones:
                         continue
-                    if hora_actual == rf.hora_inicio:
+
+                    inicio_rf = datetime.combine(fecha, rf.hora_inicio)
+
+                    # CORRECCIÓN IMPORTANTE:
+                    # Solo ocupa si la reserva fija empieza EXACTAMENTE en este turno.
+                    if inicio_turno == inicio_rf:
                         ocupado = True
                         break
 
-            horarios.append({
-                'hora_inicio': hora_actual.strftime('%H:%M'),
-                'hora_fin': hora_fin.strftime('%H:%M'),
-                'ocupado': ocupado,
-                'precio': precio,
-            })
+        horarios.append({
+            'hora_inicio': hora_actual.strftime('%H:%M'),
+            'hora_fin': hora_fin.strftime('%H:%M'),
+            'ocupado': ocupado,
+            'precio': precio,
+        })
 
+        # Avanzar al siguiente turno
         hora_actual = (datetime.combine(fecha, hora_actual) + duracion).time()
-        if hora_actual <= (datetime.combine(fecha, hora_actual) - duracion).time():
-            break
 
+    # Respuesta final
     return JsonResponse({
         'cancha': {
             'id': cancha.id,
