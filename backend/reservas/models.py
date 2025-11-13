@@ -94,7 +94,7 @@ class Turno(models.Model):
 class Reserva(models.Model):
     def clean(self):
         from django.core.exceptions import ValidationError
-        # Solo bloquear si ya existe una reserva para ese horario que no esté CANCELADA ni PAUSADA
+        # Solo bloquear si ya existe otra reserva para ese horario que no esté CANCELADA ni PAUSADA
         existe = Reserva.objects.filter(
             cancha=self.cancha,
             fecha=self.fecha,
@@ -102,6 +102,7 @@ class Reserva(models.Model):
         ).exclude(id=self.id).exclude(estado__in=['CANCELADA', 'PAUSADA']).exists()
         if existe:
             raise ValidationError('Ya existe una reserva para este horario.')
+
     def cancelar(self):
         """
         Cancela la reserva si está pendiente o confirmada y no está pagada.
