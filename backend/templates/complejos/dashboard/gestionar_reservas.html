@@ -360,7 +360,7 @@
                                             <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
                                         </a>
                                         {% if reserva.estado == 'PENDIENTE' %}
-                                            <form method="post" action="{% url 'reservas:confirmar' reserva.id %}" class="d-inline confirmar-reserva-form" style="display: inline;">
+                                            <form method="post" action="{% url 'complejos:confirmar' reserva.id %}" class="d-inline confirmar-reserva-form" style="display: inline;">
                                                 {% csrf_token %}
                                                 <button type="button" class="btn btn-outline-success btn-confirmar-reserva" title="Confirmar">
                                                     <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span>
@@ -405,7 +405,7 @@
                                     <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
                                 </a>
                                 {% if reserva.estado == 'PENDIENTE' %}
-                                    <form method="post" action="{% url 'reservas:confirmar' reserva.id %}" class="d-inline confirmar-reserva-form flex-fill">
+                                    <form method="post" action="{% url 'complejos:confirmar' reserva.id %}" class="d-inline confirmar-reserva-form flex-fill">
                                         {% csrf_token %}
                                         <button type="button" class="btn btn-outline-success btn-sm btn-confirmar-reserva w-100" title="Confirmar">
                                             <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span>
