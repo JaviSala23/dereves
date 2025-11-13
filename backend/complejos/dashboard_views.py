@@ -445,9 +445,34 @@ def crear_reserva_simple_dashboard(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'Error: {e}'})
 
-# Stub para confirmar reserva desde dashboard (solo redirige por ahora)
+
+# Confirmar reserva desde dashboard: cambia estado a CONFIRMADA y marca como no pagada
 @login_required
 @require_POST
 def confirmar(request, reserva_id):
-    # Aquí se implementará la lógica de confirmación
+    try:
+        reserva = Reserva.objects.get(id=reserva_id)
+    except Reserva.DoesNotExist:
+        messages.error(request, 'Reserva no encontrada.')
+        return redirect(reverse('complejos:gestionar_reservas'))
+
+    # Verificar que el usuario sea dueño del complejo de la reserva
+    try:
+        if reserva.cancha.complejo.dueno != request.user.perfil_dueno:
+            messages.error(request, 'No tienes permiso para confirmar esta reserva.')
+            return redirect(reverse('complejos:gestionar_reservas'))
+    except AttributeError:
+        messages.error(request, 'Solo dueños pueden confirmar reservas.')
+        return redirect(reverse('complejos:gestionar_reservas'))
+
+    if reserva.estado == 'CONFIRMADA':
+        messages.warning(request, 'La reserva ya estaba confirmada.')
+    elif reserva.estado == 'CANCELADA':
+        messages.error(request, 'No se puede confirmar una reserva cancelada.')
+    else:
+        reserva.estado = 'CONFIRMADA'
+        reserva.pagado = False  # Confirmada pero no pagada
+        reserva.save(update_fields=['estado', 'pagado'])
+        messages.success(request, 'Reserva confirmada exitosamente. Ahora figura como pendiente de pago.')
+
     return redirect(reverse('complejos:gestionar_reservas'))
