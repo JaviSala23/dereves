@@ -127,6 +127,10 @@ def lista_complejos(request):
             cancha=cancha,
             dia_semana=dia_semana,
             estado='ACTIVA'
+        ).filter(
+            fecha_inicio__lte=fecha
+        ).filter(
+            models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
         )
 
         # Crear lista de horarios
@@ -495,6 +499,8 @@ def toggle_cancha(request, slug, cancha_id):
 
 
 def obtener_horarios_disponibles(request, cancha_id):
+    from reservas.models import ReservaFija, ReservaFijaLiberacion
+    from django.db import models
     """
     API endpoint para obtener horarios disponibles de una cancha en una fecha.
     Actualizado para usar el sistema de Turnos.
@@ -904,15 +910,15 @@ def crear_reserva_dueno(request, complejo_slug):
     # Obtener datos del formulario
     cancha_id = request.POST.get('cancha_id')
     fecha_str = request.POST.get('fecha')
-    hora_inicio_str = request.POST.get('hora_inicio')
-    tipo_reserva = request.POST.get('tipo_reserva', 'ADMINISTRATIVA')
-    nombre_cliente = request.POST.get('nombre_cliente', '')
-    telefono_cliente = request.POST.get('telefono_cliente', '')
-    observaciones = request.POST.get('observaciones', '')
-    precio_str = request.POST.get('precio', '')
-    
-    try:
-        cancha = Cancha.objects.get(id=cancha_id, complejo=complejo)
+        fecha = request.GET.get('fecha')  # formato YYYY-MM-DD
+        reservas_fijas = ReservaFija.objects.filter(
+            cancha=cancha,
+            dia_semana=dia_semana,
+            estado='ACTIVA',
+            fecha_inicio__lte=fecha
+        ).filter(
+            models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
+        )
         fecha = datetime.fromisoformat(fecha_str).date()
         hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M').time()
         
