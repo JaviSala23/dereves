@@ -1,3 +1,4 @@
+    path('dashboard/reservas/<int:reserva_id>/confirmar/', dashboard_views.confirmar, name='confirmar'),
 from django.urls import path
 from . import views
 from . import dashboard_views
