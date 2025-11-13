@@ -242,53 +242,6 @@ class Reserva(models.Model):
             hora_inicio=self.hora_inicio
         ).delete()
         super().delete(*args, **kwargs)
-        ],
-        help_text='0=Lunes, 6=Domingo'
-    )
-    hora_inicio = models.TimeField()
-    hora_fin = models.TimeField()
-    
-    # Vigencia del turno fijo
-    fecha_inicio = models.DateField(
-        help_text='Primera fecha en que se aplicará esta reserva fija'
-    )
-    fecha_fin = models.DateField(
-        null=True,
-        blank=True,
-        help_text='Fecha final del turno fijo (opcional, si es null es indefinido)'
-    )
-    
-    # Estado, pagado y precio
-    ESTADO_RESERVA_CHOICES = [
-        ('PENDIENTE', 'Pendiente'),
-        ('CONFIRMADA', 'Confirmada'),
-        ('CANCELADA', 'Cancelada'),
-        ('NO_ASISTIO', 'No Asistió'),
-        ('COMPLETADA', 'Completada'),
-    ]
-    estado = models.CharField(
-        max_length=20,
-        choices=ESTADO_RESERVA_CHOICES,
-        default='PENDIENTE'
-    )
-    pagado = models.BooleanField(default=False)
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
-    
-    # Observaciones
-    observaciones = models.TextField(blank=True)
-    
-    # Quién creó la reserva fija (el dueño)
-    creada_por = models.ForeignKey(
-        'cuentas.PerfilDueno',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='reservas_fijas_creadas'
-    )
-    
-    # Auditoría
-    creado_en = models.DateTimeField(auto_now_add=True)
-    actualizado_en = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name = 'Reserva Fija'
