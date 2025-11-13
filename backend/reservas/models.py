@@ -1,3 +1,10 @@
+
+from django.db import models
+from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
+import secrets
+
 # Permitir liberar una ocurrencia específica de una reserva fija (sin cancelar la recurrencia)
 class ReservaFijaLiberacion(models.Model):
     reserva_fija = models.ForeignKey('ReservaFija', on_delete=models.CASCADE, related_name='liberaciones')
@@ -12,11 +19,6 @@ class ReservaFijaLiberacion(models.Model):
 
     def __str__(self):
         return f"Liberación {self.reserva_fija} en {self.fecha}"
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from datetime import timedelta
-import secrets
 
 
 class MetodoPago(models.Model):
