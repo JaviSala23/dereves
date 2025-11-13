@@ -461,12 +461,19 @@ def crear_reserva(request, cancha_id):
 @login_required
 def detalle_reserva(request, reserva_id):
     """Detalle de una reserva específica."""
-    reserva = get_object_or_404(
-        Reserva.objects.select_related(
-            'turno__cancha__complejo',
-            'jugador__usuario'
-        ),
-        id=reserva_id
+    from django.shortcuts import render, get_object_or_404, redirect
+    from django.contrib.auth.decorators import login_required
+    from django.contrib import messages
+    from django.http import JsonResponse
+    from django.utils import timezone
+    from django.db.models import Q
+    from datetime import datetime, timedelta, time
+    from .models import ReservaFija, ReservaFijaLiberacion, Turno
+    from .models import (
+        Reserva, MetodoPago, PartidoAbierto, JugadorPartido, Torneo, BloqueoTorneo
+    )
+    from django.db import models
+    from complejos.models import Cancha, Complejo
     )
     
     # Verificar que sea del usuario o del dueño del complejo
