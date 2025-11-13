@@ -743,8 +743,11 @@ def obtener_horarios_disponibles(request, cancha_id):
                     fin_res = datetime.combine(fecha, r_fin)
                     print(f"Comparando turno {hora_actual}-{hora_fin} con reserva {r_inicio}-{r_fin}")
                     # Solapamiento: inicio_turno < fin_res y fin_turno > inicio_res
-                    if inicio_turno < fin_res and fin_turno > inicio_res:
-                        print(f"OCUPADO por reserva simple: {hora_actual}-{hora_fin} solapa con {r_inicio}-{r_fin}")
+                    if (
+                        (inicio_turno < fin_res and fin_turno > inicio_res)
+                        or (inicio_turno == inicio_res and fin_turno == fin_res)
+                    ):
+                        print(f"OCUPADO por reserva simple: {hora_actual}-{hora_fin} solapa o coincide con {r_inicio}-{r_fin}")
                         ocupado = True
                         break
                 # 3) Reserva fija activa que inicia exactamente en este horario
