@@ -55,7 +55,7 @@ def turnos_fijos_ocupados(request):
     reservas_fijas = ReservaFija.objects.filter(
         cancha=cancha,
         dia_semana=dia_semana,
-        estado='CONFIRMADA'
+        estado='ACTIVA'
     )
     horarios_ocupados = []
     for reserva_fija in reservas_fijas:
@@ -109,7 +109,7 @@ def horarios_cancha(request, cancha_id):
     reservas_fijas = ReservaFija.objects.filter(
         cancha=cancha,
         dia_semana=dia_semana,
-        estado='CONFIRMADA',
+        estado='ACTIVA',
         fecha_inicio__lte=fecha
     ).filter(
         models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
@@ -187,7 +187,7 @@ def validar_reserva_fija(request):
             cancha_id=cancha_id,
             dia_semana=dia_semana,
             hora_inicio=hora_inicio_obj,
-            estado='CONFIRMADA'
+            estado='ACTIVA'
         ).exists()
         return JsonResponse({'yafijo': existe})
     except (ValueError, Exception):
@@ -206,7 +206,7 @@ def validar_reserva_fija(request):
             cancha_id=cancha_id,
             dia_semana=dia_semana,
             hora_inicio=hora_inicio,
-            estado='CONFIRMADA'
+            estado='ACTIVA'
         ).exists()
     return JsonResponse({'yafijo': existe})
 from django.shortcuts import render, get_object_or_404, redirect
@@ -264,7 +264,7 @@ def lista_complejos(request):
         reservas_fijas = ReservaFija.objects.filter(
             cancha=cancha,
             dia_semana=dia_semana,
-            estado='CONFIRMADA'
+            estado='ACTIVA'
         ).filter(
             fecha_inicio__lte=fecha
         ).filter(
@@ -679,7 +679,7 @@ def obtener_horarios_disponibles(request, cancha_id):
     reservas_fijas = ReservaFija.objects.filter(
         cancha=cancha,
         dia_semana=dia_semana,
-        estado='CONFIRMADA',
+        estado='ACTIVA',
         fecha_inicio__lte=fecha
     ).filter(
         models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
@@ -1366,7 +1366,7 @@ def fechas_ocupadas_cancha(request, cancha_id):
                 reservas_fijas = ReservaFija.objects.filter(
                     cancha=cancha,
                     dia_semana=dia_semana,
-                    estado='CONFIRMADA',
+                    estado='ACTIVA',
                     fecha_inicio__lte=fecha
                 ).filter(
                     Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=fecha)
