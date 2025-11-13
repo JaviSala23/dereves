@@ -910,28 +910,28 @@ def crear_reserva_dueno(request, complejo_slug):
     # Obtener datos del formulario
     cancha_id = request.POST.get('cancha_id')
     fecha_str = request.POST.get('fecha')
-        fecha = request.GET.get('fecha')  # formato YYYY-MM-DD
-        reservas_fijas = ReservaFija.objects.filter(
-            cancha=cancha,
-            dia_semana=dia_semana,
-            estado='ACTIVA',
-            fecha_inicio__lte=fecha
-        ).filter(
-            models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
-        )
+    hora_inicio_str = request.POST.get('hora_inicio')
+    tipo_reserva = request.POST.get('tipo_reserva')
+    nombre_cliente = request.POST.get('nombre_cliente')
+    telefono_cliente = request.POST.get('telefono_cliente')
+    precio_str = request.POST.get('precio')
+    observaciones = request.POST.get('observaciones')
+
+    from .models import Cancha
+    from datetime import datetime, timedelta
+    try:
+        cancha = get_object_or_404(Cancha, id=cancha_id, complejo=complejo)
         fecha = datetime.fromisoformat(fecha_str).date()
         hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M').time()
-        
         # Calcular hora fin
         duracion_minutos = cancha.duracion_turno_minutos or 90
         hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=duracion_minutos)).time()
-        
         # Precio
         if precio_str:
             precio = float(precio_str)
         else:
-            precio = cancha.precio_hora if tipo_reserva == 'CLIENTE' else 0
-        
+            precio = float(cancha.precio_hora) if tipo_reserva == 'CLIENTE' else 0
+        hora_inicio_str = hora_inicio.strftime('%H:%M')
     except (ValueError, TypeError, Cancha.DoesNotExist) as e:
         messages.error(request, f'Datos inválidos: {str(e)}')
         return redirect('complejos:calendario_reservas_dueno', complejo_slug=complejo_slug)
