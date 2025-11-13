@@ -422,10 +422,19 @@
             {% endif %}
         </div>
     </div>
+    
+    <!-- Botón Eliminar Complejo -->
+    <div class="text-center mt-4">
+        <button id="btnEliminarComplejo" class="btn btn-danger btn-lg ms-2">
+            <span class="material-symbols-rounded" style="vertical-align: middle;">delete</span>
+            Eliminar Complejo
+        </button>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 // Toggle activar/desactivar cancha
 document.querySelectorAll('.btn-toggle-cancha').forEach(btn => {
@@ -449,6 +458,67 @@ document.querySelectorAll('.btn-toggle-cancha').forEach(btn => {
             }
         });
     });
+});
+
+// Eliminar complejo
+document.getElementById('btnEliminarComplejo').addEventListener('click', function() {
+    const url = "{% url 'complejos:eliminar' complejo.slug %}";
+    
+    Swal.fire({
+        title: '¿Eliminar complejo?',
+        text: "¿Estás seguro de eliminar este complejo? Esta acción es irreversible.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+});
+
+// Confirmación y eliminación en cascada del complejo
+document.addEventListener('DOMContentLoaded', function() {
+    const btnEliminar = document.getElementById('btnEliminarComplejo');
+    if (btnEliminar) {
+        btnEliminar.addEventListener('click', function() {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                html: 'Esta acción <b>eliminará el complejo, todas sus canchas y todas las reservas asociadas</b>.<br>Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch("{% url 'complejos:eliminar' complejo.slug %}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Eliminado', data.message, 'success').then(() => {
+                                window.location.href = "{% url 'complejos:mis_complejos_dashboard' %}";
+                            });
+                        } else {
+                            Swal.fire('Error', data.error || 'No se pudo eliminar el complejo', 'error');
+                        }
+                    })
+                    .catch(() => {
+                        Swal.fire('Error', 'No se pudo eliminar el complejo', 'error');
+                    });
+                }
+            });
+        });
+    }
 });
 </script>
 {% endblock %}

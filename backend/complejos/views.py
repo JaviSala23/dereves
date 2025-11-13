@@ -243,7 +243,8 @@ def crear_complejo(request):
                 complejo.save()
             
             messages.success(request, f'¡Complejo {nombre} creado exitosamente!')
-            return redirect('complejos:detalle', slug=complejo.slug)
+            print('DEBUG: Redirigiendo a gestionar', complejo.slug)
+            return redirect('complejos:gestionar', slug=complejo.slug)
     
     return render(request, 'complejos/crear.html')
 
@@ -1033,7 +1034,7 @@ def crear_reserva_fija_dueno(request, complejo_slug):
     telefono_cliente = request.POST.get('telefono_cliente')
     precio = request.POST.get('precio')
     
-    # Validar que la cancha pertenezca al complejo
+    # Validar que la cancha pertenzca al complejo
     cancha = get_object_or_404(Cancha, id=cancha_id, complejo=complejo)
     
     try:
@@ -1122,5 +1123,20 @@ def fechas_ocupadas_cancha(request, cancha_id):
         if hasattr(t, 'reserva'):
             ocupadas.add(t.fecha.isoformat())
     return JsonResponse(list(ocupadas), safe=False)
+
+@login_required
+def eliminar_complejo(request, slug):
+    """
+    Elimina un complejo y todo lo relacionado (canchas, reservas, etc) en cascada.
+    Solo el dueño puede eliminarlo.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    complejo = get_object_or_404(Complejo, slug=slug)
+    if complejo.dueno.usuario != request.user:
+        return JsonResponse({'error': 'No tienes permiso para eliminar este complejo.'}, status=403)
+    nombre = complejo.nombre
+    complejo.delete()
+    return JsonResponse({'success': True, 'message': f'Complejo "{nombre}" eliminado correctamente.'})
 
 

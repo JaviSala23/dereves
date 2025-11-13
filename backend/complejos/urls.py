@@ -49,4 +49,5 @@ urlpatterns = [
     # Detalle y edición
     path('<slug:slug>/', views.detalle_complejo, name='detalle'),
     path('<slug:slug>/editar/', views.editar_complejo, name='editar'),
+    path('<slug:slug>/eliminar/', views.eliminar_complejo, name='eliminar'),
 ]
