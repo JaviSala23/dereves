@@ -530,17 +530,17 @@ function renderHorarios(cancha, ocupados, inputId) {
 function renderHorariosFija(cancha, ocupados, inputId, horariosFijos=[]) {
     if (!Array.isArray(ocupados)) ocupados = [];
     if (!Array.isArray(horariosFijos)) horariosFijos = [];
-    // Si el backend devuelve objetos {hora_inicio, hora_fin}, usar ese formato para solapamiento
-    let rangosFijos = [];
-    if (horariosFijos.length > 0 && typeof horariosFijos[0] === 'object' && horariosFijos[0].hora_inicio) {
-        rangosFijos = horariosFijos.map(f => ({
-            inicio: f.hora_inicio,
-            fin: f.hora_fin
-        }));
-    } else {
-        // fallback: solo hora exacta
-        rangosFijos = horariosFijos.map(h => ({inicio: h, fin: h}));
-    }
+    // Normalizar: si viene como string, convertir a objeto {hora_inicio, hora_fin}
+    let rangosFijos = horariosFijos.map(f => {
+        if (typeof f === 'object' && f.hora_inicio && f.hora_fin) {
+            return {inicio: f.hora_inicio, fin: f.hora_fin};
+        } else if (typeof f === 'string') {
+            // fallback: solo hora exacta
+            return {inicio: f, fin: f};
+        } else {
+            return null;
+        }
+    }).filter(Boolean);
     let horarios = cancha.turnos;
     if (!horarios || horarios.length === 0) {
         horarios = [];
