@@ -698,6 +698,7 @@ def obtener_horarios_disponibles(request, cancha_id):
     hora_actual = cancha.horario_apertura
     duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
 
+
     while hora_actual < cancha.horario_cierre:
         hora_fin = (datetime.combine(fecha, hora_actual) + duracion).time()
         if hora_fin > cancha.horario_cierre:
@@ -719,17 +720,11 @@ def obtener_horarios_disponibles(request, cancha_id):
             elif hora_actual.strftime('%H:%M') in reservas_simples_horas:
                 ocupado = True
             else:
-                # 3. Si hay una reserva fija activa y no liberada que solape
+                # 3. Si hay una reserva fija activa y no liberada que INICIA en este horario
                 for rf in reservas_fijas:
                     if rf.id in liberaciones:
                         continue
-                    # Convertir a datetime para comparar correctamente los rangos
-                    slot_inicio = datetime.combine(fecha, hora_actual)
-                    slot_fin = datetime.combine(fecha, hora_fin)
-                    rf_inicio = datetime.combine(fecha, rf.hora_inicio)
-                    rf_fin = datetime.combine(fecha, rf.hora_fin)
-                    # Solapamiento real: el slot se solapa con la reserva fija
-                    if slot_inicio < rf_fin and slot_fin > rf_inicio:
+                    if hora_actual == rf.hora_inicio:
                         ocupado = True
                         break
 
@@ -1361,7 +1356,7 @@ def fechas_ocupadas_cancha(request, cancha_id):
             if not ocupado:
                 if Reserva.objects.filter(cancha=cancha, fecha=fecha, hora_inicio=hora_actual.time(), estado__in=['PENDIENTE', 'CONFIRMADA']).exists():
                     ocupado = True
-            # 3. ¿Hay una reserva fija activa y no liberada que solape?
+            # 3. ¿Hay una reserva fija activa y no liberada que INICIA en este horario?
             if not ocupado:
                 reservas_fijas = ReservaFija.objects.filter(
                     cancha=cancha,
@@ -1376,12 +1371,8 @@ def fechas_ocupadas_cancha(request, cancha_id):
                     # Si está liberada, no bloquear
                     if ReservaFijaLiberacion.objects.filter(reserva_fija=rf, fecha=fecha).exists():
                         continue
-                    # Chequear solapamiento exacto de horarios
-                    inicio_fijo = rf.hora_inicio
-                    fin_fijo = rf.hora_fin
-                    inicio = hora_actual.time()
-                    fin = (hora_actual + duracion).time()
-                    if (inicio < fin_fijo and fin > inicio_fijo):
+                    # Solo bloquear si el inicio del slot coincide con el inicio de la reserva fija
+                    if hora_actual.time() == rf.hora_inicio:
                         ocupado_fijo = True
                         break
                 if ocupado_fijo:
