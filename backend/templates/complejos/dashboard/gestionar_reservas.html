@@ -644,7 +644,8 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             const [hh, mm] = h.split(':');
             hNorm = `${hh.padStart(2, '0')}:${mm ? mm.padStart(2, '0') : '00'}`;
         }
-        const ocupado = ocupados.includes(hNorm);
+        // Cambia aquí: si el horario está en ocupados, deshabilitar SIEMPRE (reserva simple o fija)
+        let ocupado = ocupados.includes(hNorm);
         let fijo = false;
         let tipoOcupacion = null;
         for (const rf of rangosFijos) {
