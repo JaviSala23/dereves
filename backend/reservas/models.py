@@ -136,8 +136,8 @@ class Reserva(models.Model):
         ('COMPLETADA', 'Completada'),
     ]
     
-    cancha = models.ForeignKey(
-        'complejos.Cancha',
+    turno = models.ForeignKey(
+        'Turno',
         on_delete=models.CASCADE,
         related_name='reservas'
     )
@@ -148,10 +148,6 @@ class Reserva(models.Model):
         null=True,
         blank=True
     )
-    fecha = models.DateField()
-    hora_inicio = models.TimeField()
-    hora_fin = models.TimeField()
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.CharField(
         max_length=20,
         choices=ESTADO_CHOICES,
@@ -167,7 +163,6 @@ class Reserva(models.Model):
     observaciones = models.TextField(blank=True)
     # Permitir nombre de cliente no registrado (para reservas simples)
     nombre_cliente = models.CharField(max_length=200, blank=True, help_text='Nombre del cliente si no es jugador registrado')
-    
     # Campos de auditoría
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
