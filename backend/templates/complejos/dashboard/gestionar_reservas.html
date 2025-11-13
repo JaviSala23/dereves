@@ -430,8 +430,15 @@
 {% endblock %}
 
 {% block extra_js %}
+
 {{ canchas|json_script:"canchas-data" }}
 <script>
+// Definición de canchasOptions para selects dinámicos
+const canchasOptions = `
+<option value="">Seleccione una cancha</option>
+{% for cancha in canchas %}
+<option value="{{ cancha.id }}">{{ cancha.complejo.nombre }} - {{ cancha.nombre }}</option>
+{% endfor %}`;
 
 // ================= FUNCIONES MEJORADAS ===================
 
