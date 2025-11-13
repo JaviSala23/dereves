@@ -1290,16 +1290,17 @@ def buscar_jugador_turno(request):
 from django.http import JsonResponse
 
 
+
 @login_required
 def fechas_ocupadas_cancha(request, cancha_id):
     """
     Devuelve un array de fechas (YYYY-MM-DD) en las que la cancha está completamente ocupada:
-    - Hay al menos un turno simple reservado (Reserva PENDIENTE o CONFIRMADA)
-    - O hay una reserva fija CONFIRMADA para ese día de semana y NO está liberada ese día
+    - TODOS los horarios de la fecha están ocupados (por reserva simple, fija no liberada, o turno bloqueado/no disponible)
+    La lógica es equivalente a obtener_horarios_disponibles.
     """
     from reservas.models import Turno, Reserva, ReservaFija, ReservaFijaLiberacion
     from django.db.models import Q
-    from datetime import timedelta
+    from datetime import timedelta, datetime
     from django.utils import timezone
     from .models import Cancha
 
@@ -1311,30 +1312,54 @@ def fechas_ocupadas_cancha(request, cancha_id):
     for i in range(dias_a_buscar):
         fecha = hoy + timedelta(days=i)
         dia_semana = fecha.weekday()
-        # 1. ¿Hay reservas simples?
-        reservas_simples = Reserva.objects.filter(
-            cancha=cancha,
-            fecha=fecha,
-            estado__in=['PENDIENTE', 'CONFIRMADA']
-        ).exists()
-        if reservas_simples:
-            fechas_ocupadas.add(fecha.isoformat())
+        # Generar todos los horarios posibles para la cancha en ese día
+        if not cancha.horario_apertura or not cancha.horario_cierre:
             continue
-        # 2. ¿Hay reserva fija confirmada para ese día de semana y no liberada?
-        reservas_fijas = ReservaFija.objects.filter(
-            cancha=cancha,
-            dia_semana=dia_semana,
-            estado='CONFIRMADA',
-            fecha_inicio__lte=fecha
-        ).filter(
-            Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=fecha)
-        )
-        liberada = False
-        for rf in reservas_fijas:
-            if ReservaFijaLiberacion.objects.filter(reserva_fija=rf, fecha=fecha).exists():
-                liberada = True
+        hora_actual = datetime.combine(fecha, cancha.horario_apertura)
+        hora_cierre = datetime.combine(fecha, cancha.horario_cierre)
+        duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
+        todos_ocupados = True
+        while hora_actual + duracion <= hora_cierre:
+            hora_str = hora_actual.time().strftime('%H:%M')
+            hora_fin = (hora_actual + duracion).time().strftime('%H:%M')
+            ocupado = False
+            # 1. ¿Hay un turno para ese horario y está ocupado?
+            turno = Turno.objects.filter(cancha=cancha, fecha=fecha, hora_inicio=hora_actual.time()).first()
+            if turno:
+                if turno.estado != 'DISPONIBLE':
+                    ocupado = True
+            # 2. ¿Hay una reserva simple para ese horario?
+            if not ocupado:
+                if Reserva.objects.filter(cancha=cancha, fecha=fecha, hora_inicio=hora_actual.time(), estado__in=['PENDIENTE', 'CONFIRMADA']).exists():
+                    ocupado = True
+            # 3. ¿Hay una reserva fija activa y no liberada que solape?
+            if not ocupado:
+                reservas_fijas = ReservaFija.objects.filter(
+                    cancha=cancha,
+                    dia_semana=dia_semana,
+                    estado='CONFIRMADA',
+                    fecha_inicio__lte=fecha
+                ).filter(
+                    Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=fecha)
+                )
+                liberada = False
+                for rf in reservas_fijas:
+                    if ReservaFijaLiberacion.objects.filter(reserva_fija=rf, fecha=fecha).exists():
+                        liberada = True
+                        continue
+                    # Chequear solapamiento
+                    inicio_fijo = rf.hora_inicio
+                    fin_fijo = rf.hora_fin
+                    inicio = hora_actual.time()
+                    fin = (hora_actual + duracion).time()
+                    if (inicio < fin_fijo and fin > inicio_fijo):
+                        ocupado = True
+                        break
+            if not ocupado:
+                todos_ocupados = False
                 break
-        if reservas_fijas.exists() and not liberada:
+            hora_actual += duracion
+        if todos_ocupados:
             fechas_ocupadas.add(fecha.isoformat())
 
     return JsonResponse(list(fechas_ocupadas), safe=False)
