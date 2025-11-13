@@ -1,3 +1,175 @@
+
+@login_required
+def liberar_reserva_fija_fecha(request, reserva_fija_id):
+    """
+    Libera una ocurrencia específica de una reserva fija sin cancelar la recurrencia.
+    Solo puede ser ejecutado por el dueño del complejo.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método no permitido'}, status=405)
+    reserva_fija = get_object_or_404(ReservaFija, id=reserva_fija_id)
+    # Verificar que sea el dueño
+    try:
+        if reserva_fija.cancha.complejo.dueno != request.user.perfil_dueno:
+            return JsonResponse({
+                'success': False,
+                'message': 'No tienes permiso para liberar esta reserva fija.'
+            }, status=403)
+    except AttributeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Solo dueños pueden liberar reservas fijas.'
+        }, status=403)
+    # Obtener fecha desde el request
+    import json
+    try:
+        data = json.loads(request.body)
+        fecha_str = data.get('fecha')
+        motivo = data.get('motivo', '')
+        if not fecha_str:
+            return JsonResponse({
+                'success': False,
+                'message': 'Fecha requerida.'
+            }, status=400)
+        fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        # Validar que la fecha corresponda al día de la semana de la reserva fija
+        if fecha.weekday() != reserva_fija.dia_semana:
+            dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+            return JsonResponse({
+                'success': False,
+                'message': f'La fecha seleccionada no corresponde a un {dias[reserva_fija.dia_semana]}.'
+            }, status=400)
+        # Validar que la fecha esté dentro del rango de la reserva fija
+        if fecha < reserva_fija.fecha_inicio:
+            return JsonResponse({
+                'success': False,
+                'message': 'La fecha es anterior al inicio de la reserva fija.'
+            }, status=400)
+        if reserva_fija.fecha_fin and fecha > reserva_fija.fecha_fin:
+            return JsonResponse({
+                'success': False,
+                'message': 'La fecha es posterior al fin de la reserva fija.'
+            }, status=400)
+        # Crear o actualizar la liberación
+        liberacion, created = ReservaFijaLiberacion.objects.get_or_create(
+            reserva_fija=reserva_fija,
+            fecha=fecha,
+            defaults={'motivo': motivo}
+        )
+        if not created:
+            liberacion.motivo = motivo
+            liberacion.save()
+        # Liberar el turno si existe y está marcado como FIJO
+        turno = Turno.objects.filter(
+            cancha=reserva_fija.cancha,
+            fecha=fecha,
+            hora_inicio=reserva_fija.hora_inicio,
+            estado='FIJO'
+        ).first()
+        if turno:
+            turno.estado = 'DISPONIBLE'
+            turno.save()
+        action = 'liberada' if created else 'actualizada'
+        return JsonResponse({
+            'success': True,
+            'message': f'Reserva fija {action} para el {fecha.strftime("%d/%m/%Y")}.',
+            'liberacion_id': liberacion.id
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Datos inválidos.'
+        }, status=400)
+    except ValueError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Formato de fecha inválido.'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al liberar reserva: {str(e)}'
+        }, status=500)
+
+
+@login_required
+def cancelar_liberacion_reserva_fija(request, liberacion_id):
+    """
+    Cancela una liberación, volviendo a bloquear el turno.
+    Solo puede ser ejecutado por el dueño del complejo.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método no permitido'}, status=405)
+    liberacion = get_object_or_404(ReservaFijaLiberacion, id=liberacion_id)
+    reserva_fija = liberacion.reserva_fija
+    # Verificar que sea el dueño
+    try:
+        if reserva_fija.cancha.complejo.dueno != request.user.perfil_dueno:
+            return JsonResponse({
+                'success': False,
+                'message': 'No tienes permiso para cancelar esta liberación.'
+            }, status=403)
+    except AttributeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Solo dueños pueden cancelar liberaciones.'
+        }, status=403)
+    fecha = liberacion.fecha
+    liberacion.delete()
+    turno = Turno.objects.filter(
+        cancha=reserva_fija.cancha,
+        fecha=fecha,
+        hora_inicio=reserva_fija.hora_inicio
+    ).first()
+    if turno:
+        if turno.estado == 'DISPONIBLE':
+            turno.estado = 'FIJO'
+            turno.save()
+    else:
+        Turno.objects.create(
+            cancha=reserva_fija.cancha,
+            fecha=fecha,
+            hora_inicio=reserva_fija.hora_inicio,
+            hora_fin=reserva_fija.hora_fin,
+            precio=reserva_fija.precio,
+            estado='FIJO'
+        )
+    return JsonResponse({
+        'success': True,
+        'message': f'Liberación cancelada. El turno volvió a bloquearse.'
+    })
+
+
+@login_required
+def listar_liberaciones_reserva_fija(request, reserva_fija_id):
+    """
+    Lista todas las liberaciones de una reserva fija.
+    """
+    reserva_fija = get_object_or_404(ReservaFija, id=reserva_fija_id)
+    # Verificar que sea el dueño
+    try:
+        if reserva_fija.cancha.complejo.dueno != request.user.perfil_dueno:
+            return JsonResponse({
+                'success': False,
+                'message': 'No tienes permiso para ver estas liberaciones.'
+            }, status=403)
+    except AttributeError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Solo dueños pueden ver liberaciones.'
+        }, status=403)
+    liberaciones = ReservaFijaLiberacion.objects.filter(
+        reserva_fija=reserva_fija
+    ).order_by('fecha').values(
+        'id',
+        'fecha',
+        'motivo',
+        'creado_en'
+    )
+    return JsonResponse({
+        'success': True,
+        'liberaciones': list(liberaciones)
+    })
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -5,10 +177,12 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Q
 from datetime import datetime, timedelta, time
+from .models import ReservaFijaLiberacion
 from .models import (
     Turno, Reserva, MetodoPago, ReservaFija, 
     PartidoAbierto, JugadorPartido, Torneo, BloqueoTorneo
 )
+from django.db import models
 from complejos.models import Cancha, Complejo
 
 

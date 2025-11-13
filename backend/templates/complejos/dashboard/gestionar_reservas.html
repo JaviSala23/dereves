@@ -432,116 +432,71 @@
 {% block extra_js %}
 {{ canchas|json_script:"canchas-data" }}
 <script>
-// Confirmar reservas pendientes
-document.querySelectorAll('.btn-confirmar-reserva').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const form = this.closest('form');
-        Swal.fire({
-            title: '¿Confirmar reserva?',
-            text: '¿Deseas confirmar esta reserva pendiente?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#198754',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sí, confirmar',
-            cancelButtonText: 'No'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
-    });
-});
 
-// Cancelar reservas fijas desde el dashboard
-document.querySelectorAll('.btn-cancelar-reserva-fija').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const form = this.closest('form');
-        Swal.fire({
-            title: '¿Cancelar reserva fija?',
-            text: 'El horario quedará liberado.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sí, cancelar',
-            cancelButtonText: 'No'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
-    });
-});
+// ================= FUNCIONES MEJORADAS ===================
 
-// Utilidad para armar selects de canchas
-const canchasOptions = `
-<option value="">Seleccione una cancha</option>
-{% for cancha in canchas %}
-<option value="{{ cancha.id }}">{{ cancha.complejo.nombre }} - {{ cancha.nombre }}</option>
-{% endfor %}`;
-
-// Utilidad para obtener fechas ocupadas de una cancha
-async function obtenerFechasOcupadas(canchaId) {
-    const resp = await fetch(`/api/canchas/${canchaId}/fechas_ocupadas/`);
-    if (!resp.ok) return [];
-    return await resp.json(); // array de strings 'YYYY-MM-DD'
-}
-
-// Utilidad para obtener horarios posibles de una cancha
-function generarHorarios(cancha) {
-    const horarios = [];
-    const apertura = cancha.horario_apertura.split(":");
-    const cierre = cancha.horario_cierre.split(":");
-    let hora = parseInt(apertura[0]);
-    let minuto = parseInt(apertura[1]);
-    const finHora = parseInt(cierre[0]);
-    const finMinuto = parseInt(cierre[1]);
-    const duracion = cancha.duracion_turno_minutos;
-    while (hora < finHora || (hora === finHora && minuto <= finMinuto - duracion)) {
-        const h = hora.toString().padStart(2, '0');
-        const m = minuto.toString().padStart(2, '0');
-        horarios.push(`${h}:${m}`);
-        minuto += duracion;
-        if (minuto >= 60) {
-            hora += Math.floor(minuto / 60);
-            minuto = minuto % 60;
-        }
+// Función mejorada para renderizar horarios de reserva fija
+async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput, fecha = null) {
+    horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
+    horaInput.value = '';
+    if (!canchaId || diaSemana === null) {
+        horariosBox.innerHTML = '';
+        return;
     }
-    return horarios;
+    const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
+    const cancha = canchasData.find(c => c.id == canchaId);
+    if (!cancha) {
+        horariosBox.innerHTML = '';
+        return;
+    }
+    if (precioInput && cancha.precio_base) {
+        precioInput.value = cancha.precio_base;
+    }
+    let url = `/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`;
+    if (fecha) {
+        url += `&fecha=${fecha}`;
+    }
+    try {
+        const resp = await fetch(url);
+        const ocupados = await resp.json();
+        const horasOcupadas = ocupados.map(o => o.hora_inicio);
+        horariosBox.innerHTML = renderHorariosFija(cancha, horasOcupadas, horaInput.id, ocupados);
+        horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
+            if (!btn.disabled) {
+                btn.addEventListener('click', function() {
+                    horariosBox.querySelectorAll('button[data-hora]').forEach(b => {
+                        b.classList.remove('btn-success');
+                        b.classList.add('btn-outline-primary');
+                    });
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-success');
+                    horaInput.value = this.dataset.hora;
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Error cargando horarios:', error);
+        horariosBox.innerHTML = '<div class="text-danger small">Error al cargar horarios</div>';
+    }
 }
 
-// Renderiza los horarios como botones (disponibles/ocupados)
-function renderHorarios(cancha, ocupados, inputId) {
-    const horarios = generarHorarios(cancha);
-    let html = '<div class="d-flex flex-wrap gap-2">';
-    horarios.forEach(hora => {
-        const ocupado = ocupados.includes(hora);
-        html += `<button type="button" class="btn btn-sm ${ocupado ? 'btn-secondary' : 'btn-primary'}" style="min-width:70px;" ${ocupado ? 'disabled' : ''} onclick="document.getElementById('${inputId}').value='${hora}';this.blur();">${hora}</button>`;
-    });
-    html += '</div>';
-    return html;
-}
-
-// Renderiza los horarios como grid de botones (igual que en reserva fija)
-// Modificado: permite deshabilitar horarios fijos con color y tooltip
-function renderHorariosFija(cancha, ocupados, inputId, horariosFijos=[]) {
+// Función mejorada para renderizar horarios con soporte para liberaciones
+function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
     if (!Array.isArray(ocupados)) ocupados = [];
     if (!Array.isArray(horariosFijos)) horariosFijos = [];
-    // Normalizar: si viene como string, convertir a objeto {hora_inicio, hora_fin}
     let rangosFijos = horariosFijos.map(f => {
         if (typeof f === 'object' && f.hora_inicio && f.hora_fin) {
-            return {inicio: f.hora_inicio, fin: f.hora_fin};
+            return {
+                inicio: f.hora_inicio,
+                fin: f.hora_fin,
+                tipo: f.tipo || 'reserva_fija'
+            };
         } else if (typeof f === 'string') {
-            // fallback: solo hora exacta
-            return {inicio: f, fin: f};
-        } else {
-            return null;
+            return {inicio: f, fin: f, tipo: 'ocupado'};
         }
+        return null;
     }).filter(Boolean);
-    let horarios = cancha.turnos;
+    let horarios = cancha.turnos || [];
     if (!horarios || horarios.length === 0) {
         horarios = [];
         if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
@@ -551,24 +506,27 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos=[]) {
             while (h < hC || (h === hC && m <= mC - cancha.duracion_turno_minutos)) {
                 horarios.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
                 m += cancha.duracion_turno_minutos;
-                if (m >= 60) { h += Math.floor(m / 60); m = m % 60; }
+                if (m >= 60) {
+                    h += Math.floor(m / 60);
+                    m = m % 60;
+                }
             }
         }
     }
-    let html = '<div class="row">';
+    let html = '<div class="row g-2">';
     horarios.forEach((h, idx) => {
-        // Normalizar h a HH:MM
         let hNorm = h;
         if (typeof h === 'string') {
             const [hh, mm] = h.split(':');
-            hNorm = `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
+            hNorm = `${hh.padStart(2, '0')}:${mm ? mm.padStart(2, '0') : '00'}`;
         }
         const ocupado = ocupados.includes(hNorm);
-        // Chequear solapamiento con algún rango fijo
         let fijo = false;
+        let tipoOcupacion = null;
         for (const rf of rangosFijos) {
             if (horaSolapa(hNorm, cancha.duracion_turno_minutos, rf.inicio, rf.fin)) {
                 fijo = true;
+                tipoOcupacion = rf.tipo;
                 break;
             }
         }
@@ -578,22 +536,31 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos=[]) {
         if (fijo) {
             btnClass = 'btn-secondary';
             disabled = 'disabled';
-            tooltip = 'data-bs-toggle="tooltip" title="Horario bloqueado por reserva fija"';
+            const mensaje = tipoOcupacion === 'reserva_fija' 
+                ? 'Bloqueado por reserva fija' 
+                : 'Horario ocupado';
+            tooltip = `data-bs-toggle="tooltip" title="${mensaje}"`;
         } else if (ocupado) {
             btnClass = 'btn-outline-danger';
             disabled = 'disabled';
             tooltip = 'data-bs-toggle="tooltip" title="Horario ocupado"';
         }
-        html += `<div class='col-4 mb-2'><button type='button' class='btn btn-sm ${btnClass} w-100' data-hora='${hNorm}' ${disabled} ${tooltip}>${hNorm}</button></div>`;
-        if ((idx + 1) % 3 === 0) html += '</div><div class="row">';
+        html += `
+            <div class='col-4 col-md-3 col-lg-2'>
+                <button type='button' 
+                        class='btn btn-sm ${btnClass} w-100' 
+                        data-hora='${hNorm}' 
+                        ${disabled} 
+                        ${tooltip}>
+                    ${hNorm}
+                </button>
+            </div>`;
     });
     html += '</div>';
     return html;
 }
 
-// Devuelve true si el horario de inicio y duración solapa con el rango fijo
 function horaSolapa(hora, duracionMin, inicioFijo, finFijo) {
-    // hora, inicioFijo, finFijo en formato 'HH:MM'
     const [h, m] = hora.split(':').map(Number);
     const [hi, mi] = inicioFijo.split(':').map(Number);
     const [hf, mf] = finFijo.split(':').map(Number);
@@ -601,41 +568,54 @@ function horaSolapa(hora, duracionMin, inicioFijo, finFijo) {
     const fin = inicio + duracionMin;
     const inicioF = hi * 60 + mi;
     const finF = hf * 60 + mf;
-    // Solapan si inicio < finF y fin > inicioF
     return inicio < finF && fin > inicioF;
 }
 
-// Asegurar que flatpickr y el locale están cargados antes de usar
-function safeFlatpickr(input, opts) {
-    if (typeof flatpickr === 'undefined') {
-        alert('flatpickr no está cargado.');
-        return null;
-    }
-    if (window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.es) {
-        opts.locale = window.flatpickr.l10ns.es;
-    }
-    return flatpickr(input, opts);
-}
-
-// RESERVA FIJA (con flatpickr para elegir primer fecha válida)
 function abrirSwalReservaFija() {
     Swal.fire({
         title: 'Nueva Reserva Fija',
         html: `
             <form id='formSwalFija'>
-                <div class='mb-2'><label>Cancha</label><select id='swal-fija-cancha' name='cancha_id' class='form-select' required>${canchasOptions}</select></div>
-                <div class='mb-2'><label>Día</label><select id='swal-fija-dia' name='dia_semana' class='form-select' required>
-                    <option value='0'>Lunes</option><option value='1'>Martes</option><option value='2'>Miércoles</option><option value='3'>Jueves</option><option value='4'>Viernes</option><option value='5'>Sábado</option><option value='6'>Domingo</option>
-                </select></div>
-                <div class='mb-2'><label>Horario</label><div id='swal-fija-horarios-box'></div></div>
+                <div class='mb-2'>
+                    <label>Cancha</label>
+                    <select id='swal-fija-cancha' name='cancha_id' class='form-select' required>
+                        ${canchasOptions}
+                    </select>
+                </div>
+                <div class='mb-2'>
+                    <label>Día</label>
+                    <select id='swal-fija-dia' name='dia_semana' class='form-select' required>
+                        <option value='0'>Lunes</option>
+                        <option value='1'>Martes</option>
+                        <option value='2'>Miércoles</option>
+                        <option value='3'>Jueves</option>
+                        <option value='4'>Viernes</option>
+                        <option value='5'>Sábado</option>
+                        <option value='6'>Domingo</option>
+                    </select>
+                </div>
+                <div class='mb-2'>
+                    <label>Horario</label>
+                    <div id='swal-fija-horarios-box'></div>
+                </div>
                 <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
-                <div class='mb-2'><label>Jugador (opcional)</label>
+                <div class='mb-2'>
+                    <label>Jugador (opcional)</label>
                     <input type='text' id='swal-fija-jugador' class='form-control' placeholder='Buscar por nombre, @usuario o DNI'>
                     <input type='hidden' name='jugador_id' id='swal-fija-jugador-id'>
                 </div>
-                <div class='mb-2'><label>Nombre Cliente</label><input type='text' name='nombre_cliente' class='form-control'></div>
-                <div class='mb-2'><label>Teléfono</label><input type='tel' name='telefono_cliente' class='form-control'></div>
-                <div class='mb-2'><label>Precio</label><input type='number' id='swal-fija-precio' name='precio' class='form-control' step='0.01' min='0' required></div>
+                <div class='mb-2'>
+                    <label>Nombre Cliente</label>
+                    <input type='text' name='nombre_cliente' class='form-control'>
+                </div>
+                <div class='mb-2'>
+                    <label>Teléfono</label>
+                    <input type='tel' name='telefono_cliente' class='form-control'>
+                </div>
+                <div class='mb-2'>
+                    <label>Precio</label>
+                    <input type='number' id='swal-fija-precio' name='precio' class='form-control' step='0.01' min='0' required>
+                </div>
             </form>
         `,
         didOpen: async () => {
@@ -644,83 +624,14 @@ function abrirSwalReservaFija() {
             const horariosBox = document.getElementById('swal-fija-horarios-box');
             const horaInput = document.getElementById('swal-fija-hora');
             const precioInput = document.getElementById('swal-fija-precio');
-            const jugadorInput = document.getElementById('swal-fija-jugador');
-            const jugadorIdInput = document.getElementById('swal-fija-jugador-id');
-            const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
-            let timeout = null;
-            
             async function updateHorarios() {
-                horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
-                horaInput.value = '';
                 const canchaId = canchaSelect.value;
                 const diaSemana = parseInt(diaSelect.value);
-                if (!canchaId) { horariosBox.innerHTML = ''; return; }
-                const cancha = canchasData.find(c => c.id == canchaId);
-                if (!cancha) { horariosBox.innerHTML = ''; return; }
-                // Autocompletar precio
-                if (precioInput && cancha.precio_base) {
-                    precioInput.value = cancha.precio_base;
-                }
-                // Pedir turnos fijos ocupados para ese día/cancha
-                const resp = await fetch(`/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`);
-                const ocupados = await resp.json(); // array de strings 'HH:MM'
-                horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-fija-hora');
-                // Marcar botón seleccionado
-                horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        horariosBox.querySelectorAll('button[data-hora]').forEach(b => b.classList.remove('btn-success'));
-                        this.classList.add('btn-success');
-                        horaInput.value = this.dataset.hora;
-                    });
-                });
+                await updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput);
             }
             canchaSelect.addEventListener('change', updateHorarios);
             diaSelect.addEventListener('change', updateHorarios);
-            
-            // Autocompletar jugador
-            jugadorInput.addEventListener('input', function() {
-                clearTimeout(timeout);
-                const q = this.value.trim();
-                if (q.length < 2) return;
-                timeout = setTimeout(async () => {
-                    const resp = await fetch(`/complejos/api/buscar_jugador/?q=${encodeURIComponent(q)}`);
-                    if (!resp.ok) return;
-                    const resultados = await resp.json();
-                    let list = document.getElementById('swal-fija-jugador-list');
-                    if (!list) {
-                        list = document.createElement('div');
-                        list.id = 'swal-fija-jugador-list';
-                        list.className = 'list-group position-absolute w-100';
-                        jugadorInput.parentNode.appendChild(list);
-                    }
-                    list.innerHTML = '';
-                    resultados.forEach(j => {
-                        const item = document.createElement('button');
-                        item.type = 'button';
-                        item.className = 'list-group-item list-group-item-action';
-                        item.textContent = `${j.nombre} (@${j.usuario}) - DNI: ${j.dni}`;
-                        item.onclick = () => {
-                            jugadorInput.value = `${j.nombre} (@${j.usuario})`;
-                            jugadorIdInput.value = j.id;
-                            // Autocompletar nombre_cliente si existe
-                            const nombreClienteInput = document.querySelector("input[name='nombre_cliente']");
-                            if (nombreClienteInput && j.nombre_real) {
-                                nombreClienteInput.value = j.nombre_real;
-                            } else if (nombreClienteInput) {
-                                nombreClienteInput.value = j.nombre;
-                            }
-                            list.innerHTML = '';
-                        };
-                        list.appendChild(item);
-                    });
-                }, 300);
-            });
-            document.addEventListener('click', function(e) {
-                const list = document.getElementById('swal-fija-jugador-list');
-                if (list && !jugadorInput.contains(e.target)) list.innerHTML = '';
-            });
-            
-            updateHorarios();
+            setupJugadorAutocomplete('swal-fija-jugador', 'swal-fija-jugador-id', 'swal-fija-jugador-list');
         },
         showCancelButton: true,
         confirmButtonText: 'Crear',
@@ -732,10 +643,9 @@ function abrirSwalReservaFija() {
                 Swal.showValidationMessage('Complete todos los campos obligatorios');
                 return false;
             }
-            // Validar si ya existe un turno fijo para ese día, cancha y hora
-            const resp = await fetch("/complejos/api/validar_reserva_fija/?cancha_id=" + data.cancha_id + "&dia_semana=" + data.dia_semana + "&hora_inicio=" + data.hora_inicio);
-            const existe = await resp.json();
-            if (existe.yafijo) {
+            const resp = await fetch(`/complejos/api/validar_reserva_fija/?cancha_id=${data.cancha_id}&dia_semana=${data.dia_semana}&hora_inicio=${data.hora_inicio}`);
+            const resultado = await resp.json();
+            if (resultado.yafijo) {
                 Swal.showValidationMessage('Ya existe un turno fijo para ese día y horario en esta cancha.');
                 return false;
             }
@@ -764,87 +674,43 @@ function abrirSwalReservaFija() {
     });
 }
 
-// RESERVA CAMPEONATO
-function abrirSwalReservaCampeonato() {
-    Swal.fire({
-        title: 'Reserva de Campeonato',
-        html: `
-            <form id='formSwalCamp'>
-                <div class='mb-2'><label>Cancha</label><select id='swal-campeonato-cancha' name='cancha_id' class='form-select' required>${canchasOptions}</select></div>
-                <div class='mb-2'><label>Fecha</label><input type='text' id='swal-campeonato-fecha' name='fecha' class='form-control' required readonly></div>
-                <div class='mb-2'><label>Hora de inicio</label><input type='time' name='hora_inicio' class='form-control' required></div>
-                <div class='mb-2'><label>Nombre Campeonato</label><input type='text' name='nombre_campeonato' class='form-control' required></div>
-                <div class='mb-2'><label>Precio</label><input type='number' name='precio' class='form-control' step='0.01' min='0' required></div>
-            </form>
-        `,
-        didOpen: () => {
-            const canchaSelect = document.getElementById('swal-campeonato-cancha');
-            const fechaInput = document.getElementById('swal-campeonato-fecha');
-            let fp = null;
-            canchaSelect.addEventListener('change', async function() {
-                if (fp) fp.destroy();
-                if (!this.value) return;
-                const ocupadas = await obtenerFechasOcupadas(this.value);
-                fp = safeFlatpickr(fechaInput, {
-                    minDate: 'today',
-                    disable: ocupadas,
-                    dateFormat: 'Y-m-d',
-                    locale: 'es'
-                });
-            });
-        },
-        showCancelButton: true,
-        confirmButtonText: 'Crear',
-        cancelButtonText: 'Cancelar',
-        preConfirm: () => {
-            const form = document.getElementById('formSwalCamp');
-            const data = Object.fromEntries(new FormData(form));
-            if (!data.cancha_id || !data.fecha || !data.hora_inicio || !data.nombre_campeonato || !data.precio) {
-                Swal.showValidationMessage('Complete todos los campos obligatorios');
-                return false;
-            }
-            return data;
-        }
-    }).then(result => {
-        if (result.isConfirmed) {
-            fetch("{% url 'complejos:crear_reserva_campeonato_dashboard' %}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(result.value)
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire('¡Listo!', data.message, 'success').then(() => location.reload());
-                } else {
-                    Swal.fire('Error', data.message, 'error');
-                }
-            })
-            .catch(() => Swal.fire('Error', 'No se pudo crear la reserva.', 'error'));
-        }
-    });
-}
-
-// RESERVA SIMPLE
 function abrirSwalReservaSimple() {
     Swal.fire({
         title: 'Reserva Simple',
         html: `
             <form id='formSwalSimple'>
-                <div class='mb-2'><label>Cancha</label><select id='swal-simple-cancha' name='cancha_id' class='form-select' required>${canchasOptions}</select></div>
-                <div class='mb-2'><label>Fecha</label><input type='text' id='swal-simple-fecha' name='fecha' class='form-control' required readonly></div>
-                <div class='mb-2'><label>Horario</label><div id='swal-simple-horarios-box'></div></div>
+                <div class='mb-2'>
+                    <label>Cancha</label>
+                    <select id='swal-simple-cancha' name='cancha_id' class='form-select' required>
+                        ${canchasOptions}
+                    </select>
+                </div>
+                <div class='mb-2'>
+                    <label>Fecha</label>
+                    <input type='text' id='swal-simple-fecha' name='fecha' class='form-control' required readonly>
+                </div>
+                <div class='mb-2'>
+                    <label>Horario</label>
+                    <div id='swal-simple-horarios-box'></div>
+                </div>
                 <input type='hidden' id='swal-simple-hora' name='hora_inicio' required>
-                <div class='mb-2'><label>Jugador (opcional)</label>
+                <div class='mb-2'>
+                    <label>Jugador (opcional)</label>
                     <input type='text' id='swal-simple-jugador' class='form-control' placeholder='Buscar por nombre, @usuario o DNI'>
                     <input type='hidden' name='jugador_id' id='swal-simple-jugador-id'>
                 </div>
-                <div class='mb-2'><label>Nombre Cliente</label><input type='text' name='nombre_cliente' id='swal-simple-nombre-cliente' class='form-control'></div>
-                <div class='mb-2'><label>Teléfono</label><input type='tel' name='telefono_cliente' class='form-control'></div>
-                <div class='mb-2'><label>Precio</label><input type='number' id='swal-simple-precio' name='precio' class='form-control' step='0.01' min='0' required></div>
+                <div class='mb-2'>
+                    <label>Nombre Cliente</label>
+                    <input type='text' name='nombre_cliente' id='swal-simple-nombre-cliente' class='form-control'>
+                </div>
+                <div class='mb-2'>
+                    <label>Teléfono</label>
+                    <input type='tel' name='telefono_cliente' class='form-control'>
+                </div>
+                <div class='mb-2'>
+                    <label>Precio</label>
+                    <input type='number' id='swal-simple-precio' name='precio' class='form-control' step='0.01' min='0' required>
+                </div>
             </form>
         `,
         didOpen: async () => {
@@ -853,9 +719,6 @@ function abrirSwalReservaSimple() {
             const horariosBox = document.getElementById('swal-simple-horarios-box');
             const horaInput = document.getElementById('swal-simple-hora');
             const precioInput = document.getElementById('swal-simple-precio');
-            const jugadorInput = document.getElementById('swal-simple-jugador');
-            const jugadorIdInput = document.getElementById('swal-simple-jugador-id');
-            const nombreClienteInput = document.getElementById('swal-simple-nombre-cliente');
             const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
             let fp = null;
             async function updateFlatpickr() {
@@ -865,108 +728,77 @@ function abrirSwalReservaSimple() {
                 fp = safeFlatpickr(fechaInput, {
                     minDate: 'today',
                     disable: ocupadas,
-                    dateFormat: 'Y-m-d',
-                    locale: 'es'
+                    dateFormat: 'Y-m-d'
                 });
             }
-            canchaSelect.addEventListener('change', updateFlatpickr);
-            updateFlatpickr();
             async function updateHorarios() {
                 horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
                 horaInput.value = '';
                 const canchaId = canchaSelect.value;
-                if (!canchaId || !fechaInput.value) { horariosBox.innerHTML = ''; return; }
+                const fecha = fechaInput.value;
+                if (!canchaId || !fecha) {
+                    horariosBox.innerHTML = '';
+                    return;
+                }
                 const cancha = canchasData.find(c => c.id == canchaId);
-                if (!cancha) { horariosBox.innerHTML = ''; return; }
-                // Autocompletar precio
+                if (!cancha) {
+                    horariosBox.innerHTML = '';
+                    return;
+                }
                 if (precioInput && cancha.precio_base) {
                     precioInput.value = cancha.precio_base;
                 }
-                // Pedir turnos ocupados para esa fecha/cancha
-                const resp = await fetch(`/complejos/api/canchas/${canchaId}/horarios/?fecha=${fechaInput.value}`);
-                const horariosResp = await resp.json();
-                let ocupados = [];
-                if (Array.isArray(horariosResp.horarios)) {
-                    ocupados = horariosResp.horarios.filter(h => h.ocupado).map(h => h.hora_inicio);
-                }
-
-                // Pedir horarios fijos bloqueados para ese día de semana
-                const fechaObj = new Date(fechaInput.value);
-                const diaSemana = fechaObj.getDay(); // 0=Domingo, 1=Lunes...
-                // En backend: 0=Lunes, 6=Domingo, en JS: 0=Domingo, 1=Lunes...
-                const diaSemanaApi = diaSemana === 0 ? 6 : diaSemana - 1;
-                let horariosFijos = [];
                 try {
-                    const params = new URLSearchParams({
-                        cancha_id: canchaId,
-                        dia_semana: diaSemanaApi,
-                        fecha: fechaInput.value
-                    });
-                    const respFija = await fetch(`/complejos/api/turnos_fijos_ocupados/?${params.toString()}`);
-                    if (respFija.ok) {
-                        horariosFijos = await respFija.json();
+                    const resp = await fetch(`/complejos/api/canchas/${canchaId}/horarios/?fecha=${fecha}`);
+                    const data = await resp.json();
+                    if (!data.horarios || !Array.isArray(data.horarios)) {
+                        horariosBox.innerHTML = '<div class="text-danger small">Error al cargar horarios</div>';
+                        return;
                     }
-                } catch (e) {}
-
-                horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora', horariosFijos);
-                horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
-                    if (btn.disabled) return; // No permitir seleccionar horarios deshabilitados
-                    btn.addEventListener('click', function() {
-                        horariosBox.querySelectorAll('button[data-hora]').forEach(b => b.classList.remove('btn-success'));
-                        this.classList.add('btn-success');
-                        horaInput.value = this.dataset.hora;
+                    const ocupados = data.horarios
+                        .filter(h => h.ocupado && h.tipo_ocupacion !== 'RESERVA_FIJA')
+                        .map(h => h.hora_inicio);
+                    const horariosFijos = data.horarios
+                        .filter(h => h.tipo_ocupacion === 'RESERVA_FIJA')
+                        .map(h => ({
+                            hora_inicio: h.hora_inicio,
+                            hora_fin: h.hora_fin,
+                            tipo: 'reserva_fija'
+                        }));
+                    horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora', horariosFijos);
+                    horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
+                        if (!btn.disabled) {
+                            btn.addEventListener('click', function() {
+                                horariosBox.querySelectorAll('button[data-hora]').forEach(b => {
+                                    b.classList.remove('btn-success');
+                                    b.classList.add('btn-outline-primary');
+                                });
+                                this.classList.remove('btn-outline-primary');
+                                this.classList.add('btn-success');
+                                horaInput.value = this.dataset.hora;
+                            });
+                        }
                     });
-                });
+                    const tooltipTriggerList = horariosBox.querySelectorAll('[data-bs-toggle="tooltip"]');
+                    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+                } catch (error) {
+                    console.error('Error cargando horarios:', error);
+                    horariosBox.innerHTML = '<div class="text-danger small">Error al cargar horarios</div>';
+                }
             }
+            canchaSelect.addEventListener('change', async () => {
+                await updateFlatpickr();
+                await updateHorarios();
+            });
             fechaInput.addEventListener('change', updateHorarios);
-            canchaSelect.addEventListener('change', updateHorarios);
-            // Autocompletar jugador
-            let timeout = null;
-            jugadorInput.addEventListener('input', function() {
-                clearTimeout(timeout);
-                const q = this.value.trim();
-                if (q.length < 2) return;
-                timeout = setTimeout(async () => {
-                    const url = `/complejos/api/buscar_jugador/?q=${encodeURIComponent(q)}`;
-                    const resp = await fetch(url);
-                    if (!resp.ok) return;
-                    const resultados = await resp.json();
-                    let list = document.getElementById('swal-simple-jugador-list');
-                    if (!list) {
-                        list = document.createElement('div');
-                        list.id = 'swal-simple-jugador-list';
-                        list.className = 'list-group position-absolute w-100';
-                        jugadorInput.parentNode.appendChild(list);
-                    }
-                    list.innerHTML = '';
-                    resultados.forEach(j => {
-                        const item = document.createElement('button');
-                        item.type = 'button';
-                        item.className = 'list-group-item list-group-item-action';
-                        item.textContent = `${j.nombre} (@${j.usuario}) - DNI: ${j.dni}`;
-                        item.onclick = () => {
-                            jugadorInput.value = `${j.nombre} (@${j.usuario})`;
-                            jugadorIdInput.value = j.id;
-                            if (nombreClienteInput && j.nombre_real) {
-                                nombreClienteInput.value = j.nombre_real;
-                            } else if (nombreClienteInput) {
-                                nombreClienteInput.value = j.nombre;
-                            }
-                            list.innerHTML = '';
-                        };
-                        list.appendChild(item);
-                    });
-                }, 300);
-            });
-            document.addEventListener('click', function(e) {
-                const list = document.getElementById('swal-simple-jugador-list');
-                if (list && !jugadorInput.contains(e.target)) list.innerHTML = '';
-            });
+            await updateFlatpickr();
+            setupJugadorAutocomplete('swal-simple-jugador', 'swal-simple-jugador-id', 'swal-simple-jugador-list', 'swal-simple-nombre-cliente');
         },
         showCancelButton: true,
         confirmButtonText: 'Crear',
         cancelButtonText: 'Cancelar',
-        preConfirm: async () => {
+        width: '600px',
+        preConfirm: () => {
             const form = document.getElementById('formSwalSimple');
             const data = Object.fromEntries(new FormData(form));
             if (!data.cancha_id || !data.fecha || !data.hora_inicio || !data.precio) {
@@ -998,16 +830,70 @@ function abrirSwalReservaSimple() {
     });
 }
 
-// Deshabilitar botón de reserva de campeonato
-document.addEventListener('DOMContentLoaded', function() {
-    const btnCamp = document.querySelector('.btn-reserva-campeonato');
-    if (btnCamp) {
-        btnCamp.setAttribute('disabled', 'disabled');
-        btnCamp.classList.add('btn-secondary');
-        btnCamp.classList.remove('btn-warning');
-        btnCamp.title = 'Próximamente';
-    }
-});
+function setupJugadorAutocomplete(inputId, hiddenInputId, listId, nombreClienteInputId = null) {
+    const jugadorInput = document.getElementById(inputId);
+    const jugadorIdInput = document.getElementById(hiddenInputId);
+    const nombreClienteInput = nombreClienteInputId ? document.getElementById(nombreClienteInputId) : null;
+    let timeout = null;
+    jugadorInput.addEventListener('input', function() {
+        clearTimeout(timeout);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            const list = document.getElementById(listId);
+            if (list) list.innerHTML = '';
+            return;
+        }
+        timeout = setTimeout(async () => {
+            try {
+                const resp = await fetch(`/complejos/api/buscar_jugador/?q=${encodeURIComponent(q)}`);
+                if (!resp.ok) return;
+                const resultados = await resp.json();
+                let list = document.getElementById(listId);
+                if (!list) {
+                    list = document.createElement('div');
+                    list.id = listId;
+                    list.className = 'list-group position-absolute w-100';
+                    list.style.zIndex = '9999';
+                    list.style.maxHeight = '200px';
+                    list.style.overflowY = 'auto';
+                    jugadorInput.parentNode.style.position = 'relative';
+                    jugadorInput.parentNode.appendChild(list);
+                }
+                list.innerHTML = '';
+                if (resultados.length === 0) {
+                    list.innerHTML = '<div class="list-group-item text-muted">No se encontraron jugadores</div>';
+                    return;
+                }
+                resultados.forEach(j => {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'list-group-item list-group-item-action text-start';
+                    item.innerHTML = `
+                        <div><strong>${j.nombre}</strong> <span class="text-muted">@${j.usuario}</span></div>
+                        <small class="text-muted">DNI: ${j.dni}</small>
+                    `;
+                    item.onclick = () => {
+                        jugadorInput.value = `${j.nombre} (@${j.usuario})`;
+                        jugadorIdInput.value = j.id;
+                        if (nombreClienteInput) {
+                            nombreClienteInput.value = j.nombre_real || j.nombre;
+                        }
+                        list.innerHTML = '';
+                    };
+                    list.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error buscando jugador:', error);
+            }
+        }, 300);
+    });
+    document.addEventListener('click', function(e) {
+        const list = document.getElementById(listId);
+        if (list && !jugadorInput.contains(e.target) && !list.contains(e.target)) {
+            list.innerHTML = '';
+        }
+    });
+}
 </script>
 
 <!-- Flatpickr CSS -->
