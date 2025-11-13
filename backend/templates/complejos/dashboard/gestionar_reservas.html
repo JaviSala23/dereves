@@ -539,14 +539,15 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
         if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
             const [hA, mA] = cancha.horario_apertura.split(':').map(Number);
             const [hC, mC] = cancha.horario_cierre.split(':').map(Number);
-            let h = hA, m = mA;
-            while (h < hC || (h === hC && m <= mC - cancha.duracion_turno_minutos)) {
+            let totalMinApertura = hA * 60 + mA;
+            let totalMinCierre = hC * 60 + mC;
+            let duracion = parseInt(cancha.duracion_turno_minutos);
+            let actual = totalMinApertura;
+            while (actual + duracion <= totalMinCierre) {
+                let h = Math.floor(actual / 60);
+                let m = actual % 60;
                 horarios.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
-                m += cancha.duracion_turno_minutos;
-                if (m >= 60) {
-                    h += Math.floor(m / 60);
-                    m = m % 60;
-                }
+                actual += duracion;
             }
         }
     }
