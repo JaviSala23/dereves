@@ -353,7 +353,7 @@ def cancelar_reserva(request, reserva_id):
     # No permitir cancelar si la reserva ya está pagada
     if reserva.pagado:
         messages.error(request, 'No se puede cancelar una reserva que ya está pagada.')
-        return redirect('reservas:mis_reservas')
+        return redirect('complejos:gestionar', slug=reserva.cancha.complejo.slug)
 
     # Usar el método cancelar del modelo que actualiza turno y reserva
     resultado = reserva.cancelar()
@@ -363,7 +363,7 @@ def cancelar_reserva(request, reserva_id):
     else:
         messages.error(request, 'No se pudo cancelar la reserva.')
 
-    return redirect('reservas:mis_reservas')
+    return redirect('complejos:gestionar', slug=reserva.cancha.complejo.slug)
 
 
 @login_required
