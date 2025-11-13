@@ -246,15 +246,18 @@ def crear_reserva(request, cancha_id):
             'estado': 'DISPONIBLE'
         }
     )
-
-    # Permitir reservar si no hay otra reserva activa (no CANCELADA ni PAUSADA) para ese turno
-    reserva_existente = Reserva.objects.filter(
-        turno=turno
-    ).exclude(estado__in=['CANCELADA', 'PAUSADA']).first()
-
-    if reserva_existente:
-        messages.error(request, 'Ya existe una reserva para este horario.')
-        return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
+    
+    # Verificar que el turno esté disponible
+    if not es_dueno:
+        # Jugadores solo pueden reservar turnos disponibles
+        if not turno.puede_ser_reservado_por_jugador():
+            messages.error(request, f'Este turno no está disponible. Estado: {turno.get_estado_display()}')
+            return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
+    else:
+        # Dueños pueden reservar sobre turnos disponibles
+        if turno.estado != 'DISPONIBLE':
+            messages.error(request, f'Este turno ya está ocupado. Estado: {turno.get_estado_display()}')
+            return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
     
     # Crear la reserva
     reserva = Reserva.objects.create(
@@ -309,7 +312,7 @@ def detalle_reserva(request, reserva_id):
             pass
     
     es_propietario = (
-        (reserva.jugador_principal and reserva.jugador_principal.usuario == request.user) or
+        (reserva.jugador and reserva.jugador.usuario == request.user) or
         es_dueno or 
         request.user.is_staff
     )
@@ -331,7 +334,7 @@ def cancelar_reserva(request, reserva_id):
     if request.method != 'POST':
         return redirect('reservas:mis_reservas')
     
-    reserva = get_object_or_404(Reserva.objects.select_related('jugador_principal', 'cancha', 'metodo_pago'), id=reserva_id)
+    reserva = get_object_or_404(Reserva.objects.select_related('turno', 'jugador__usuario'), id=reserva_id)
     
     # Verificar permisos
     es_dueno = False
@@ -341,26 +344,21 @@ def cancelar_reserva(request, reserva_id):
         except AttributeError:
             pass
     
-    es_propietario = (reserva.jugador_principal and reserva.jugador_principal.usuario == request.user) or es_dueno
+    es_propietario = (reserva.jugador and reserva.jugador.usuario == request.user) or es_dueno
     
     if not es_propietario:
         messages.error(request, 'No tienes permiso para cancelar esta reserva.')
         return redirect('reservas:mis_reservas')
     
-    # No permitir cancelar si la reserva ya está pagada
-    if reserva.pagado:
-        messages.error(request, 'No se puede cancelar una reserva que ya está pagada.')
-        return redirect('complejos:gestionar', slug=reserva.cancha.complejo.slug)
-
     # Usar el método cancelar del modelo que actualiza turno y reserva
     resultado = reserva.cancelar()
-
+    
     if resultado:
         messages.success(request, 'Reserva cancelada exitosamente.')
     else:
         messages.error(request, 'No se pudo cancelar la reserva.')
-
-    return redirect('complejos:gestionar', slug=reserva.cancha.complejo.slug)
+    
+    return redirect('reservas:mis_reservas')
 
 
 @login_required
@@ -456,15 +454,15 @@ def crear_reserva_fija(request, cancha_id):
         messages.error(request, f'Datos inválidos: {str(e)}')
         return redirect('complejos:gestionar', slug=cancha.complejo.slug)
     
-    # Verificar si ya existe una reserva fija ACTIVA para ese horario
-    existe_fija_activa = ReservaFija.objects.filter(
+    # Verificar si ya existe una reserva fija para ese horario
+    existe_fija = ReservaFija.objects.filter(
         cancha=cancha,
         dia_semana=dia_semana,
         hora_inicio=hora_inicio,
         estado='ACTIVA'
     ).exists()
-
-    if existe_fija_activa:
+    
+    if existe_fija:
         messages.error(request, 'Ya existe una reserva fija activa para este horario.')
         return redirect('complejos:gestionar', slug=cancha.complejo.slug)
     
