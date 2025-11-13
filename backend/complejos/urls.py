@@ -1,4 +1,3 @@
-    path('dashboard/reservas/<int:reserva_id>/confirmar/', dashboard_views.confirmar, name='confirmar'),
 from django.urls import path
 from . import views
 from . import dashboard_views
@@ -6,6 +5,7 @@ from . import dashboard_views
 app_name = 'complejos'
 
 urlpatterns = [
+        path('dashboard/reservas/<int:reserva_id>/confirmar/', dashboard_views.confirmar, name='confirmar'),
     # API para validar si ya existe un turno fijo para ese día, cancha y hora
     path('api/validar_reserva_fija/', views.validar_reserva_fija, name='validar_reserva_fija'),
     # API para obtener horarios ocupados de reservas fijas
