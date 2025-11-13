@@ -92,6 +92,17 @@ class Turno(models.Model):
 
 
 class Reserva(models.Model):
+        def cancelar(self):
+            """
+            Cancela la reserva si está pendiente o confirmada y no está pagada.
+            Cambia el estado a CANCELADA y guarda.
+            Devuelve True si se modificó, False si ya estaba cancelada o pagada.
+            """
+            if self.estado in ['PENDIENTE', 'CONFIRMADA'] and not self.pagado:
+                self.estado = 'CANCELADA'
+                self.save(update_fields=['estado', 'actualizado_en'])
+                return True
+            return False
     """
     Modelo para reservas de canchas.
     """
