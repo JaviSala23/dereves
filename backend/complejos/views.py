@@ -33,9 +33,10 @@ from django.views.decorators.http import require_GET
 # API: horarios ocupados de reservas fijas para una cancha y día de semana
 @require_GET
 def turnos_fijos_ocupados(request):
-    from reservas.models import ReservaFija
+    from reservas.models import ReservaFija, ReservaFijaLiberacion
     cancha_id = request.GET.get('cancha_id')
     dia_semana = request.GET.get('dia_semana')
+    fecha = request.GET.get('fecha')  # formato YYYY-MM-DD
     horarios = []
     if cancha_id and dia_semana is not None:
         reservas = ReservaFija.objects.filter(
@@ -43,7 +44,13 @@ def turnos_fijos_ocupados(request):
             dia_semana=dia_semana,
             estado='ACTIVA'
         )
-        horarios = [r.hora_inicio.strftime('%H:%M') for r in reservas]
+        for r in reservas:
+            # Si se pasa fecha, chequear si está liberada
+            liberado = False
+            if fecha:
+                liberado = ReservaFijaLiberacion.objects.filter(reserva_fija=r, fecha=fecha).exists()
+            if not liberado:
+                horarios.append(r.hora_inicio.strftime('%H:%M'))
     return JsonResponse(horarios, safe=False)
 from django.views.decorators.http import require_GET
 # API para validar si ya existe un turno fijo para ese día, cancha y hora

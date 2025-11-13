@@ -871,7 +871,12 @@ function abrirSwalReservaSimple() {
                 const diaSemanaApi = diaSemana === 0 ? 6 : diaSemana - 1;
                 let horariosFijos = [];
                 try {
-                    const respFija = await fetch(`/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemanaApi}`);
+                    const params = new URLSearchParams({
+                        cancha_id: canchaId,
+                        dia_semana: diaSemanaApi,
+                        fecha: fechaInput.value
+                    });
+                    const respFija = await fetch(`/complejos/api/turnos_fijos_ocupados/?${params.toString()}`);
                     if (respFija.ok) {
                         horariosFijos = await respFija.json();
                     }

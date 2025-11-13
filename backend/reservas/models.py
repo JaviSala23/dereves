@@ -1,3 +1,17 @@
+# Permitir liberar una ocurrencia específica de una reserva fija (sin cancelar la recurrencia)
+class ReservaFijaLiberacion(models.Model):
+    reserva_fija = models.ForeignKey('ReservaFija', on_delete=models.CASCADE, related_name='liberaciones')
+    fecha = models.DateField()
+    motivo = models.CharField(max_length=255, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['reserva_fija', 'fecha']
+        verbose_name = 'Liberación de Reserva Fija'
+        verbose_name_plural = 'Liberaciones de Reservas Fijas'
+
+    def __str__(self):
+        return f"Liberación {self.reserva_fija} en {self.fecha}"
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -195,12 +209,20 @@ class ReservaFija(models.Model):
         help_text='Fecha final del turno fijo (opcional, si es null es indefinido)'
     )
     
-    # Estado y precio
+    # Estado, pagado y precio
+    ESTADO_RESERVA_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('CONFIRMADA', 'Confirmada'),
+        ('CANCELADA', 'Cancelada'),
+        ('NO_ASISTIO', 'No Asistió'),
+        ('COMPLETADA', 'Completada'),
+    ]
     estado = models.CharField(
         max_length=20,
-        choices=ESTADO_CHOICES,
-        default='ACTIVA'
+        choices=ESTADO_RESERVA_CHOICES,
+        default='PENDIENTE'
     )
+    pagado = models.BooleanField(default=False)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     
     # Observaciones
