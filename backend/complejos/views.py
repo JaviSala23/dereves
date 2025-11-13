@@ -674,22 +674,18 @@ def obtener_horarios_disponibles(request, cancha_id):
 
     # Guardar los rangos de cada reserva simple (asegurando tipo datetime.time)
     reservas_simples_rangos = []
+    from datetime import time
     for r in reservas_simples:
         hora_inicio = r.hora_inicio
         hora_fin = r.hora_fin
-        # Si por algún motivo hora_inicio o hora_fin no es time, convertir
-        if hasattr(hora_inicio, 'hour') and hasattr(hora_fin, 'hour'):
-            reservas_simples_rangos.append((hora_inicio, hora_fin))
-        else:
-            # fallback: intentar parsear
-            from datetime import time
-            if isinstance(hora_inicio, str):
-                h, m = map(int, hora_inicio.split(':'))
-                hora_inicio = time(h, m)
-            if isinstance(hora_fin, str):
-                h, m = map(int, hora_fin.split(':'))
-                hora_fin = time(h, m)
-            reservas_simples_rangos.append((hora_inicio, hora_fin))
+        # Convertir a time si es string
+        if isinstance(hora_inicio, str):
+            h, m = map(int, hora_inicio.split(':'))
+            hora_inicio = time(h, m)
+        if isinstance(hora_fin, str):
+            h, m = map(int, hora_fin.split(':'))
+            hora_fin = time(h, m)
+        reservas_simples_rangos.append((hora_inicio, hora_fin))
 
     # Reservas fijas activas
     dia_semana = fecha.weekday()
@@ -734,19 +730,20 @@ def obtener_horarios_disponibles(request, cancha_id):
             if turno and turno.estado != 'DISPONIBLE':
                 ocupado = True
                 precio = float(turno.precio)
-
-            # 2) Reserva simple (solapamiento de rangos)
             else:
+                # 2) Reserva simple (solapamiento de rangos, robusto)
                 inicio_turno = datetime.combine(fecha, hora_actual)
                 fin_turno = datetime.combine(fecha, hora_fin)
                 for r_inicio, r_fin in reservas_simples_rangos:
+                    # Asegurar que r_inicio y r_fin sean time
+                    if not (hasattr(r_inicio, 'hour') and hasattr(r_fin, 'hour')):
+                        continue
                     inicio_res = datetime.combine(fecha, r_inicio)
                     fin_res = datetime.combine(fecha, r_fin)
-                    # Si hay solapamiento
+                    # Solapamiento: inicio_turno < fin_res y fin_turno > inicio_res
                     if inicio_turno < fin_res and fin_turno > inicio_res:
                         ocupado = True
                         break
-
                 # 3) Reserva fija activa que inicia exactamente en este horario
                 if not ocupado:
                     for rf in reservas_fijas:
