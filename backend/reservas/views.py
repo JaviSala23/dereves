@@ -131,7 +131,7 @@ def calendario_cancha(request, cancha_id):
             if turno:
                 # Turno existe, obtener su estado
                 # El dueño puede seleccionar cualquier turno, jugadores solo DISPONIBLE
-                disponible = turno.estado == 'DISPONIBLE' or es_dueno
+                reserva = get_object_or_404(Reserva, id=reserva_id)
                 
                 horarios.append({
                     'hora': hora_actual.strftime('%H:%M'),
@@ -147,15 +147,10 @@ def calendario_cancha(request, cancha_id):
                     'hora': hora_actual.strftime('%H:%M'),
                     'hora_fin': hora_fin.strftime('%H:%M'),
                     'estado': 'DISPONIBLE',
-                    'disponible': True,
-                    'precio': cancha.precio_hora,
-                    'turno_id': None,
-                })
-        
-        # Avanzar según duración del turno
-        hora_actual = (datetime.combine(fecha, hora_actual) + duracion).time()
-        
-        # Evitar loop infinito
+                # Eliminar la reserva directamente
+                reserva.delete()
+                messages.success(request, 'Reserva eliminada exitosamente.')
+                return redirect('reservas:gestionar_reservas')
         if hora_actual <= (datetime.combine(fecha, hora_actual) - duracion).time():
             break
     
