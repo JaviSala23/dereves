@@ -368,7 +368,7 @@
                                                 </button>
                                             </form>
                                         {% endif %}
-                                        {% if reserva.estado in 'PENDIENTE,CONFIRMADA' %}
+                                        {% if reserva.estado in 'PENDIENTE,CONFIRMADA' and not reserva.pagado %}
                                             <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form" style="display: inline;">
                                                 {% csrf_token %}
                                                 <button type="button" class="btn btn-outline-danger btn-cancelar-reserva" title="Cancelar">
@@ -421,7 +421,7 @@
                                         </button>
                                     </form>
                                 {% endif %}
-                                {% if reserva.estado in 'PENDIENTE,CONFIRMADA' %}
+                                {% if reserva.estado in 'PENDIENTE,CONFIRMADA' and not reserva.pagado %}
                                     <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form flex-fill">
                                         {% csrf_token %}
                                         <button type="button" class="btn btn-outline-danger btn-sm btn-cancelar-reserva w-100" title="Cancelar">

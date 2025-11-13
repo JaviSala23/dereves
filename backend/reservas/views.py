@@ -312,7 +312,7 @@ def detalle_reserva(request, reserva_id):
             pass
     
     es_propietario = (
-        (reserva.jugador and reserva.jugador.usuario == request.user) or
+        (reserva.jugador_principal and reserva.jugador_principal.usuario == request.user) or
         es_dueno or 
         request.user.is_staff
     )
@@ -334,7 +334,7 @@ def cancelar_reserva(request, reserva_id):
     if request.method != 'POST':
         return redirect('reservas:mis_reservas')
     
-    reserva = get_object_or_404(Reserva.objects.select_related('turno', 'jugador__usuario'), id=reserva_id)
+    reserva = get_object_or_404(Reserva.objects.select_related('jugador_principal', 'cancha', 'metodo_pago'), id=reserva_id)
     
     # Verificar permisos
     es_dueno = False
@@ -344,20 +344,25 @@ def cancelar_reserva(request, reserva_id):
         except AttributeError:
             pass
     
-    es_propietario = (reserva.jugador and reserva.jugador.usuario == request.user) or es_dueno
+    es_propietario = (reserva.jugador_principal and reserva.jugador_principal.usuario == request.user) or es_dueno
     
     if not es_propietario:
         messages.error(request, 'No tienes permiso para cancelar esta reserva.')
         return redirect('reservas:mis_reservas')
     
+    # No permitir cancelar si la reserva ya está pagada
+    if reserva.pagado:
+        messages.error(request, 'No se puede cancelar una reserva que ya está pagada.')
+        return redirect('reservas:mis_reservas')
+
     # Usar el método cancelar del modelo que actualiza turno y reserva
     resultado = reserva.cancelar()
-    
+
     if resultado:
         messages.success(request, 'Reserva cancelada exitosamente.')
     else:
         messages.error(request, 'No se pudo cancelar la reserva.')
-    
+
     return redirect('reservas:mis_reservas')
 
 
