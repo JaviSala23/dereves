@@ -92,6 +92,16 @@ class Turno(models.Model):
 
 
 class Reserva(models.Model):
+    
+    class Meta:
+        verbose_name = 'Reserva'
+        verbose_name_plural = 'Reservas'
+        ordering = ['-fecha', '-hora_inicio']
+        unique_together = ['cancha', 'fecha', 'hora_inicio']
+    
+
+    def __str__(self):
+        return f"{self.cancha} - {self.fecha} {self.hora_inicio}"
     def clean(self):
         from django.core.exceptions import ValidationError
         # Solo bloquear si ya existe otra reserva para ese horario que no esté CANCELADA ni PAUSADA
@@ -161,16 +171,6 @@ class Reserva(models.Model):
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
     
-    class Meta:
-        verbose_name = 'Reserva'
-        verbose_name_plural = 'Reservas'
-        ordering = ['-fecha', '-hora_inicio']
-        unique_together = ['cancha', 'fecha', 'hora_inicio']
-    
-
-    def __str__(self):
-        return f"{self.cancha} - {self.fecha} {self.hora_inicio}"
-
     def confirmar(self):
         """
         Marca la reserva como pagada y confirmada (solo dueños).

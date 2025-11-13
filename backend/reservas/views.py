@@ -249,9 +249,7 @@ def crear_reserva(request, cancha_id):
 
     # Permitir reservar si no hay otra reserva activa (no CANCELADA ni PAUSADA) para ese turno
     reserva_existente = Reserva.objects.filter(
-        cancha=cancha,
-        fecha=fecha,
-        hora_inicio=hora_inicio
+        turno=turno
     ).exclude(estado__in=['CANCELADA', 'PAUSADA']).first()
 
     if reserva_existente:
