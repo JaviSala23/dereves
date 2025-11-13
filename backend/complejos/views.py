@@ -1289,16 +1289,55 @@ def buscar_jugador_turno(request):
     return JsonResponse(resultados, safe=False)
 from django.http import JsonResponse
 
+
 @login_required
 def fechas_ocupadas_cancha(request, cancha_id):
-    from reservas.models import Turno
-    # Solo fechas futuras/reservadas
-    turnos = Turno.objects.filter(cancha_id=cancha_id, fecha__gte=timezone.now().date())
-    ocupadas = set()
-    for t in turnos:
-        if hasattr(t, 'reserva'):
-            ocupadas.add(t.fecha.isoformat())
-    return JsonResponse(list(ocupadas), safe=False)
+    """
+    Devuelve un array de fechas (YYYY-MM-DD) en las que la cancha está completamente ocupada:
+    - Hay al menos un turno simple reservado (Reserva PENDIENTE o CONFIRMADA)
+    - O hay una reserva fija CONFIRMADA para ese día de semana y NO está liberada ese día
+    """
+    from reservas.models import Turno, Reserva, ReservaFija, ReservaFijaLiberacion
+    from django.db.models import Q
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import Cancha
+
+    hoy = timezone.now().date()
+    cancha = Cancha.objects.get(id=cancha_id)
+    dias_a_buscar = 31  # Buscar hasta 1 mes adelante
+    fechas_ocupadas = set()
+
+    for i in range(dias_a_buscar):
+        fecha = hoy + timedelta(days=i)
+        dia_semana = fecha.weekday()
+        # 1. ¿Hay reservas simples?
+        reservas_simples = Reserva.objects.filter(
+            cancha=cancha,
+            fecha=fecha,
+            estado__in=['PENDIENTE', 'CONFIRMADA']
+        ).exists()
+        if reservas_simples:
+            fechas_ocupadas.add(fecha.isoformat())
+            continue
+        # 2. ¿Hay reserva fija confirmada para ese día de semana y no liberada?
+        reservas_fijas = ReservaFija.objects.filter(
+            cancha=cancha,
+            dia_semana=dia_semana,
+            estado='CONFIRMADA',
+            fecha_inicio__lte=fecha
+        ).filter(
+            Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=fecha)
+        )
+        liberada = False
+        for rf in reservas_fijas:
+            if ReservaFijaLiberacion.objects.filter(reserva_fija=rf, fecha=fecha).exists():
+                liberada = True
+                break
+        if reservas_fijas.exists() and not liberada:
+            fechas_ocupadas.add(fecha.isoformat())
+
+    return JsonResponse(list(fechas_ocupadas), safe=False)
 
 @login_required
 def eliminar_complejo(request, slug):
