@@ -49,7 +49,7 @@ def turnos_fijos_ocupados(request):
             reservas = ReservaFija.objects.filter(
                 cancha_id=cancha_id,
                 dia_semana=dia_semana,
-                estado='ACTIVA',
+                estado='CONFIRMADA',
                 fecha_inicio__lte=fecha
             ).filter(
                 models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
@@ -76,7 +76,7 @@ def validar_reserva_fija(request):
             cancha_id=cancha_id,
             dia_semana=dia_semana,
             hora_inicio=hora_inicio,
-            estado='ACTIVA'
+            estado='CONFIRMADA'
         ).exists()
     return JsonResponse({'yafijo': existe})
 from django.shortcuts import render, get_object_or_404, redirect
@@ -134,7 +134,7 @@ def lista_complejos(request):
         reservas_fijas = ReservaFija.objects.filter(
             cancha=cancha,
             dia_semana=dia_semana,
-            estado='ACTIVA'
+            estado='CONFIRMADA'
         ).filter(
             fecha_inicio__lte=fecha
         ).filter(
