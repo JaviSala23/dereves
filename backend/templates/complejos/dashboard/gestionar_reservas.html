@@ -4,6 +4,37 @@
 {% block title %}Gestionar Reservas - Dashboard - DeRevés{% endblock %}
 
 {% block content %}
+    <!-- Carrusel de Fechas Disponibles -->
+    <div class="mb-4">
+        <h5 class="mb-3"><span class="material-symbols-rounded" style="vertical-align: middle;">calendar_month</span> Fechas Disponibles</h5>
+        {% if fechas_disponibles %}
+        <div id="carouselFechasDisponibles" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                {% for fecha in fechas_disponibles %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                    <div class="card border-primary mx-auto" style="max-width: 320px;">
+                        <div class="card-body text-center">
+                            <h6 class="card-title mb-2">{{ fecha|date:'l d/m/Y' }}</h6>
+                            <span class="material-symbols-rounded text-primary" style="font-size: 40px;">event_available</span>
+                            <p class="card-text mt-2">Disponible para reservas simples</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselFechasDisponibles" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Anterior</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselFechasDisponibles" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Siguiente</span>
+            </button>
+        </div>
+        {% else %}
+        <div class="text-muted">No hay fechas disponibles para mostrar.</div>
+        {% endif %}
+    </div>
 <div class="container-fluid my-4">
     <div class="row mb-4">
         <div class="col">
