@@ -916,7 +916,12 @@ function abrirSwalReservaSimple() {
                 </div>
                 <div class='mb-2'>
                     <label>Fecha</label>
-                    <input type='text' id='swal-simple-fecha' name='fecha' class='form-control' required readonly>
+                    <div class="input-group input-group-sm" style="max-width: 180px;">
+                        <input type='text' id='swal-simple-fecha' name='fecha' class='form-control' required readonly style="background: #fff; cursor: pointer; border-right: 0;" placeholder="Seleccionar...">
+                        <span class="input-group-text bg-white" id="swal-simple-fecha-icon" style="cursor:pointer; border-left: 0;">
+                            <span class="material-symbols-rounded" style="font-size: 20px; color: #007bff;">calendar_month</span>
+                        </span>
+                    </div>
                 </div>
                 <div class='mb-2'>
                     <label>Horario</label>
@@ -943,6 +948,15 @@ function abrirSwalReservaSimple() {
             </form>
         `,
         didOpen: async () => {
+            // Icono de calendario despliega el flatpickr
+            setTimeout(() => {
+                const fechaInput = document.getElementById('swal-simple-fecha');
+                const icon = document.getElementById('swal-simple-fecha-icon');
+                if (icon && fechaInput && fechaInput._flatpickr) {
+                    icon.addEventListener('click', () => fechaInput._flatpickr.open());
+                    fechaInput.addEventListener('click', () => fechaInput._flatpickr.open());
+                }
+            }, 300);
             const canchaSelect = document.getElementById('swal-simple-cancha');
             const fechaInput = document.getElementById('swal-simple-fecha');
             const horariosBox = document.getElementById('swal-simple-horarios-box');
