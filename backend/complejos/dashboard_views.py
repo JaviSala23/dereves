@@ -249,14 +249,12 @@ def gestionar_reservas(request):
     hoy = date.today()
     for i in range(0, 14):
         dia = hoy + timedelta(days=i)
-        canchas_disponibles = 0
         turnos_dia = set()
         for cancha in canchas_qs:
             dia_semana = dia.weekday()
             tiene_fija = ReservaFija.objects.filter(cancha=cancha, dia_semana=dia_semana, estado='ACTIVA').exists()
             tiene_simple = Reserva.objects.filter(cancha=cancha, fecha=dia).exists()
             if not tiene_fija and not tiene_simple:
-                canchas_disponibles += 1
                 # Generar turnos posibles para la cancha
                 hora_apertura = cancha.horario_apertura
                 hora_cierre = cancha.horario_cierre
@@ -276,9 +274,8 @@ def gestionar_reservas(request):
                         h += 1
                     if (h > hora_cierre.hour) or (h == hora_cierre.hour and m > hora_cierre.minute - duracion):
                         break
-        if canchas_disponibles > 0:
-            fechas_disponibles.append(dia)
-            turnos_por_fecha[dia] = sorted(turnos_dia)
+        fechas_disponibles.append(dia)
+        turnos_por_fecha[dia] = sorted(turnos_dia)
 
     # Agrupar fechas_disponibles en sublistas de hasta 4 para el carrusel
     fechas_disponibles_grouped = [fechas_disponibles[i:i+4] for i in range(0, len(fechas_disponibles), 4)]
