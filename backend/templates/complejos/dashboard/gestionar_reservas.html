@@ -8,10 +8,10 @@
     <!-- Carrusel de Fechas Disponibles (4 por slide, con turnos) -->
     <div class="mb-4">
         <h5 class="mb-3"><span class="material-symbols-rounded" style="vertical-align: middle;">calendar_month</span> Fechas Disponibles</h5>
-        {% if fechas_disponibles %}
+        {% if fechas_disponibles_grouped %}
         <div id="carouselFechasDisponibles" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner">
-                {% for group in fechas_disponibles|batch:4 %}
+                {% for group in fechas_disponibles_grouped %}
                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
                     <div class="row g-3 justify-content-center">
                         {% for fecha in group %}
