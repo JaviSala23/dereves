@@ -1,4 +1,3 @@
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -908,3 +907,21 @@ def listar_liberaciones_reserva_fija(request, reserva_fija_id):
         'success': True,
         'liberaciones': list(liberaciones)
     })
+
+
+@login_required
+def marcar_reserva_pagada(request, reserva_id):
+    """Marca una reserva como pagada (solo dueños)."""
+    reserva = get_object_or_404(Reserva, id=reserva_id)
+    # Verificar que sea el dueño
+    try:
+        if reserva.cancha.complejo.dueno != request.user.perfil_dueno:
+            messages.error(request, 'No tienes permiso para marcar como pagada esta reserva.')
+            return redirect('home')
+    except AttributeError:
+        messages.error(request, 'Solo dueños pueden marcar reservas como pagadas.')
+        return redirect('home')
+    reserva.pagado = True
+    reserva.save(update_fields=['pagado'])
+    messages.success(request, 'Reserva marcada como pagada.')
+    return redirect('reservas:detalle_reserva', reserva_id=reserva_id)

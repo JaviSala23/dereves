@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:reserva_id>/', views.detalle_reserva, name='detalle_reserva'),
     path('<int:reserva_id>/cancelar/', views.cancelar_reserva, name='cancelar_reserva'),
     path('<int:reserva_id>/confirmar/', views.confirmar_reserva, name='confirmar_reserva'),
+    path('<int:reserva_id>/pagar/', views.marcar_reserva_pagada, name='marcar_reserva_pagada'),
     
     # Reservas fijas (solo dueños)
     path('fijas/cancha/<int:cancha_id>/crear/', views.crear_reserva_fija, name='crear_reserva_fija'),

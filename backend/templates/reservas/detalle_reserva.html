@@ -114,7 +114,15 @@
                             <span class="material-symbols-rounded">arrow_back</span>
                             Volver
                         </a>
-                        
+                        {% if es_dueno and not reserva.pagado %}
+                        <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <span class="material-symbols-rounded">paid</span>
+                                Marcar como Pagada
+                            </button>
+                        </form>
+                        {% endif %}
                         {% if not es_dueno and reserva.estado not in 'CANCELADA,COMPLETADA' %}
                         <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form">
                             {% csrf_token %}
