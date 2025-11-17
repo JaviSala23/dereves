@@ -676,17 +676,20 @@ def obtener_horarios_disponibles(request, cancha_id):
             if not ocupado:
                 inicio_turno = hora_actual
                 fin_turno = hora_actual + duracion
+                print(f"Turno: {inicio_turno.time()} - {fin_turno.time()}")
                 for r_inicio, r_fin in reservas_simples_rangos:
                     if not (hasattr(r_inicio, 'hour') and hasattr(r_fin, 'hour')):
                         continue
                     inicio_res = datetime.combine(fecha, r_inicio)
                     fin_res = datetime.combine(fecha, r_fin)
+                    print(f"Comparando con reserva simple: {inicio_res.time()} - {fin_res.time()}")
                     # Solapamiento real: inicio_turno < fin_res y fin_turno > inicio_res
                     # Pero NO si fin_turno == inicio_res (no se solapan, solo se tocan)
                     if (
                         (inicio_turno < fin_res and fin_turno > inicio_res)
                         and not (fin_turno == inicio_res or inicio_turno == fin_res)
                     ):
+                        print("OCUPADO por reserva simple")
                         ocupado = True
                         break
             # 3. Si hay una reserva fija activa y no liberada que solape
@@ -698,8 +701,10 @@ def obtener_horarios_disponibles(request, cancha_id):
                     rf_fin = reserva_fija.hora_fin
                     inicio_fijo = datetime.combine(fecha, rf_inicio)
                     fin_fijo = datetime.combine(fecha, rf_fin)
+                    print(f"Comparando con reserva fija: {inicio_fijo.time()} - {fin_fijo.time()}")
                     # Igual que arriba: no marcar ocupado si solo se tocan los bordes
                     if (inicio_turno < fin_fijo and fin_turno > inicio_fijo and not (fin_turno == inicio_fijo or inicio_turno == fin_fijo)):
+                        print("OCUPADO por reserva fija")
                         ocupado = True
                         break
             horarios.append({
