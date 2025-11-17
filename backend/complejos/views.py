@@ -612,41 +612,16 @@ def obtener_horarios_disponibles(request, cancha_id):
     if not cancha.horario_apertura or not cancha.horario_cierre:
         return JsonResponse({'error': 'Esta cancha no tiene horarios configurados'}, status=400)
 
-    # Obtener turnos generados para ese día
-    turnos = Turno.objects.filter(
+    # Unificación de lógica robusta de ocupación
+    from datetime import time
+    dia_semana = fecha.weekday()
+    turnos_existentes = Turno.objects.filter(
         cancha=cancha,
         fecha=fecha
-    ).order_by('hora_inicio')
-
-    turnos_dict = {t.hora_inicio: t for t in turnos}
-
-    # Reservas simples
-    reservas_simples = Reserva.objects.filter(
-        cancha=cancha,
-        fecha=fecha,
-        estado__in=['PENDIENTE', 'CONFIRMADA']
-    )
-
-    # Guardar los rangos de cada reserva simple (asegurando tipo datetime.time)
-    reservas_simples_rangos = []
-    from datetime import time
-    print('--- DEBUG RESERVAS SIMPLES ---')
-    for r in reservas_simples:
-        hora_inicio = r.hora_inicio
-        hora_fin = r.hora_fin
-        # Convertir a time si es string
-        if isinstance(hora_inicio, str):
-            h, m = map(int, hora_inicio.split(':'))
-            hora_inicio = time(h, m)
-        if isinstance(hora_fin, str):
-            h, m = map(int, hora_fin.split(':'))
-            hora_fin = time(h, m)
-        reservas_simples_rangos.append((hora_inicio, hora_fin))
-        print(f"Reserva simple: {hora_inicio} - {hora_fin}")
-
-    # Reservas fijas activas
-    dia_semana = fecha.weekday()
-
+    ).values('hora_inicio', 'estado', 'precio')
+    turnos_dict = {
+        t['hora_inicio'].strftime('%H:%M'): t for t in turnos_existentes
+    }
     reservas_fijas = ReservaFija.objects.filter(
         cancha=cancha,
         dia_semana=dia_semana,
@@ -655,75 +630,82 @@ def obtener_horarios_disponibles(request, cancha_id):
     ).filter(
         models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha)
     )
-
-    # Liberaciones de reserva fija en esa fecha
     liberaciones = set(
         ReservaFijaLiberacion.objects.filter(
             reserva_fija__cancha=cancha,
             fecha=fecha
         ).values_list('reserva_fija_id', flat=True)
     )
-
-    # Generar horarios del día
+    reservas_simples = Reserva.objects.filter(
+        cancha=cancha,
+        fecha=fecha,
+        estado__in=['PENDIENTE', 'CONFIRMADA']
+    )
+    reservas_simples_rangos = []
+    for r in reservas_simples:
+        hora_inicio = r.hora_inicio
+        hora_fin = r.hora_fin
+        if isinstance(hora_inicio, str):
+            h, m = map(int, hora_inicio.split(':'))
+            hora_inicio = time(h, m)
+        if isinstance(hora_fin, str):
+            h, m = map(int, hora_fin.split(':'))
+            hora_fin = time(h, m)
+        reservas_simples_rangos.append((hora_inicio, hora_fin))
     horarios = []
-    hora_actual = cancha.horario_apertura
-    duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
-
-
-    while (datetime.combine(fecha, hora_actual) + duracion) <= datetime.combine(fecha, cancha.horario_cierre):
-        hora_fin = (datetime.combine(fecha, hora_actual) + duracion).time()
-
-        es_hoy = fecha == timezone.now().date()
-        hora_pasada = es_hoy and hora_actual < timezone.now().time()
-
-        ocupado = False
-        precio = float(cancha.precio_hora)
-
-        if not hora_pasada:
-            # 1) Turno generado
-            turno = turnos_dict.get(hora_actual)
-            if turno and turno.estado != 'DISPONIBLE':
-                ocupado = True
-                precio = float(turno.precio)
+    if cancha.horario_apertura and cancha.horario_cierre:
+        hora_actual = datetime.combine(fecha, cancha.horario_apertura)
+        hora_cierre = datetime.combine(fecha, cancha.horario_cierre)
+        duracion = timedelta(minutes=cancha.duracion_turno_minutos or 90)
+        while hora_actual + duracion <= hora_cierre:
+            hora_str = hora_actual.time().strftime('%H:%M')
+            hora_fin_time = (hora_actual + duracion).time()
+            hora_fin_str = hora_fin_time.strftime('%H:%M')
+            ocupado = False
+            # 1. Si existe un turno y no está disponible
+            if hora_str in turnos_dict:
+                estado_turno = turnos_dict[hora_str]['estado']
+                if estado_turno != 'DISPONIBLE':
+                    ocupado = True
+                    precio = float(turnos_dict[hora_str]['precio'])
+                else:
+                    precio = float(cancha.precio_hora)
             else:
-                # 2) Reserva simple (solapamiento de rangos, robusto)
-                inicio_turno = datetime.combine(fecha, hora_actual)
-                fin_turno = datetime.combine(fecha, hora_fin)
+                precio = float(cancha.precio_hora)
+            # 2. Si hay una reserva simple que solape (robusto)
+            if not ocupado:
+                inicio_turno = hora_actual
+                fin_turno = hora_actual + duracion
                 for r_inicio, r_fin in reservas_simples_rangos:
                     if not (hasattr(r_inicio, 'hour') and hasattr(r_fin, 'hour')):
                         continue
                     inicio_res = datetime.combine(fecha, r_inicio)
                     fin_res = datetime.combine(fecha, r_fin)
-                    print(f"Comparando turno {hora_actual}-{hora_fin} con reserva {r_inicio}-{r_fin}")
-                    # Solapamiento: inicio_turno < fin_res y fin_turno > inicio_res
                     if (
                         (inicio_turno < fin_res and fin_turno > inicio_res)
                         or (inicio_turno == inicio_res and fin_turno == fin_res)
                     ):
-                        print(f"OCUPADO por reserva simple: {hora_actual}-{hora_fin} solapa o coincide con {r_inicio}-{r_fin}")
                         ocupado = True
                         break
-                # 3) Reserva fija activa que inicia exactamente en este horario
-                if not ocupado:
-                    for rf in reservas_fijas:
-                        if rf.id in liberaciones:
-                            continue
-                        inicio_rf = datetime.combine(fecha, rf.hora_inicio)
-                        if inicio_turno == inicio_rf:
-                            ocupado = True
-                            break
-
-        horarios.append({
-            'hora_inicio': hora_actual.strftime('%H:%M'),
-            'hora_fin': hora_fin.strftime('%H:%M'),
-            'ocupado': ocupado,
-            'precio': precio,
-        })
-
-        # Avanzar al siguiente turno
-        hora_actual = (datetime.combine(fecha, hora_actual) + duracion).time()
-
-    # Respuesta final
+            # 3. Si hay una reserva fija activa y no liberada que solape
+            if not ocupado:
+                for reserva_fija in reservas_fijas:
+                    if reserva_fija.id in liberaciones:
+                        continue
+                    rf_inicio = reserva_fija.hora_inicio
+                    rf_fin = reserva_fija.hora_fin
+                    inicio_fijo = datetime.combine(fecha, rf_inicio)
+                    fin_fijo = datetime.combine(fecha, rf_fin)
+                    if (inicio_turno < fin_fijo and fin_turno > inicio_fijo):
+                        ocupado = True
+                        break
+            horarios.append({
+                'hora_inicio': hora_str,
+                'hora_fin': hora_fin_str,
+                'ocupado': ocupado,
+                'precio': precio
+            })
+            hora_actual += duracion
     return JsonResponse({
         'cancha': {
             'id': cancha.id,
