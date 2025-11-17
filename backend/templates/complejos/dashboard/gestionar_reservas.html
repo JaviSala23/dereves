@@ -515,6 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.btn-liberar-fecha').forEach(btn => {
         btn.addEventListener('click', function() {
             const reservaId = btn.getAttribute('data-reserva-id');
+            const diaSemana = btn.getAttribute('data-dia-semana'); // 0=Lunes, 6=Domingo
             const hoy = new Date();
             const yyyy = hoy.getFullYear();
             const mm = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -522,10 +523,33 @@ document.addEventListener('DOMContentLoaded', function() {
             const hoyStr = `${yyyy}-${mm}-${dd}`;
             Swal.fire({
                 title: 'Liberar una fecha',
-                html: `<input type='date' id='liberar-fecha-input' class='form-control' required min='${hoyStr}' value='${hoyStr}'>`,
+                html: `<input type='text' id='liberar-fecha-input' class='form-control' required readonly>`,
                 showCancelButton: true,
                 confirmButtonText: 'Liberar',
                 cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    // flatpickr solo permite seleccionar el día de la semana de la reserva fija
+                    safeFlatpickr(document.getElementById('liberar-fecha-input'), {
+                        minDate: hoyStr,
+                        dateFormat: 'Y-m-d',
+                        locale: flatpickr.l10ns.es,
+                        disable: [function(date) {
+                            // flatpickr: 0=Domingo, 1=Lunes, ..., 6=Sábado
+                            // Django: 0=Lunes, ..., 6=Domingo
+                            // Convertimos diaSemana Django a flatpickr
+                            let flatpickrDay = (parseInt(diaSemana) + 1) % 7;
+                            return date.getDay() !== flatpickrDay;
+                        }]
+                    });
+                    // Set default value to today if matches, else next valid day
+                    const input = document.getElementById('liberar-fecha-input');
+                    let today = new Date();
+                    let flatpickrDay = (parseInt(diaSemana) + 1) % 7;
+                    while (today.getDay() !== flatpickrDay) {
+                        today.setDate(today.getDate() + 1);
+                    }
+                    input.value = today.toISOString().slice(0, 10);
+                },
                 preConfirm: () => {
                     const fecha = document.getElementById('liberar-fecha-input').value;
                     if (!fecha) {
