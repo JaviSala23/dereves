@@ -44,10 +44,15 @@
                                     {% if turnos %}
                                     <div class="container-fluid px-0">
                                         <div class="row g-1">
+                                            {% now "H:i" as hora_actual %}
                                             {% for turno in turnos %}
                                                 {% if forloop.counter0|divisibleby:4 and not forloop.first %}</div><div class="row g-1">{% endif %}
                                                 <div class="col-3 px-1">
-                                                    <span class="badge bg-gradient bg-success-subtle text-success-emphasis border border-success-subtle w-100" style="font-size:0.90em;">{{ turno }}</span>
+                                                    {% if fecha|date:'Y-m-d' == today|date:'Y-m-d' and turno < hora_actual %}
+                                                        <span class="badge bg-secondary w-100" style="font-size:0.90em; opacity:0.5;">{{ turno }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-gradient bg-success-subtle text-success-emphasis border border-success-subtle w-100" style="font-size:0.90em;">{{ turno }}</span>
+                                                    {% endif %}
                                                 </div>
                                             {% endfor %}
                                         </div>
