@@ -242,22 +242,27 @@ def gestionar_reservas(request):
         for cancha in canchas_qs
     ]
 
-    # Calcular fechas_disponibles (próximos 14 días, al menos una cancha activa y sin reservas fijas ni simples en ese día)
+    # Calcular fechas_disponibles y turnos_por_fecha (próximos 14 días, al menos una cancha activa y sin reservas fijas ni simples en ese día)
     from datetime import timedelta, date
     fechas_disponibles = []
+    turnos_por_fecha = {}
     hoy = date.today()
     for i in range(0, 14):
         dia = hoy + timedelta(days=i)
         canchas_disponibles = 0
+        turnos_dia = set()
         for cancha in canchas_qs:
-            # ¿Hay reserva fija activa para ese día de semana y cancha?
             dia_semana = dia.weekday()
             tiene_fija = ReservaFija.objects.filter(cancha=cancha, dia_semana=dia_semana, estado='ACTIVA').exists()
             tiene_simple = Reserva.objects.filter(cancha=cancha, fecha=dia).exists()
             if not tiene_fija and not tiene_simple:
                 canchas_disponibles += 1
+                # Agregar turnos posibles de la cancha
+                for turno in cancha.turnos:
+                    turnos_dia.add(turno)
         if canchas_disponibles > 0:
             fechas_disponibles.append(dia)
+            turnos_por_fecha[dia] = sorted(turnos_dia)
 
     context = {
         'reservas': reservas,
@@ -270,6 +275,7 @@ def gestionar_reservas(request):
         'canchas': canchas,
         'complejos': complejos,
         'fechas_disponibles': fechas_disponibles,
+        'turnos_por_fecha': turnos_por_fecha,
     }
 
     return render(request, 'complejos/dashboard/gestionar_reservas.html', context)

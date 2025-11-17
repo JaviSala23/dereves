@@ -4,20 +4,35 @@
 {% block title %}Gestionar Reservas - Dashboard - DeRevés{% endblock %}
 
 {% block content %}
-    <!-- Carrusel de Fechas Disponibles -->
+
+    <!-- Carrusel de Fechas Disponibles (4 por slide, con turnos) -->
     <div class="mb-4">
         <h5 class="mb-3"><span class="material-symbols-rounded" style="vertical-align: middle;">calendar_month</span> Fechas Disponibles</h5>
         {% if fechas_disponibles %}
         <div id="carouselFechasDisponibles" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner">
-                {% for fecha in fechas_disponibles %}
+                {% for group in fechas_disponibles|slice:':':4 %}{% empty %}{% endfor %} {# para forloop.counter0 #}
+                {% for group in fechas_disponibles|batch:4 %}
                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                    <div class="card border-primary mx-auto" style="max-width: 320px;">
-                        <div class="card-body text-center">
-                            <h6 class="card-title mb-2">{{ fecha|date:'l d/m/Y' }}</h6>
-                            <span class="material-symbols-rounded text-primary" style="font-size: 40px;">event_available</span>
-                            <p class="card-text mt-2">Disponible para reservas simples</p>
+                    <div class="row g-3 justify-content-center">
+                        {% for fecha in group %}
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <div class="card border-primary h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title mb-2">{{ fecha|date:'l d/m/Y' }}</h6>
+                                    <span class="material-symbols-rounded text-primary" style="font-size: 40px;">event_available</span>
+                                    <p class="card-text mt-2">Turnos disponibles:</p>
+                                    <ul class="list-unstyled mb-0">
+                                        {% for turno in turnos_por_fecha|default:{}|dict_get:fecha %}
+                                            <li><span class="badge bg-success">{{ turno }}</span></li>
+                                        {% empty %}
+                                            <li class="text-muted">Sin turnos</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
