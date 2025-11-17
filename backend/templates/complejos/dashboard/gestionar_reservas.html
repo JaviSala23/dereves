@@ -6,6 +6,24 @@
 
 {% block content %}
 
+    <!-- Breadcrumb y título arriba -->
+    <div class="container-fluid my-4">
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'complejos:dashboard_principal' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Gestionar Reservas</li>
+                    </ol>
+                </nav>
+                <h2 class="mb-0">
+                    <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 36px;">event_note</span>
+                    Gestionar Reservas
+                </h2>
+            </div>
+        </div>
+    </div>
+
     <!-- Carrusel de Fechas Disponibles (4 por slide, con turnos) -->
     <div class="mb-4">
         <h5 class="mb-3"><span class="material-symbols-rounded" style="vertical-align: middle;">calendar_month</span> Fechas Disponibles</h5>
@@ -17,11 +35,11 @@
                     <div class="row g-3 justify-content-center">
                         {% for fecha in group %}
                         <div class="col-12 col-sm-6 col-md-3">
-                            <div class="card border-primary h-100" style="font-size: 0.95rem; min-width: 180px; max-width: 220px; margin: 0 auto;">
+                            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeIn" style="min-width: 170px; max-width: 210px; margin: 0 auto; background: linear-gradient(135deg, #f8fafc 60%, #e3f0ff 100%);">
                                 <div class="card-body text-center p-2">
-                                    <h6 class="card-title mb-1" style="font-size: 1rem;">{{ fecha|date:'l d/m/Y' }}</h6>
+                                    <h6 class="card-title mb-1 fw-bold text-primary" style="font-size: 1rem;">{{ fecha|date:'l d/m/Y' }}</h6>
                                     <span class="material-symbols-rounded text-primary mb-1" style="font-size: 28px;">event_available</span>
-                                    <p class="card-text mb-1" style="font-size: 0.95em;">Turnos disponibles:</p>
+                                    <p class="card-text mb-1 text-secondary" style="font-size: 0.95em;">Turnos disponibles:</p>
                                     {% with turnos=turnos_por_fecha|get_item:fecha %}
                                     {% if turnos %}
                                     <div class="container-fluid px-0">
@@ -29,7 +47,7 @@
                                             {% for turno in turnos %}
                                                 {% if forloop.counter0|divisibleby:4 and not forloop.first %}</div><div class="row g-1">{% endif %}
                                                 <div class="col-3 px-1">
-                                                    <span class="badge bg-success w-100" style="font-size:0.90em;">{{ turno }}</span>
+                                                    <span class="badge bg-gradient bg-success-subtle text-success-emphasis border border-success-subtle w-100" style="font-size:0.90em;">{{ turno }}</span>
                                                 </div>
                                             {% endfor %}
                                         </div>
