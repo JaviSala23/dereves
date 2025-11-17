@@ -150,6 +150,8 @@ def mis_complejos_dashboard(request):
         return render(request, 'complejos/dashboard/mis_complejos.html', context)
 
 
+
+# Vista: Gestionar todas las reservas de los complejos del dueño
 @login_required
 def gestionar_reservas(request):
     """
@@ -157,75 +159,69 @@ def gestionar_reservas(request):
     Incluye filtros por estado, fecha, complejo, etc.
     También muestra las reservas fijas activas.
     """
-    # === Fechas disponibles para reservas simples (próximos 14 días, al menos una cancha activa y sin reservas fijas ni simples en ese día) ===
     from datetime import timedelta, date
     fechas_disponibles = []
-    # canchas_qs se define más abajo, así que la lógica de fechas_disponibles debe ir después de definir canchas_qs
     if not (request.user.tipo_usuario == 'DUENIO' or request.user.is_staff or request.user.is_superuser):
         messages.error(request, 'Acceso denegado.')
         return redirect('home')
-    
+
     perfil_dueno = PerfilDueno.objects.get(usuario=request.user)
     complejos = Complejo.objects.filter(dueno=perfil_dueno)
-    
-    # Obtener todas las reservas fijas activas
+
+    # Reservas fijas activas
     reservas_fijas_activas = ReservaFija.objects.filter(
         cancha__complejo__in=complejos,
         estado='ACTIVA'
     ).select_related(
         'cancha', 'cancha__complejo', 'jugador', 'jugador__usuario'
     ).order_by('cancha__complejo__nombre', 'cancha__nombre', 'dia_semana', 'hora_inicio')
-    
-    # Obtener todas las reservas de los complejos del dueño
+
+    # Reservas de los complejos
     reservas = Reserva.objects.filter(
         cancha__complejo__in=complejos
     ).select_related(
         'cancha', 'cancha__complejo', 'jugador_principal', 'metodo_pago'
     ).order_by('-fecha', '-hora_inicio')
-    
-    # Aplicar filtros
+
+    # Filtros
     estado_filtro = request.GET.get('estado', '')
     complejo_filtro = request.GET.get('complejo', '')
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
     pagado_filtro = request.GET.get('pagado', '')
-    
+
     if estado_filtro:
         reservas = reservas.filter(estado=estado_filtro)
-    
     if complejo_filtro:
         reservas = reservas.filter(cancha__complejo__id=complejo_filtro)
-    
     if fecha_desde:
         try:
             fecha_desde_obj = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
             reservas = reservas.filter(fecha__gte=fecha_desde_obj)
         except ValueError:
             pass
-    
     if fecha_hasta:
         try:
             fecha_hasta_obj = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
             reservas = reservas.filter(fecha__lte=fecha_hasta_obj)
         except ValueError:
             pass
-    
     if pagado_filtro:
         reservas = reservas.filter(pagado=(pagado_filtro == 'true'))
-    
-    # Estadísticas de las reservas filtradas
+
+    # Estadísticas
     total_reservas = reservas.count()
     reservas_pendientes = reservas.filter(estado='PENDIENTE').count()
     reservas_confirmadas = reservas.filter(estado='CONFIRMADA').count()
     total_ingresos = reservas.filter(estado='CONFIRMADA', pagado=True).aggregate(
         total=Sum('precio')
     )['total'] or 0
-    
-    # Obtener jugadores para el modal de crear reserva fija
+
+    # Jugadores para modal crear reserva fija
     from cuentas.models import PerfilJugador
     jugadores = PerfilJugador.objects.filter(usuario__is_active=True).select_related('usuario').order_by('usuario__first_name')
-    
-    # Obtener canchas del dueño para el modal
+
+    # Canchas del dueño para el modal
     canchas_qs = Cancha.objects.filter(complejo__in=complejos, activo=True).select_related('complejo')
     canchas = [
         {
@@ -245,30 +241,66 @@ def gestionar_reservas(request):
         }
         for cancha in canchas_qs
     ]
+
+    # Calcular fechas_disponibles (próximos 14 días, al menos una cancha activa y sin reservas fijas ni simples en ese día)
+    from datetime import timedelta, date
+    fechas_disponibles = []
+    hoy = date.today()
+    for i in range(0, 14):
+        dia = hoy + timedelta(days=i)
+        canchas_disponibles = 0
+        for cancha in canchas_qs:
+            # ¿Hay reserva fija activa para ese día de semana y cancha?
+            dia_semana = dia.weekday()
+            tiene_fija = ReservaFija.objects.filter(cancha=cancha, dia_semana=dia_semana, estado='ACTIVA').exists()
+            tiene_simple = Reserva.objects.filter(cancha=cancha, fecha=dia).exists()
+            if not tiene_fija and not tiene_simple:
+                canchas_disponibles += 1
+        if canchas_disponibles > 0:
+            fechas_disponibles.append(dia)
+
+    context = {
+        'reservas': reservas,
+        'reservas_fijas_activas': reservas_fijas_activas,
+        'total_reservas': total_reservas,
+        'reservas_pendientes': reservas_pendientes,
+        'reservas_confirmadas': reservas_confirmadas,
+        'total_ingresos': total_ingresos,
+        'jugadores': jugadores,
+        'canchas': canchas,
+        'complejos': complejos,
+        'fechas_disponibles': fechas_disponibles,
+    }
+
+    return render(request, 'complejos/dashboard/gestionar_reservas.html', context)
+
+# Vista: Estadísticas por complejo (usando slug)
+@login_required
+def estadisticas_complejo(request, slug):
+    """
+    Vista de estadísticas por complejo, usando slug.
+    """
+    from datetime import timedelta
+    if not (request.user.tipo_usuario == 'DUENIO' or request.user.is_staff or request.user.is_superuser):
         messages.error(request, 'Acceso denegado.')
         return redirect('home')
-    
+
     perfil_dueno = PerfilDueno.objects.get(usuario=request.user)
     complejo = Complejo.objects.filter(slug=slug, dueno=perfil_dueno).first()
-    
+
     if not complejo:
         messages.error(request, 'Complejo no encontrado.')
         return redirect('complejos:dashboard_principal')
-    
-    # Rango de fechas
+
     hoy = timezone.now().date()
     hace_30_dias = hoy - timedelta(days=30)
-    
-    # Canchas del complejo
+
     canchas = complejo.canchas.all()
-    
-    # Reservas del mes
     reservas_mes = Reserva.objects.filter(
         cancha__complejo=complejo,
         fecha__gte=hace_30_dias
     )
-    
-    # Estadísticas por cancha
+
     stats_canchas = []
     for cancha in canchas:
         reservas_cancha = reservas_mes.filter(cancha=cancha)
@@ -280,12 +312,11 @@ def gestionar_reservas(request):
                 total=Sum('precio')
             )['total'] or 0,
         })
-    
-    # Ingresos totales
+
     ingresos_total = reservas_mes.filter(estado='CONFIRMADA', pagado=True).aggregate(
         total=Sum('precio')
     )['total'] or 0
-    
+
     context = {
         'complejo': complejo,
         'canchas': canchas,
@@ -293,7 +324,7 @@ def gestionar_reservas(request):
         'ingresos_total': ingresos_total,
         'total_reservas': reservas_mes.count(),
     }
-    
+
     return render(request, 'complejos/dashboard/estadisticas_complejo.html', context)
 
 
