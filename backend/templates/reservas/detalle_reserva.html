@@ -70,61 +70,21 @@
                                 {% else %}-{% endif %}
                             </div>
                             <div class="mb-1"><b>Cliente/Jugador</b><br>
-                                {% if reserva.jugador %}{{ reserva.jugador.alias }}
-                                {% elif reserva.jugador_principal %}{{ reserva.jugador_principal.alias }}
-                                {% elif reserva.nombre_cliente %}{{ reserva.nombre_cliente }}
-                                {% elif reserva.nombre_cliente_sin_cuenta %}{{ reserva.nombre_cliente_sin_cuenta }}
+                                {% if reserva.reservado_por_dueno %}
+                                    {{ reserva.nombre_cliente_sin_cuenta|default:"Cliente sin nombre" }}
+                                    {% if reserva.telefono_cliente %}<br><small class="text-muted">Tel: {{ reserva.telefono_cliente }}</small>{% endif %}
+                                {% elif reserva.jugador %}
+                                    {{ reserva.jugador.alias }}
+                                {% elif reserva.jugador_principal %}
+                                    {{ reserva.jugador_principal.alias }}
+                                {% elif reserva.nombre_cliente %}
+                                    {{ reserva.nombre_cliente }}
                                 {% else %}Sin información{% endif %}
                             </div>
                             <div class="mb-1"><b>Creada</b><br> {{ reserva.creado_en|date:'d/m/Y H:i' }}</div>
                         </div>
                     </div>
-                            </div>
-                            <div class="mb-2">
-                                <label class="text-muted small">Ubicación</label>
-                                <p class="mb-0">{{ reserva.turno.cancha.complejo.direccion }}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-3">Información de la Reserva</h6>
-                            <div class="mb-2">
-                                <label class="text-muted small">Fecha</label>
-                                <p class="mb-0">
-                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
-                                    <strong>{{ reserva.turno.fecha|date:"d/m/Y" }}</strong>
-                                </p>
-                            </div>
-                            <div class="mb-2">
-                                <label class="text-muted small">Horario</label>
-                                <p class="mb-0">
-                                    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">schedule</span>
-                                    {{ reserva.turno.hora_inicio|time:"H:i" }} - {{ reserva.turno.hora_fin|time:"H:i" }}
-                                </p>
-                            </div>
-                            <div class="mb-2">
-                                <label class="text-muted small">Cliente/Jugador</label>
-                                <p class="mb-0">
-                                    {% if reserva.reservado_por_dueno %}
-                                        {{ reserva.nombre_cliente_sin_cuenta|default:"Cliente sin nombre" }}
-                                        {% if reserva.telefono_cliente %}
-                                        <br><small class="text-muted">Tel: {{ reserva.telefono_cliente }}</small>
-                                        {% endif %}
-                                    {% elif reserva.jugador %}
-                                        {{ reserva.jugador.alias }}
-                                    {% elif reserva.jugador_principal %}
-                                        {{ reserva.jugador_principal.alias }}
-                                    {% else %}
-                                        Sin información
-                                    {% endif %}
-                                </p>
-                            </div>
-                            <div class="mb-2">
-                                <label class="text-muted small">Creada</label>
-                                <p class="mb-0">{{ reserva.creado_en|date:"d/m/Y H:i" }}</p>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Fin de la información principal, todo queda dentro de la card -->
                     
                     <hr>
                     
