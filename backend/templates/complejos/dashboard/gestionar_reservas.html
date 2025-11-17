@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 
 {% block title %}Gestionar Reservas - Dashboard - DeRevés{% endblock %}
@@ -89,7 +88,6 @@
                 </h5>
             </div>
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn btn-sm" onclick="abrirSwalReservaFija()">
                 <button type="button" class="btn btn-white btn-sm border" style="background-color: #fff; color: #212529;" onclick="abrirSwalReservaFija()">
                     <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">event_repeat</span>
                     Nueva Reserva Fija
@@ -156,26 +154,27 @@
                             </td>
                         </tr>
                         
-                        <!-- Modal para editar -->
-                        <div class="modal fade" id="modalEditarReservaFija{{ reserva.id }}" tabindex="-1">
+                        <!-- Modal para editar reserva fija -->
+                        <div class="modal fade" id="modalEditarReservaFija{{ reserva.id }}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h5 class="modal-title">Editar Reserva Fija</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                     </div>
                                     <form method="post" action="{% url 'reservas:editar_reserva_fija' reserva.id %}">
                                         {% csrf_token %}
                                         <div class="modal-body">
                                             <div class="mb-3">
                                                 <label class="form-label"><strong>Cancha:</strong> {{ reserva.cancha.nombre }}</label>
-                                                <br><label class="form-label"><strong>Horario:</strong> {{ reserva.get_dia_semana_display }} {{ reserva.hora_inicio|time:"H:i" }}</label>
+                                                <br>
+                                                <label class="form-label"><strong>Horario:</strong> {{ reserva.get_dia_semana_display }} {{ reserva.hora_inicio|time:"H:i" }}</label>
                                             </div>
                                             <div class="mb-3">
                                                 <label for="jugador_id_{{ reserva.id }}" class="form-label">Jugador *</label>
                                                 <select class="form-select" id="jugador_id_{{ reserva.id }}" name="jugador_id" required>
                                                     {% for j in jugadores %}
-                                                    <option value="{{ j.id }}" {% if j.id == reserva.jugador.id %}selected{% endif %}>
+                                                    <option value="{{ j.id }}" {% if reserva.jugador and j.id == reserva.jugador.id %}selected{% endif %}>
                                                         {{ j.usuario.get_full_name }} ({{ j.alias }})
                                                     </option>
                                                     {% endfor %}
@@ -202,17 +201,13 @@
             <div class="text-center text-muted py-4">
                 <span class="material-symbols-rounded" style="font-size: 48px;">event_repeat</span>
                 <p class="mt-2">No hay reservas fijas activas</p>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCrearReservaFija">
+                <button type="button" class="btn btn-primary btn-sm" onclick="abrirSwalReservaFija()">
                     Crear Primera Reserva Fija
                 </button>
             </div>
             {% endif %}
         </div>
     </div>
-    
-    <!-- MODALES ELIMINADOS POR USO DE SWEETALERT2 -->
-    <!-- SweetAlert2 CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Filtros de Reservas Comunes -->
     <div class="card border-0 shadow-sm mb-4">
@@ -272,6 +267,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             {% if reservas %}
+                <!-- Vista desktop -->
                 <div class="d-none d-md-block table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
@@ -330,7 +326,7 @@
                                     {% if reserva.estado == 'CONFIRMADA' %}
                                         <span class="badge bg-success">Confirmada</span>
                                     {% elif reserva.estado == 'PENDIENTE' %}
-                                        <span class="badge bg-warning">Pendiente</span>
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
                                     {% elif reserva.estado == 'CANCELADA' %}
                                         <span class="badge bg-danger">Cancelada</span>
                                     {% elif reserva.estado == 'RECHAZADA' %}
@@ -346,7 +342,7 @@
                                             Pagado
                                         </span>
                                     {% else %}
-                                        <span class="badge bg-warning">
+                                        <span class="badge bg-warning text-dark">
                                             <span class="material-symbols-rounded" style="font-size: 14px;">schedule</span>
                                             Pendiente
                                         </span>
@@ -361,23 +357,23 @@
                                             <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
                                         </a>
                                         {% if reserva.estado == 'PENDIENTE' and not reserva.pagado %}
-                                            <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline confirmar-reserva-form" style="display: inline;">
+                                            <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline confirmar-reserva-form">
                                                 {% csrf_token %}
                                                 <button type="button" class="btn btn-outline-primary btn-confirmar-reserva" title="Confirmar">
                                                     <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span>
                                                 </button>
                                             </form>
                                         {% endif %}
-                                        {% if reserva.estado in 'PENDIENTE,CONFIRMADA' and not reserva.pagado %}
-                                            <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline pagar-reserva-form" style="display: inline;">
+                                        {% if (reserva.estado == 'PENDIENTE' or reserva.estado == 'CONFIRMADA') and not reserva.pagado %}
+                                            <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline pagar-reserva-form">
                                                 {% csrf_token %}
                                                 <button type="button" class="btn btn-outline-success btn-pagar-reserva" title="Marcar como pagada">
                                                     <span class="material-symbols-rounded" style="font-size: 16px;">payments</span>
                                                 </button>
                                             </form>
                                         {% endif %}
-                                        {% if reserva.estado in 'PENDIENTE,CONFIRMADA' %}
-                                            <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form" style="display: inline;">
+                                        {% if reserva.estado == 'PENDIENTE' or reserva.estado == 'CONFIRMADA' %}
+                                            <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form">
                                                 {% csrf_token %}
                                                 <button type="button" class="btn btn-outline-danger btn-cancelar-reserva" title="Cancelar">
                                                     <span class="material-symbols-rounded" style="font-size: 16px;">cancel</span>
@@ -391,21 +387,39 @@
                         </tbody>
                     </table>
                 </div>
+
                 <!-- Vista móvil -->
-                <div class="d-block d-md-none">
+                <div class="d-block d-md-none p-2">
                     {% for reserva in reservas %}
                     <div class="card mb-2 shadow-sm">
                         <div class="card-body p-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="text-muted small">#{{ reserva.id }}</span>
-                                <span class="badge {% if reserva.estado == 'CONFIRMADA' %}bg-success{% elif reserva.estado == 'PENDIENTE' %}bg-warning{% elif reserva.estado == 'CANCELADA' %}bg-danger{% elif reserva.estado == 'RECHAZADA' %}bg-secondary{% else %}bg-info{% endif %}">
+                                <span class="badge 
+                                    {% if reserva.estado == 'CONFIRMADA' %}bg-success
+                                    {% elif reserva.estado == 'PENDIENTE' %}bg-warning text-dark
+                                    {% elif reserva.estado == 'CANCELADA' %}bg-danger
+                                    {% elif reserva.estado == 'RECHAZADA' %}bg-secondary
+                                    {% else %}bg-info{% endif %}">
                                     {{ reserva.get_estado_display }}
                                 </span>
                             </div>
-                            <div class="mb-1"><strong>{{ reserva.cancha.nombre }}</strong> <span class="text-muted small">({{ reserva.cancha.get_deporte_display }})</span></div>
-                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">calendar_today</span> {{ reserva.fecha|date:"d/m/Y" }}</div>
-                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">schedule</span> {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}</div>
-                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">location_on</span> {{ reserva.cancha.complejo.nombre }}</div>
+                            <div class="mb-1">
+                                <strong>{{ reserva.cancha.nombre }}</strong> 
+                                <span class="text-muted small">({{ reserva.cancha.get_deporte_display }})</span>
+                            </div>
+                            <div class="mb-1">
+                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">calendar_today</span>
+                                {{ reserva.fecha|date:"d/m/Y" }}
+                            </div>
+                            <div class="mb-1">
+                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">schedule</span>
+                                {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}
+                            </div>
+                            <div class="mb-1">
+                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">location_on</span>
+                                {{ reserva.cancha.complejo.nombre }}
+                            </div>
                             <div class="mb-1">
                                 <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">person</span>
                                 {% if reserva.jugador_principal %}
@@ -416,12 +430,15 @@
                                     <span class="text-muted">-</span>
                                 {% endif %}
                             </div>
-                            <div class="mb-1"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">payments</span> <strong>${{ reserva.precio }}</strong></div>
+                            <div class="mb-1">
+                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">payments</span>
+                                <strong>${{ reserva.precio }}</strong>
+                            </div>
                             <div class="d-flex gap-2 mt-2">
                                 <a href="{% url 'reservas:detalle_reserva' reserva.id %}" class="btn btn-outline-primary btn-sm flex-fill" title="Ver detalle">
                                     <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
                                 </a>
-                                {% if reserva.estado in 'PENDIENTE,CONFIRMADA' and not reserva.pagado %}
+                                {% if (reserva.estado == 'PENDIENTE' or reserva.estado == 'CONFIRMADA') and not reserva.pagado %}
                                     <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline pagar-reserva-form flex-fill">
                                         {% csrf_token %}
                                         <button type="button" class="btn btn-outline-success btn-sm btn-pagar-reserva w-100" title="Marcar como pagada">
@@ -429,57 +446,126 @@
                                         </button>
                                     </form>
                                 {% endif %}
-                                {% if reserva.estado in 'PENDIENTE,CONFIRMADA' %}
+                                {% if reserva.estado == 'PENDIENTE' or reserva.estado == 'CONFIRMADA' %}
                                     <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form flex-fill">
-                                        // Marcar como pagada
-                                        <script
-                                        document.querySelectorAll('.btn-pagar-reserva').forEach(btn => {
-                                            btn.addEventListener('click', function(e) {
-                                                const form = btn.closest('form.pagar-reserva-form');
-                                                const url = form.action;
-                                                const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
-                                                fetch(url, {
-                                                    method: 'POST',
-                                                    headers: {
-                                                        'X-CSRFToken': csrfToken,
-                                                        'Accept': 'application/json',
-                                                    },
-                                                })
-                                                .then(response => response.json())
-                                                .then(data => {
-                                                    if (data.success) {
-                                                        Swal.fire({
-                                                            icon: 'success',
-                                                            title: 'Pagada',
-                                                            text: data.message,
-                                                            timer: 1500,
-                                                            showConfirmButton: false
-                                                        });
-                                                        // Actualizar badge visual
-                                                        const row = btn.closest('tr');
-                                                        if (row) {
-                                                            const badge = row.querySelector('.badge.bg-warning');
-                                                            if (badge) {
-                                                                badge.classList.remove('bg-warning', 'text-dark');
-                                                                badge.classList.add('bg-success');
-                                                                badge.textContent = 'Pagado';
-                                                    } else {
-                                                        Swal.fire({
-                                                            icon: 'error',
-                                                            title: 'Error',
-                                                            text: data.message || 'No se pudo marcar como pagada.'
-                                                        });
-                                                    }
-                                                })
-                                                .catch(() => {
-                                                    Swal.fire({
-                                                        icon: 'error',
-                                                        title: 'Error',
-                                                        text: 'No se pudo marcar como pagada.'
-                                                    });
-                                                });
-                                            });
-                                        });
+                                        {% csrf_token %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm btn-cancelar-reserva w-100" title="Cancelar">
+                                            <span class="material-symbols-rounded" style="font-size: 16px;">cancel</span>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="p-4 text-center text-muted">
+                    <span class="material-symbols-rounded" style="font-size: 48px;">event_busy</span>
+                    <p class="mt-2 mb-0">No se encontraron reservas con los filtros seleccionados.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Datos de canchas en JSON para JS -->
+    <script id="canchas-data" type="application/json">
+        {{ canchas_json|safe }}
+    </script>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- Flatpickr Spanish locale -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
+<script>
+// ================== HANDLERS DE ACCIONES (CONFIRMAR / PAGAR / CANCELAR) ==================
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmar reserva (solo muestra Swal y envía formulario normal)
+    document.querySelectorAll('.btn-confirmar-reserva').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const form = btn.closest('form.confirmar-reserva-form');
+            if (!form) return;
+            Swal.fire({
+                title: '¿Confirmar reserva?',
+                text: 'El turno quedará confirmado.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, confirmar',
+                cancelButtonText: 'Cancelar',
+            }).then(result => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+
+    // Marcar como pagada (fetch + recarga)
+    document.querySelectorAll('.btn-pagar-reserva').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const form = btn.closest('form.pagar-reserva-form');
+            if (!form) return;
+            const url = form.action;
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            Swal.fire({
+                title: '¿Marcar como pagada?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, marcar',
+                cancelButtonText: 'Cancelar'
+            }).then(result => {
+                if (!result.isConfirmed) return;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Pagada',
+                            text: data.message || 'La reserva fue marcada como pagada.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'No se pudo marcar como pagada.'
+                        });
+                    }
+                })
+                .catch(() => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo marcar como pagada.'
+                    });
+                });
+            });
+        });
+    });
+
+    // Cancelar reserva simple
+    document.querySelectorAll('.btn-cancelar-reserva').forEach(btn => {
+        btn.addEventListener('click', function() {
             const form = btn.closest('form.cancelar-reserva-form');
             if (!form) return;
             Swal.fire({
@@ -496,16 +582,8 @@
             });
         });
     });
-});
-// Definición de canchasOptions para selects dinámicos
-const canchasOptions = `
-<option value="">Seleccione una cancha</option>
-{% for cancha in canchas %}
-<option value="{{ cancha.id }}">{{ cancha.complejo.nombre }} - {{ cancha.nombre }}</option>
-{% endfor %}`;
 
-// ========== ELIMINAR RESERVA FIJA ========== //
-document.addEventListener('DOMContentLoaded', function() {
+    // Cancelar reserva fija
     document.querySelectorAll('.btn-cancelar-reserva-fija').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -527,8 +605,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ================= FUNCIONES AUXILIARES ===================
-// Inicializa flatpickr de forma segura, destruyendo instancias previas si existen
+// =============== UTILIDADES PARA HORARIOS Y FECHAS =====================
 function safeFlatpickr(element, options) {
     if (!element) return null;
     if (element._flatpickr) {
@@ -536,10 +613,9 @@ function safeFlatpickr(element, options) {
     }
     return flatpickr(element, options);
 }
-// Devuelve un array de fechas (YYYY-MM-DD) en las que la cancha está completamente ocupada (no hay horarios disponibles para reserva simple)
+
+// Devuelve un array de fechas ocupadas (YYYY-MM-DD) para una cancha
 async function obtenerFechasOcupadas(canchaId) {
-    // Endpoint esperado: /complejos/api/canchas/<cancha_id>/fechas_ocupadas/
-    // Debe devolver un array de strings con fechas ocupadas: ["2025-11-13", ...]
     try {
         const resp = await fetch(`/complejos/api/canchas/${canchaId}/fechas_ocupadas/`);
         if (!resp.ok) return [];
@@ -556,34 +632,37 @@ async function obtenerFechasOcupadas(canchaId) {
     }
 }
 
-// ================= FUNCIONES MEJORADAS ===================
-
-// Función mejorada para renderizar horarios de reserva fija
+// ================= FUNCIONES PARA HORARIOS FIJOS ===================
 async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput, fecha = null) {
     horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
     horaInput.value = '';
-    if (!canchaId || diaSemana === null) {
+    if (!canchaId || diaSemana === null || typeof diaSemana === 'undefined') {
         horariosBox.innerHTML = '';
         return;
     }
+
     const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
     const cancha = canchasData.find(c => c.id == canchaId);
     if (!cancha) {
         horariosBox.innerHTML = '';
         return;
     }
+
     if (precioInput && cancha.precio_base) {
         precioInput.value = cancha.precio_base;
     }
+
     let url = `/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`;
     if (fecha) {
         url += `&fecha=${fecha}`;
     }
+
     try {
         const resp = await fetch(url);
         const ocupados = await resp.json();
         const horasOcupadas = ocupados.map(o => o.hora_inicio);
         horariosBox.innerHTML = renderHorariosFija(cancha, horasOcupadas, horaInput.id, ocupados);
+
         horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
             if (!btn.disabled) {
                 btn.addEventListener('click', function() {
@@ -603,10 +682,11 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
     }
 }
 
-// Función mejorada para renderizar horarios con soporte para liberaciones
+// Render de horarios (tanto para fija como simple)
 function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
     if (!Array.isArray(ocupados)) ocupados = [];
     if (!Array.isArray(horariosFijos)) horariosFijos = [];
+
     let rangosFijos = horariosFijos.map(f => {
         if (typeof f === 'object' && f.hora_inicio && f.hora_fin) {
             return {
@@ -619,6 +699,7 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
         }
         return null;
     }).filter(Boolean);
+
     let horarios = [];
     if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
         const [hA, mA] = cancha.horario_apertura.split(':').map(Number);
@@ -627,6 +708,7 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
         let totalMinCierre = hC * 60 + mC;
         let duracion = Number(cancha.duracion_turno_minutos);
         if (isNaN(duracion) || duracion <= 0) duracion = 90;
+
         let actual = totalMinApertura;
         while (actual + duracion <= totalMinCierre) {
             let h = Math.floor(actual / 60);
@@ -635,17 +717,19 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             actual += duracion;
         }
     }
+
     let html = '<div class="row g-2">';
-    horarios.forEach((h, idx) => {
+    horarios.forEach((h) => {
         let hNorm = h;
         if (typeof h === 'string') {
             const [hh, mm] = h.split(':');
-            hNorm = `${hh.padStart(2, '0')}:${mm ? mm.padStart(2, '0') : '00'}`;
+            hNorm = `${hh.padStart(2, '0')}:${(mm || '00').padStart(2, '0')}`;
         }
-        // Cambia aquí: si el horario está en ocupados, deshabilitar SIEMPRE (reserva simple o fija)
+
         let ocupado = ocupados.includes(hNorm);
         let fijo = false;
         let tipoOcupacion = null;
+
         for (const rf of rangosFijos) {
             if (horaSolapa(hNorm, cancha.duracion_turno_minutos, rf.inicio, rf.fin)) {
                 fijo = true;
@@ -653,9 +737,11 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
                 break;
             }
         }
+
         let btnClass = 'btn-outline-primary';
         let disabled = '';
         let tooltip = '';
+
         if (fijo) {
             btnClass = 'btn-secondary';
             disabled = 'disabled';
@@ -668,6 +754,7 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             disabled = 'disabled';
             tooltip = 'data-bs-toggle="tooltip" title="Horario ocupado"';
         }
+
         html += `
             <div class='col-4 col-md-3 col-lg-2'>
                 <button type='button' 
@@ -687,87 +774,80 @@ function horaSolapa(hora, duracionMin, inicioFijo, finFijo) {
     const [h, m] = hora.split(':').map(Number);
     const [hi, mi] = inicioFijo.split(':').map(Number);
     const [hf, mf] = finFijo.split(':').map(Number);
+
     const inicio = h * 60 + m;
-    const fin = inicio + duracionMin;
+    const fin = inicio + Number(duracionMin || 90);
+
     const inicioF = hi * 60 + mi;
     const finF = hf * 60 + mf;
+
     return inicio < finF && fin > inicioF;
 }
 
+// ===================== RESERVA FIJA (SWEETALERT) =====================
 function abrirSwalReservaFija() {
     Swal.fire({
         title: 'Nueva Reserva Fija',
         html: `
             <form id='formSwalFija'>
-                Swal.fire({
-                    title: 'Nueva Reserva Fija',
-                    html: `
-                        <form id='formSwalFija'>
-                            <div class='mb-2'>
-                                <label>Cancha</label>
-                                <select id='swal-fija-cancha' name='cancha_id' class='form-select' required>
-                                    ${canchasOptions}
-                                </select>
-                            </div>
-                            <div class='mb-2'>
-                                <label>Día</label>
-                                <select id='swal-fija-dia' name='dia_semana' class='form-select' required>
-                                    <option value='0'>Lunes</option>
-                                    <option value='1'>Martes</option>
-                                    <option value='2'>Miércoles</option>
-                                    <option value='3'>Jueves</option>
-                                    <option value='4'>Viernes</option>
-                                    <option value='5'>Sábado</option>
-                                    <option value='6'>Domingo</option>
-                                </select>
-                            </div>
-                            <div class='mb-2'>
-                                <label>Horario</label>
-                                <div id='swal-fija-horarios-box'></div>
-                            </div>
-                            <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
-                            <div class='mb-2'>
-                                <label>Jugador (opcional)</label>
-                                <input type='text' id='swal-fija-jugador' class='form-control' placeholder='Buscar por nombre, @usuario o DNI'>
-                                <input type='hidden' name='jugador_id' id='swal-fija-jugador-id'>
-                            </div>
-                            <div class='mb-2'>
-                                <label>Nombre Cliente</label>
-                                <input type='text' name='nombre_cliente' class='form-control'>
-                            </div>
-                            <div class='mb-2'>
-                                <label>Teléfono</label>
-                                <input type='tel' name='telefono_cliente' class='form-control'>
-                            </div>
-                            <div class='mb-2'>
-                                <label>Precio</label>
-                                <input type='number' id='swal-fija-precio' name='precio' class='form-control' step='0.01' min='0' required>
-                            </div>
-                        </form>
-                    `,
-                    didOpen: async () => {
-                        const canchaSelect = document.getElementById('swal-fija-cancha');
-                        const diaSelect = document.getElementById('swal-fija-dia');
-                        const horariosBox = document.getElementById('swal-fija-horarios-box');
-                        const horaInput = document.getElementById('swal-fija-hora');
-                        const precioInput = document.getElementById('swal-fija-precio');
-                        async function updateHorarios() {
-                            const canchaId = canchaSelect.value;
-                            const diaSemana = parseInt(diaSelect.value);
-                            await updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput);
-                        }
-                        canchaSelect.addEventListener('change', updateHorarios);
-                        diaSelect.addEventListener('change', updateHorarios);
-                        setupJugadorAutocomplete('swal-fija-jugador', 'swal-fija-jugador-id', 'swal-fija-jugador-list');
-                    },
-                    showCancelButton: true,
-                    confirmButtonText: 'Crear',
-                    cancelButtonText: 'Cancelar',
-                    preConfirm: async () => {
+                <div class='mb-2'>
+                    <label>Cancha</label>
+                    <select id='swal-fija-cancha' name='cancha_id' class='form-select' required>
+                        ${canchasOptions}
+                    </select>
+                </div>
+                <div class='mb-2'>
+                    <label>Día</label>
+                    <select id='swal-fija-dia' name='dia_semana' class='form-select' required>
+                        <option value='0'>Lunes</option>
+                        <option value='1'>Martes</option>
+                        <option value='2'>Miércoles</option>
+                        <option value='3'>Jueves</option>
+                        <option value='4'>Viernes</option>
+                        <option value='5'>Sábado</option>
+                        <option value='6'>Domingo</option>
+                    </select>
+                </div>
+                <div class='mb-2'>
+                    <label>Horario</label>
+                    <div id='swal-fija-horarios-box'></div>
+                </div>
+                <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
+                <div class='mb-2'>
+                    <label>Jugador (opcional)</label>
+                    <input type='text' id='swal-fija-jugador' class='form-control' placeholder='Buscar por nombre, @usuario o DNI'>
+                    <input type='hidden' name='jugador_id' id='swal-fija-jugador-id'>
+                </div>
+                <div class='mb-2'>
+                    <label>Nombre Cliente</label>
+                    <input type='text' name='nombre_cliente' class='form-control'>
+                </div>
+                <div class='mb-2'>
+                    <label>Teléfono</label>
+                    <input type='tel' name='telefono_cliente' class='form-control'>
+                </div>
+                <div class='mb-2'>
+                    <label>Precio</label>
+                    <input type='number' id='swal-fija-precio' name='precio' class='form-control' step='0.01' min='0' required>
+                </div>
+            </form>
+        `,
+        didOpen: () => {
+            const canchaSelect = document.getElementById('swal-fija-cancha');
+            const diaSelect = document.getElementById('swal-fija-dia');
+            const horariosBox = document.getElementById('swal-fija-horarios-box');
+            const horaInput = document.getElementById('swal-fija-hora');
+            const precioInput = document.getElementById('swal-fija-precio');
+
+            async function updateHorarios() {
+                const canchaId = canchaSelect.value;
+                const diaSemana = parseInt(diaSelect.value);
                 await updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput);
             }
+
             canchaSelect.addEventListener('change', updateHorarios);
             diaSelect.addEventListener('change', updateHorarios);
+
             setupJugadorAutocomplete('swal-fija-jugador', 'swal-fija-jugador-id', 'swal-fija-jugador-list');
         },
         showCancelButton: true,
@@ -776,10 +856,12 @@ function abrirSwalReservaFija() {
         preConfirm: async () => {
             const form = document.getElementById('formSwalFija');
             const data = Object.fromEntries(new FormData(form));
+
             if (!data.cancha_id || !data.dia_semana || !data.hora_inicio || !data.precio) {
                 Swal.showValidationMessage('Complete todos los campos obligatorios');
                 return false;
             }
+
             const resp = await fetch(`/complejos/api/validar_reserva_fija/?cancha_id=${data.cancha_id}&dia_semana=${data.dia_semana}&hora_inicio=${data.hora_inicio}`);
             const resultado = await resp.json();
             if (resultado.yafijo) {
@@ -803,7 +885,7 @@ function abrirSwalReservaFija() {
                 if (data.success) {
                     Swal.fire('¡Listo!', data.message, 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Error', data.message, 'error');
+                    Swal.fire('Error', data.message || 'No se pudo crear la reserva.', 'error');
                 }
             })
             .catch(() => Swal.fire('Error', 'No se pudo crear la reserva.', 'error'));
@@ -811,6 +893,7 @@ function abrirSwalReservaFija() {
     });
 }
 
+// ===================== RESERVA SIMPLE (SWEETALERT) =====================
 function abrirSwalReservaSimple() {
     Swal.fire({
         title: 'Reserva Simple',
@@ -858,6 +941,7 @@ function abrirSwalReservaSimple() {
             const precioInput = document.getElementById('swal-simple-precio');
             const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
             let fp = null;
+
             async function updateFlatpickr() {
                 if (fp) fp.destroy();
                 if (!canchaSelect.value) return;
@@ -865,26 +949,32 @@ function abrirSwalReservaSimple() {
                 fp = safeFlatpickr(fechaInput, {
                     minDate: 'today',
                     disable: ocupadas,
-                    dateFormat: 'Y-m-d'
+                    dateFormat: 'Y-m-d',
+                    locale: flatpickr.l10ns.es
                 });
             }
+
             async function updateHorarios() {
                 horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
                 horaInput.value = '';
+
                 const canchaId = canchaSelect.value;
                 const fecha = fechaInput.value;
                 if (!canchaId || !fecha) {
                     horariosBox.innerHTML = '';
                     return;
                 }
+
                 const cancha = canchasData.find(c => c.id == canchaId);
                 if (!cancha) {
                     horariosBox.innerHTML = '';
                     return;
                 }
+
                 if (precioInput && cancha.precio_base) {
                     precioInput.value = cancha.precio_base;
                 }
+
                 try {
                     const resp = await fetch(`/complejos/api/canchas/${canchaId}/horarios/?fecha=${fecha}`);
                     const data = await resp.json();
@@ -892,9 +982,11 @@ function abrirSwalReservaSimple() {
                         horariosBox.innerHTML = '<div class="text-danger small">Error al cargar horarios</div>';
                         return;
                     }
+
                     const ocupados = data.horarios
                         .filter(h => h.ocupado && h.tipo_ocupacion !== 'RESERVA_FIJA')
                         .map(h => h.hora_inicio);
+
                     const horariosFijos = data.horarios
                         .filter(h => h.tipo_ocupacion === 'RESERVA_FIJA')
                         .map(h => ({
@@ -902,7 +994,9 @@ function abrirSwalReservaSimple() {
                             hora_fin: h.hora_fin,
                             tipo: 'reserva_fija'
                         }));
+
                     horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora', horariosFijos);
+
                     horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
                         if (!btn.disabled) {
                             btn.addEventListener('click', function() {
@@ -916,6 +1010,7 @@ function abrirSwalReservaSimple() {
                             });
                         }
                     });
+
                     const tooltipTriggerList = horariosBox.querySelectorAll('[data-bs-toggle="tooltip"]');
                     tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
                 } catch (error) {
@@ -923,11 +1018,14 @@ function abrirSwalReservaSimple() {
                     horariosBox.innerHTML = '<div class="text-danger small">Error al cargar horarios</div>';
                 }
             }
+
             canchaSelect.addEventListener('change', async () => {
                 await updateFlatpickr();
                 await updateHorarios();
             });
+
             fechaInput.addEventListener('change', updateHorarios);
+
             await updateFlatpickr();
             setupJugadorAutocomplete('swal-simple-jugador', 'swal-simple-jugador-id', 'swal-simple-jugador-list', 'swal-simple-nombre-cliente');
         },
@@ -959,7 +1057,7 @@ function abrirSwalReservaSimple() {
                 if (data.success) {
                     Swal.fire('¡Listo!', data.message, 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Error', data.message, 'error');
+                    Swal.fire('Error', data.message || 'No se pudo crear la reserva.', 'error');
                 }
             })
             .catch(() => Swal.fire('Error', 'No se pudo crear la reserva.', 'error'));
@@ -967,25 +1065,32 @@ function abrirSwalReservaSimple() {
     });
 }
 
+// ===================== AUTOCOMPLETE DE JUGADORES =====================
 function setupJugadorAutocomplete(inputId, hiddenInputId, listId, nombreClienteInputId = null) {
     const jugadorInput = document.getElementById(inputId);
     const jugadorIdInput = document.getElementById(hiddenInputId);
     const nombreClienteInput = nombreClienteInputId ? document.getElementById(nombreClienteInputId) : null;
     let timeout = null;
+
+    if (!jugadorInput || !jugadorIdInput) return;
+
     jugadorInput.addEventListener('input', function() {
         clearTimeout(timeout);
         const q = this.value.trim();
+        const existingList = document.getElementById(listId);
+
         if (q.length < 2) {
-            const list = document.getElementById(listId);
-            if (list) list.innerHTML = '';
+            if (existingList) existingList.innerHTML = '';
             return;
         }
+
         timeout = setTimeout(async () => {
             try {
                 const resp = await fetch(`/complejos/api/buscar_jugador/?q=${encodeURIComponent(q)}`);
                 if (!resp.ok) return;
                 const resultados = await resp.json();
-                let list = document.getElementById(listId);
+
+                let list = existingList;
                 if (!list) {
                     list = document.createElement('div');
                     list.id = listId;
@@ -996,11 +1101,13 @@ function setupJugadorAutocomplete(inputId, hiddenInputId, listId, nombreClienteI
                     jugadorInput.parentNode.style.position = 'relative';
                     jugadorInput.parentNode.appendChild(list);
                 }
+
                 list.innerHTML = '';
-                if (resultados.length === 0) {
+                if (!Array.isArray(resultados) || resultados.length === 0) {
                     list.innerHTML = '<div class="list-group-item text-muted">No se encontraron jugadores</div>';
                     return;
                 }
+
                 resultados.forEach(j => {
                     const item = document.createElement('button');
                     item.type = 'button';
@@ -1024,6 +1131,7 @@ function setupJugadorAutocomplete(inputId, hiddenInputId, listId, nombreClienteI
             }
         }, 300);
     });
+
     document.addEventListener('click', function(e) {
         const list = document.getElementById(listId);
         if (list && !jugadorInput.contains(e.target) && !list.contains(e.target)) {
@@ -1032,13 +1140,12 @@ function setupJugadorAutocomplete(inputId, hiddenInputId, listId, nombreClienteI
     });
 }
 
-
-{% endblock %}
-{% block extra_js %}
-<!-- Flatpickr CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<!-- Flatpickr JS -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<!-- Flatpickr Spanish locale -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+// ================== OPCIONES DE CANCHAS PARA SELECTS (USADAS EN SWEETALERT) ==================
+const canchasOptions = `
+<option value="">Seleccione una cancha</option>
+{% for cancha in canchas %}
+<option value="{{ cancha.id }}">{{ cancha.complejo.nombre }} - {{ cancha.nombre }}</option>
+{% endfor %}
+`;
+</script>
 {% endblock %}
