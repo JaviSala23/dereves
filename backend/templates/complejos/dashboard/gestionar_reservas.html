@@ -432,6 +432,7 @@
                                 {% if reserva.estado in 'PENDIENTE,CONFIRMADA' %}
                                     <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form flex-fill">
                                         // Marcar como pagada
+                                        <script
                                         document.querySelectorAll('.btn-pagar-reserva').forEach(btn => {
                                             btn.addEventListener('click', function(e) {
                                                 const form = btn.closest('form.pagar-reserva-form');
@@ -701,57 +702,71 @@ function abrirSwalReservaFija() {
         title: 'Nueva Reserva Fija',
         html: `
             <form id='formSwalFija'>
-                <div class='mb-2'>
-                    <label>Cancha</label>
-                    <select id='swal-fija-cancha' name='cancha_id' class='form-select' required>
-                        ${canchasOptions}
-                    </select>
-                </div>
-                <div class='mb-2'>
-                    <label>Día</label>
-                    <select id='swal-fija-dia' name='dia_semana' class='form-select' required>
-                        <option value='0'>Lunes</option>
-                        <option value='1'>Martes</option>
-                        <option value='2'>Miércoles</option>
-                        <option value='3'>Jueves</option>
-                        <option value='4'>Viernes</option>
-                        <option value='5'>Sábado</option>
-                        <option value='6'>Domingo</option>
-                    </select>
-                </div>
-                <div class='mb-2'>
-                    <label>Horario</label>
-                    <div id='swal-fija-horarios-box'></div>
-                </div>
-                <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
-                <div class='mb-2'>
-                    <label>Jugador (opcional)</label>
-                    <input type='text' id='swal-fija-jugador' class='form-control' placeholder='Buscar por nombre, @usuario o DNI'>
-                    <input type='hidden' name='jugador_id' id='swal-fija-jugador-id'>
-                </div>
-                <div class='mb-2'>
-                    <label>Nombre Cliente</label>
-                    <input type='text' name='nombre_cliente' class='form-control'>
-                </div>
-                <div class='mb-2'>
-                    <label>Teléfono</label>
-                    <input type='tel' name='telefono_cliente' class='form-control'>
-                </div>
-                <div class='mb-2'>
-                    <label>Precio</label>
-                    <input type='number' id='swal-fija-precio' name='precio' class='form-control' step='0.01' min='0' required>
-                </div>
-            </form>
-        `,
-        didOpen: async () => {
-            const canchaSelect = document.getElementById('swal-fija-cancha');
-            const diaSelect = document.getElementById('swal-fija-dia');
-            const horariosBox = document.getElementById('swal-fija-horarios-box');
-            const horaInput = document.getElementById('swal-fija-hora');
-            const precioInput = document.getElementById('swal-fija-precio');
-            async function updateHorarios() {
-                const canchaId = canchaSelect.value;
-                const diaSemana = parseInt(diaSelect.value);
+                Swal.fire({
+                    title: 'Nueva Reserva Fija',
+                    html: `
+                        <form id='formSwalFija'>
+                            <div class='mb-2'>
+                                <label>Cancha</label>
+                                <select id='swal-fija-cancha' name='cancha_id' class='form-select' required>
+                                    ${canchasOptions}
+                                </select>
+                            </div>
+                            <div class='mb-2'>
+                                <label>Día</label>
+                                <select id='swal-fija-dia' name='dia_semana' class='form-select' required>
+                                    <option value='0'>Lunes</option>
+                                    <option value='1'>Martes</option>
+                                    <option value='2'>Miércoles</option>
+                                    <option value='3'>Jueves</option>
+                                    <option value='4'>Viernes</option>
+                                    <option value='5'>Sábado</option>
+                                    <option value='6'>Domingo</option>
+                                </select>
+                            </div>
+                            <div class='mb-2'>
+                                <label>Horario</label>
+                                <div id='swal-fija-horarios-box'></div>
+                            </div>
+                            <input type='hidden' id='swal-fija-hora' name='hora_inicio' required>
+                            <div class='mb-2'>
+                                <label>Jugador (opcional)</label>
+                                <input type='text' id='swal-fija-jugador' class='form-control' placeholder='Buscar por nombre, @usuario o DNI'>
+                                <input type='hidden' name='jugador_id' id='swal-fija-jugador-id'>
+                            </div>
+                            <div class='mb-2'>
+                                <label>Nombre Cliente</label>
+                                <input type='text' name='nombre_cliente' class='form-control'>
+                            </div>
+                            <div class='mb-2'>
+                                <label>Teléfono</label>
+                                <input type='tel' name='telefono_cliente' class='form-control'>
+                            </div>
+                            <div class='mb-2'>
+                                <label>Precio</label>
+                                <input type='number' id='swal-fija-precio' name='precio' class='form-control' step='0.01' min='0' required>
+                            </div>
+                        </form>
+                    `,
+                    didOpen: async () => {
+                        const canchaSelect = document.getElementById('swal-fija-cancha');
+                        const diaSelect = document.getElementById('swal-fija-dia');
+                        const horariosBox = document.getElementById('swal-fija-horarios-box');
+                        const horaInput = document.getElementById('swal-fija-hora');
+                        const precioInput = document.getElementById('swal-fija-precio');
+                        async function updateHorarios() {
+                            const canchaId = canchaSelect.value;
+                            const diaSemana = parseInt(diaSelect.value);
+                            await updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput);
+                        }
+                        canchaSelect.addEventListener('change', updateHorarios);
+                        diaSelect.addEventListener('change', updateHorarios);
+                        setupJugadorAutocomplete('swal-fija-jugador', 'swal-fija-jugador-id', 'swal-fija-jugador-list');
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Crear',
+                    cancelButtonText: 'Cancelar',
+                    preConfirm: async () => {
                 await updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput);
             }
             canchaSelect.addEventListener('change', updateHorarios);
@@ -1019,6 +1034,7 @@ function setupJugadorAutocomplete(inputId, hiddenInputId, listId, nombreClienteI
         }
     });
 }
+
 
 {% endblock %}
 
