@@ -369,7 +369,7 @@
                                             </form>
                                         {% endif %}
                                         {% if reserva.estado in 'PENDIENTE,CONFIRMADA' and not reserva.pagado %}
-                                            <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline pagar-reserva-form" style="display: inline;">
+                                            <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline pagar-reserva-form" style="display: inline;">
                                                 {% csrf_token %}
                                                 <button type="button" class="btn btn-outline-success btn-pagar-reserva" title="Marcar como pagada">
                                                     <span class="material-symbols-rounded" style="font-size: 16px;">payments</span>
@@ -422,7 +422,7 @@
                                     <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
                                 </a>
                                 {% if reserva.estado in 'PENDIENTE,CONFIRMADA' and not reserva.pagado %}
-                                    <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline pagar-reserva-form flex-fill">
+                                    <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline pagar-reserva-form flex-fill">
                                         {% csrf_token %}
                                         <button type="button" class="btn btn-outline-success btn-sm btn-pagar-reserva w-100" title="Marcar como pagada">
                                             <span class="material-symbols-rounded" style="font-size: 16px;">payments</span>
@@ -431,57 +431,57 @@
                                 {% endif %}
                                 {% if reserva.estado in 'PENDIENTE,CONFIRMADA' %}
                                     <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form flex-fill">
-                                        {% csrf_token %}
-                                        <button type="button" class="btn btn-outline-danger btn-sm btn-cancelar-reserva w-100" title="Cancelar">
-                                            <span class="material-symbols-rounded" style="font-size: 16px;">cancel</span>
-                                        </button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="text-center py-5">
-                    <span class="material-symbols-rounded text-muted" style="font-size: 80px;">event_busy</span>
-                    <h5 class="mt-3 text-muted">No se encontraron reservas</h5>
-                    <p class="text-muted">Intenta ajustar los filtros de búsqueda</p>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-
-{{ canchas|json_script:"canchas-data" }}
-<script>
-// ========== CONFIRMAR RESERVA SIMPLE ========== //
-document.addEventListener('DOMContentLoaded', function() {
-    // Confirmar reserva (si queda algún botón)
-    document.querySelectorAll('.btn-confirmar-reserva').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const form = btn.closest('form.confirmar-reserva-form');
-            if (!form) return;
-            form.submit();
-        });
-    });
-    // Marcar como pagada
-    document.querySelectorAll('.btn-pagar-reserva').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const form = btn.closest('form.pagar-reserva-form');
-            if (!form) return;
-            form.submit();
-        });
-    });
-    // Cancelar reserva con confirmación
-    document.querySelectorAll('.btn-cancelar-reserva').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
+                                        // Marcar como pagada
+                                        document.querySelectorAll('.btn-pagar-reserva').forEach(btn => {
+                                            btn.addEventListener('click', function(e) {
+                                                const form = btn.closest('form.pagar-reserva-form');
+                                                const url = form.action;
+                                                const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+                                                fetch(url, {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'X-CSRFToken': csrfToken,
+                                                        'Accept': 'application/json',
+                                                    },
+                                                })
+                                                .then(response => response.json())
+                                                .then(data => {
+                                                    if (data.success) {
+                                                        Swal.fire({
+                                                            icon: 'success',
+                                                            title: 'Pagada',
+                                                            text: data.message,
+                                                            timer: 1500,
+                                                            showConfirmButton: false
+                                                        });
+                                                        // Actualizar badge visual
+                                                        const row = btn.closest('tr');
+                                                        if (row) {
+                                                            const badge = row.querySelector('.badge.bg-warning');
+                                                            if (badge) {
+                                                                badge.classList.remove('bg-warning', 'text-dark');
+                                                                badge.classList.add('bg-success');
+                                                                badge.textContent = 'Pagado';
+                                                            }
+                                                        }
+                                                        btn.closest('form').remove();
+                                                    } else {
+                                                        Swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Error',
+                                                            text: data.message || 'No se pudo marcar como pagada.'
+                                                        });
+                                                    }
+                                                })
+                                                .catch(() => {
+                                                    Swal.fire({
+                                                        icon: 'error',
+                                                        title: 'Error',
+                                                        text: 'No se pudo marcar como pagada.'
+                                                    });
+                                                });
+                                            });
+                                        });
             const form = btn.closest('form.cancelar-reserva-form');
             if (!form) return;
             Swal.fire({
