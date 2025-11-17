@@ -915,12 +915,14 @@ def marcar_reserva_pagada(request, reserva_id):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Método no permitido'}, status=405)
     reserva = get_object_or_404(Reserva, id=reserva_id)
-    # Verificar que sea el dueño
+    # Permitir dueños, staff y superusuarios
+    es_dueno = False
     try:
-        if reserva.cancha.complejo.dueno != request.user.perfil_duena:
-            return JsonResponse({'success': False, 'message': 'No tienes permiso para marcar como pagada esta reserva.'}, status=403)
+        es_dueno = reserva.cancha.complejo.dueno == getattr(request.user, 'perfil_duena', None)
     except AttributeError:
-        return JsonResponse({'success': False, 'message': 'Solo dueños pueden marcar reservas como pagadas.'}, status=403)
+        es_dueno = False
+    if not (es_dueno or request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'success': False, 'message': 'No tienes permiso para marcar como pagada esta reserva.'}, status=403)
     reserva.pagado = True
     reserva.save(update_fields=['pagado'])
     return JsonResponse({'success': True, 'message': 'Reserva marcada como pagada.'})
