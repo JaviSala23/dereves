@@ -151,19 +151,16 @@ class Reserva(models.Model):
 
     def confirmar(self):
         """
-        Marca la reserva como pagada y confirmada (solo dueños).
-        Si ya está pagada, no hace nada.
-        Devuelve True si se modificó, False si ya estaba pagada.
+        Marca la reserva como confirmada (solo dueños).
+        No marca como pagada automáticamente.
+        Devuelve True si se modificó, False si ya estaba confirmada.
         """
         modificado = False
-        if not self.pagado:
-            self.pagado = True
-            modificado = True
         if self.estado != 'CONFIRMADA':
             self.estado = 'CONFIRMADA'
             modificado = True
         if modificado:
-            self.save(update_fields=['pagado', 'estado', 'actualizado_en'])
+            self.save(update_fields=['estado', 'actualizado_en'])
         return modificado
 
 
