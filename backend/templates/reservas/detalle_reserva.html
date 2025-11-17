@@ -70,6 +70,8 @@
                                         {% endif %}
                                     {% elif reserva.jugador %}
                                         {{ reserva.jugador.alias }}
+                                    {% elif reserva.jugador_principal %}
+                                        {{ reserva.jugador_principal.alias }}
                                     {% else %}
                                         Sin información
                                     {% endif %}
