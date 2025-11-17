@@ -834,21 +834,33 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             actual += duracion;
         }
     }
-    // Obtener contexto de "hoy" y hora actual en Argentina (UTC-3)
+    // Bloqueo de turnos pasados para reserva fija y simple (según fecha/hora actual de Argentina)
     let isToday = false;
     let horaActual = null;
-    // Buscar si el inputId corresponde al modal de reserva fija y si el día seleccionado es hoy
-    if (inputId && (inputId.includes('fija') || inputId.includes('swal-fija'))) {
+    let fechaSeleccionada = null;
+    // Para reserva simple: inputId incluye 'simple'
+    if (inputId && inputId.includes('swal-simple')) {
+        // Obtener fecha seleccionada
+        const fechaInput = document.getElementById('swal-simple-fecha');
+        if (fechaInput && fechaInput.value) {
+            fechaSeleccionada = fechaInput.value;
+        }
+        // Hoy en Argentina (UTC-3)
+        const now = new Date();
+        const nowArg = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        const hoyStr = nowArg.toISOString().slice(0,10);
+        if (fechaSeleccionada === hoyStr) {
+            isToday = true;
+            horaActual = `${nowArg.getHours().toString().padStart(2,'0')}:${nowArg.getMinutes().toString().padStart(2,'0')}`;
+        }
+    } else if (inputId && (inputId.includes('fija') || inputId.includes('swal-fija'))) {
         // Día de la semana seleccionado
         let diaSemana = null;
-        // Intentar obtener el valor del select de día
         const diaSelect = document.getElementById('swal-fija-dia');
         if (diaSelect) {
             diaSemana = parseInt(diaSelect.value);
         }
-        // Hoy en Argentina (UTC-3)
         const now = new Date();
-        // Ajustar a UTC-3 (hora de Argentina)
         const nowArg = new Date(now.getTime() - 3 * 60 * 60 * 1000);
         if (diaSemana !== null && nowArg.getDay() === diaSemana) {
             isToday = true;
@@ -873,7 +885,7 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
                 break;
             }
         }
-        // Bloquear turnos pasados de hoy (solo para reserva fija)
+        // Bloquear turnos pasados de hoy (para reserva fija y simple)
         let esPasado = false;
         if (isToday && horaActual && hNorm < horaActual) {
             esPasado = true;
