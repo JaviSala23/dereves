@@ -731,9 +731,7 @@ def confirmar_reserva(request, reserva_id):
 
     if resultado:
         messages.success(request, f'Reserva confirmada exitosamente para {nombre_cliente}.')
-    else:
-        messages.warning(request, f'La reserva ya estaba confirmada para {nombre_cliente}.')
-
+    # Si ya estaba confirmada, no mostrar advertencia ni mensaje adicional
     return redirect('reservas:detalle_reserva', reserva_id=reserva_id)
 
 
