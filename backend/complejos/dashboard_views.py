@@ -244,36 +244,36 @@ def gestionar_reservas(request):
             ]
         }
         for cancha in canchas_qs
-    ]
-
-    context = {
-        'reservas': reservas[:100],  # Limitar a 100 para performance
-        'complejos': complejos,
-        'reservas_fijas_activas': reservas_fijas_activas,
-        'jugadores': jugadores,
-        'canchas': canchas,
-        'total_reservas': total_reservas,
-        'reservas_pendientes': reservas_pendientes,
-        'reservas_confirmadas': reservas_confirmadas,
-        'total_ingresos': total_ingresos,
-        # Filtros actuales
-        'estado_filtro': estado_filtro,
-        'complejo_filtro': complejo_filtro,
-        'fecha_desde': fecha_desde,
-        'fecha_hasta': fecha_hasta,
-        'pagado_filtro': pagado_filtro,
-        'estados': Reserva.ESTADO_CHOICES,
-        'fechas_disponibles': fechas_disponibles,
-    }
-    return render(request, 'complejos/dashboard/gestionar_reservas.html', context)
-
-
-@login_required
-def estadisticas_complejo(request, slug):
-    """
-    Estadísticas detalladas de un complejo específico.
-    """
-    if request.user.tipo_usuario != 'DUENIO':
+        from reservas.models import ReservaFijaLiberacion
+        from django.db.models import Q
+        for i in range(dias_a_mostrar):
+            dia = hoy + timedelta(days=i)
+            disponible = False
+            for cancha in canchas_activas:
+                # Buscar reservas fijas activas para ese día de semana y cancha, vigentes en la fecha
+                reservas_fijas = reservas_fijas_activas.filter(
+                    cancha=cancha,
+                    dia_semana=dia.weekday(),
+                    fecha_inicio__lte=dia
+                ).filter(
+                    Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=dia)
+                )
+                # Si hay reservas fijas, verificar si alguna está liberada para ese día
+                if reservas_fijas.exists():
+                    liberada = False
+                    for rf in reservas_fijas:
+                        if rf.liberaciones.filter(fecha=dia).exists():
+                            liberada = True
+                            break
+                    if not liberada:
+                        continue  # Día bloqueado por reserva fija vigente
+                # ¿Hay reserva simple para esa cancha y día?
+                if Reserva.objects.filter(cancha=cancha, fecha=dia, estado__in=["PENDIENTE", "CONFIRMADA"]).exists():
+                    continue
+                disponible = True
+                break
+            if disponible:
+                fechas_disponibles.append(dia)
         messages.error(request, 'Acceso denegado.')
         return redirect('home')
     
