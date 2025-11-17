@@ -721,11 +721,12 @@ def confirmar_reserva(request, reserva_id):
 
     # Mensaje personalizado según tipo de reserva
     nombre_cliente = None
-    if hasattr(reserva, 'jugador') and reserva.jugador:
-        nombre_cliente = reserva.jugador.alias
-    elif hasattr(reserva, 'jugador_principal') and reserva.jugador_principal:
+    jugador_obj = getattr(reserva, 'jugador', None)
+    if jugador_obj:
+        nombre_cliente = jugador_obj.alias
+    elif getattr(reserva, 'jugador_principal', None):
         nombre_cliente = reserva.jugador_principal.alias
-    elif hasattr(reserva, 'nombre_cliente') and reserva.nombre_cliente:
+    elif getattr(reserva, 'nombre_cliente', None):
         nombre_cliente = reserva.nombre_cliente
     else:
         nombre_cliente = 'Sin jugador'
