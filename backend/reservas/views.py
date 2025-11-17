@@ -918,7 +918,7 @@ def marcar_reserva_pagada(request, reserva_id):
     # Permitir dueños, staff y superusuarios
     es_dueno = False
     try:
-        es_dueno = reserva.cancha.complejo.dueno == getattr(request.user, 'perfil_duena', None)
+        es_dueno = reserva.cancha.complejo.dueno == getattr(request.user, 'perfil_dueno', None)
     except AttributeError:
         es_dueno = False
     if not (es_dueno or request.user.is_staff or request.user.is_superuser):
