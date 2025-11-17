@@ -14,6 +14,8 @@ import json
 from .models import Complejo, Cancha
 from reservas.models import Reserva, ReservaFija
 from cuentas.models import PerfilDueno
+from reservas.models import ReservaFijaLiberacion
+from django.db.models import Q
 from django.http import JsonResponse
 
 
