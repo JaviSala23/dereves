@@ -157,7 +157,7 @@ def gestionar_reservas(request):
     Incluye filtros por estado, fecha, complejo, etc.
     También muestra las reservas fijas activas.
     """
-    if request.user.tipo_usuario != 'DUENIO':
+    if not (request.user.tipo_usuario == 'DUENIO' or request.user.is_staff or request.user.is_superuser):
         messages.error(request, 'Acceso denegado.')
         return redirect('home')
     
