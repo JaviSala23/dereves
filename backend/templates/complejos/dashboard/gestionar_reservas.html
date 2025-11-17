@@ -1037,46 +1037,6 @@ function abrirSwalReservaSimple() {
             await updateFlatpickr();
             setupJugadorAutocomplete('swal-simple-jugador', 'swal-simple-jugador-id', 'swal-simple-jugador-list', 'swal-simple-nombre-cliente');
         },
-                    }
-                    const ocupados = data.horarios
-                        .filter(h => h.ocupado && h.tipo_ocupacion !== 'RESERVA_FIJA')
-                        .map(h => h.hora_inicio);
-                    const horariosFijos = data.horarios
-                        .filter(h => h.tipo_ocupacion === 'RESERVA_FIJA')
-                        .map(h => ({
-                            hora_inicio: h.hora_inicio,
-                            hora_fin: h.hora_fin,
-                            tipo: 'reserva_fija'
-                        }));
-                    horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora', horariosFijos);
-                    horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
-                        if (!btn.disabled) {
-                            btn.addEventListener('click', function() {
-                                horariosBox.querySelectorAll('button[data-hora]').forEach(b => {
-                                    b.classList.remove('btn-success');
-                                    b.classList.add('btn-outline-primary');
-                                });
-                                this.classList.remove('btn-outline-primary');
-                                this.classList.add('btn-success');
-                                horaInput.value = this.dataset.hora;
-                            });
-                        }
-                    });
-                    const tooltipTriggerList = horariosBox.querySelectorAll('[data-bs-toggle="tooltip"]');
-                    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
-                } catch (error) {
-                    console.error('Error cargando horarios:', error);
-                    horariosBox.innerHTML = '<div class="text-danger small">Error al cargar horarios</div>';
-                }
-            }
-            canchaSelect.addEventListener('change', async () => {
-                await updateFlatpickr();
-                await updateHorarios();
-            });
-            fechaInput.addEventListener('change', updateHorarios);
-            await updateFlatpickr();
-            setupJugadorAutocomplete('swal-simple-jugador', 'swal-simple-jugador-id', 'swal-simple-jugador-list', 'swal-simple-nombre-cliente');
-        },
         showCancelButton: true,
         confirmButtonText: 'Crear',
         cancelButtonText: 'Cancelar',
