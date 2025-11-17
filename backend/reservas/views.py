@@ -306,8 +306,9 @@ def detalle_reserva(request, reserva_id):
         except AttributeError:
             pass
     
+    jugador_obj = getattr(reserva, 'jugador', None)
     es_propietario = (
-        (reserva.jugador and reserva.jugador.usuario == request.user) or
+        (jugador_obj and jugador_obj.usuario == request.user) or
         es_dueno or 
         request.user.is_staff
     )
