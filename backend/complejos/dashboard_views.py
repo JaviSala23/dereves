@@ -280,6 +280,9 @@ def gestionar_reservas(request):
             fechas_disponibles.append(dia)
             turnos_por_fecha[dia] = sorted(turnos_dia)
 
+    # Agrupar fechas_disponibles en sublistas de hasta 4 para el carrusel
+    fechas_disponibles_grouped = [fechas_disponibles[i:i+4] for i in range(0, len(fechas_disponibles), 4)]
+
     context = {
         'reservas': reservas,
         'reservas_fijas_activas': reservas_fijas_activas,
@@ -290,7 +293,7 @@ def gestionar_reservas(request):
         'jugadores': jugadores,
         'canchas': canchas,
         'complejos': complejos,
-        'fechas_disponibles': fechas_disponibles,
+        'fechas_disponibles_grouped': fechas_disponibles_grouped,
         'turnos_por_fecha': turnos_por_fecha,
     }
 
