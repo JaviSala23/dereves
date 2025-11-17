@@ -463,9 +463,7 @@
                                                                 badge.classList.remove('bg-warning', 'text-dark');
                                                                 badge.classList.add('bg-success');
                                                                 badge.textContent = 'Pagado';
-                                                            }
-                                                        }
-                                                        btn.closest('form').remove();
+                                                            {% block extra_js %}
                                                     } else {
                                                         Swal.fire({
                                                             icon: 'error',
