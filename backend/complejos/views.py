@@ -681,9 +681,11 @@ def obtener_horarios_disponibles(request, cancha_id):
                         continue
                     inicio_res = datetime.combine(fecha, r_inicio)
                     fin_res = datetime.combine(fecha, r_fin)
+                    # Solapamiento real: inicio_turno < fin_res y fin_turno > inicio_res
+                    # Pero NO si fin_turno == inicio_res (no se solapan, solo se tocan)
                     if (
                         (inicio_turno < fin_res and fin_turno > inicio_res)
-                        or (inicio_turno == inicio_res and fin_turno == fin_res)
+                        and not (fin_turno == inicio_res or inicio_turno == fin_res)
                     ):
                         ocupado = True
                         break
@@ -696,7 +698,8 @@ def obtener_horarios_disponibles(request, cancha_id):
                     rf_fin = reserva_fija.hora_fin
                     inicio_fijo = datetime.combine(fecha, rf_inicio)
                     fin_fijo = datetime.combine(fecha, rf_fin)
-                    if (inicio_turno < fin_fijo and fin_turno > inicio_fijo):
+                    # Igual que arriba: no marcar ocupado si solo se tocan los bordes
+                    if (inicio_turno < fin_fijo and fin_turno > inicio_fijo and not (fin_turno == inicio_fijo or inicio_turno == fin_fijo)):
                         ocupado = True
                         break
             horarios.append({
