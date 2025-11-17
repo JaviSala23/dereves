@@ -115,14 +115,71 @@
                             Volver
                         </a>
                         {% if es_dueno and not reserva.pagado %}
-                        <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline">
+                        <form id="form-pagar" method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-success">
+                            <button type="button" id="btn-pagar" class="btn btn-success">
                                 <span class="material-symbols-rounded">paid</span>
                                 Marcar como Pagada
                             </button>
                         </form>
                         {% endif %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnPagar = document.getElementById('btn-pagar');
+    if (btnPagar) {
+        btnPagar.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = document.getElementById('form-pagar');
+            const url = form.action;
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Pagada',
+                        text: data.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    // Actualizar badge de pago
+                    const badge = document.querySelector('.badge.bg-warning');
+                    if (badge) {
+                        badge.classList.remove('bg-warning', 'text-dark');
+                        badge.classList.add('bg-success');
+                        badge.textContent = 'Pagado';
+                    }
+                    // Ocultar el botón
+                    btnPagar.closest('form').remove();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'No se pudo marcar como pagada.'
+                    });
+                }
+            })
+            .catch(() => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo marcar como pagada.'
+                });
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
                         {% if not es_dueno and reserva.estado not in 'CANCELADA,COMPLETADA' %}
                         <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form">
                             {% csrf_token %}

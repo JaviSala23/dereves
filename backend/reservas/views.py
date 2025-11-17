@@ -841,7 +841,7 @@ def cancelar_liberacion_reserva_fija(request, liberacion_id):
     reserva_fija = liberacion.reserva_fija
     # Verificar que sea el dueño
     try:
-        if reserva_fija.cancha.complejo.dueno != request.user.perfil_dueno:
+        if reserva_fija.cancha.complejo.dueno != request.user.perfil_duena:
             return JsonResponse({
                 'success': False,
                 'message': 'No tienes permiso para cancelar esta liberación.'
@@ -885,7 +885,7 @@ def listar_liberaciones_reserva_fija(request, reserva_fija_id):
     reserva_fija = get_object_or_404(ReservaFija, id=reserva_fija_id)
     # Verificar que sea el dueño
     try:
-        if reserva_fija.cancha.complejo.dueno != request.user.perfil_dueno:
+        if reserva_fija.cancha.complejo.dueno != request.user.perfil_duena:
             return JsonResponse({
                 'success': False,
                 'message': 'No tienes permiso para ver estas liberaciones.'
@@ -911,17 +911,16 @@ def listar_liberaciones_reserva_fija(request, reserva_fija_id):
 
 @login_required
 def marcar_reserva_pagada(request, reserva_id):
-    """Marca una reserva como pagada (solo dueños)."""
+    """Marca una reserva como pagada (solo dueños). Responde JSON para AJAX."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método no permitido'}, status=405)
     reserva = get_object_or_404(Reserva, id=reserva_id)
     # Verificar que sea el dueño
     try:
-        if reserva.cancha.complejo.dueno != request.user.perfil_dueno:
-            messages.error(request, 'No tienes permiso para marcar como pagada esta reserva.')
-            return redirect('home')
+        if reserva.cancha.complejo.dueno != request.user.perfil_duena:
+            return JsonResponse({'success': False, 'message': 'No tienes permiso para marcar como pagada esta reserva.'}, status=403)
     except AttributeError:
-        messages.error(request, 'Solo dueños pueden marcar reservas como pagadas.')
-        return redirect('home')
+        return JsonResponse({'success': False, 'message': 'Solo dueños pueden marcar reservas como pagadas.'}, status=403)
     reserva.pagado = True
     reserva.save(update_fields=['pagado'])
-    messages.success(request, 'Reserva marcada como pagada.')
-    return redirect('reservas:detalle_reserva', reserva_id=reserva_id)
+    return JsonResponse({'success': True, 'message': 'Reserva marcada como pagada.'})
