@@ -160,7 +160,11 @@
                                     data-reserva-id="{{ reserva.id }}"
                                     data-dia-semana="{{ reserva.dia_semana }}"
                                     data-fecha-inicio="{{ reserva.fecha_inicio|date:'Y-m-d' }}"
-                                    data-fecha-fin="{{ reserva.fecha_fin|date:'Y-m-d' if reserva.fecha_fin }}"
+                                    {% if reserva.fecha_fin %}
+                                        data-fecha-fin="{{ reserva.fecha_fin|date:'Y-m-d' }}"
+                                    {% else %}
+                                        data-fecha-fin=""
+                                    {% endif %}
                                     data-liberadas="{% for l in liberadas %}{{ l.fecha|date:'Y-m-d' }}{% if not forloop.last %},{% endif %}{% endfor %}"
                                 >
                                     <span class="material-symbols-rounded" style="font-size: 16px;">event_busy</span>
