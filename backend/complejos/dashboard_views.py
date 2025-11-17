@@ -152,6 +152,26 @@ def mis_complejos_dashboard(request):
 
 @login_required
 def gestionar_reservas(request):
+        # === Fechas disponibles para reservas simples (próximos 14 días, al menos una cancha activa y sin reservas fijas ni simples en ese día) ===
+        from datetime import timedelta, date
+        fechas_disponibles = []
+        canchas_activas = list(canchas_qs)
+        hoy = date.today()
+        dias_a_mostrar = 14
+        for i in range(dias_a_mostrar):
+            dia = hoy + timedelta(days=i)
+            disponible = False
+            for cancha in canchas_activas:
+                # ¿Hay reserva fija para ese día de semana y cancha?
+                if reservas_fijas_activas.filter(cancha=cancha, dia_semana=dia.weekday()).exists():
+                    continue
+                # ¿Hay reserva simple para esa cancha y día?
+                if Reserva.objects.filter(cancha=cancha, fecha=dia, estado__in=["PENDIENTE", "CONFIRMADA"]).exists():
+                    continue
+                disponible = True
+                break
+            if disponible:
+                fechas_disponibles.append(dia)
     """
     Vista para gestionar todas las reservas de los complejos del dueño.
     Incluye filtros por estado, fecha, complejo, etc.
@@ -259,8 +279,8 @@ def gestionar_reservas(request):
         'fecha_hasta': fecha_hasta,
         'pagado_filtro': pagado_filtro,
         'estados': Reserva.ESTADO_CHOICES,
+        'fechas_disponibles': fechas_disponibles,
     }
-    
     return render(request, 'complejos/dashboard/gestionar_reservas.html', context)
 
 
