@@ -11,7 +11,6 @@
         {% if fechas_disponibles %}
         <div id="carouselFechasDisponibles" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner">
-                {% for group in fechas_disponibles|slice:':':4 %}{% empty %}{% endfor %} {# para forloop.counter0 #}
                 {% for group in fechas_disponibles|batch:4 %}
                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
                     <div class="row g-3 justify-content-center">
