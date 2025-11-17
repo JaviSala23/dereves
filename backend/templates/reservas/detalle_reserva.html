@@ -21,22 +21,42 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-4">
+                    <div class="row">
                         <div class="col-md-6">
-                            <h6 class="text-muted mb-3">Información del Complejo</h6>
-                            <div class="mb-2">
-                                <label class="text-muted small">Complejo</label>
-                                <p class="mb-0">
-                                    <strong>{{ reserva.turno.cancha.complejo.nombre }}</strong>
-                                </p>
+                            <h6 class="mb-2">Información del Complejo</h6>
+                            <div class="mb-1"><b>Complejo</b><br>
+                                {{ reserva.turno.cancha.complejo.nombre|default:'-' }}
                             </div>
-                            <div class="mb-2">
-                                <label class="text-muted small">Cancha</label>
-                                <p class="mb-0">{{ reserva.turno.cancha.nombre }}</p>
+                            <div class="mb-1"><b>Cancha</b><br>
+                                {{ reserva.turno.cancha.nombre|default:'-' }}
                             </div>
-                            <div class="mb-2">
-                                <label class="text-muted small">Tipo</label>
-                                <p class="mb-0">{{ reserva.turno.cancha.get_tipo_display }}</p>
+                            <div class="mb-1"><b>Tipo</b><br>
+                                {{ reserva.turno.cancha.tipo|default:'-' }}
+                            </div>
+                            <div class="mb-1"><b>Ubicación</b><br>
+                                {{ reserva.turno.cancha.complejo.ubicacion|default:'-' }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-2">Información de la Reserva</h6>
+                            <div class="mb-1"><b>Fecha</b><br> <i class="fa fa-calendar"></i>
+                                {{ reserva.turno.fecha|date:'d/m/Y'|default:'-' }}
+                            </div>
+                            <div class="mb-1"><b>Horario</b><br> <i class="fa fa-clock-o"></i>
+                                {% if reserva.turno.hora_inicio and reserva.turno.hora_fin %}
+                                    {{ reserva.turno.hora_inicio|time:'H:i' }} - {{ reserva.turno.hora_fin|time:'H:i' }}
+                                {% else %}-{% endif %}
+                            </div>
+                            <div class="mb-1"><b>Cliente/Jugador</b><br>
+                                {% if reserva.jugador %}{{ reserva.jugador.alias }}
+                                {% elif reserva.jugador_principal %}{{ reserva.jugador_principal.alias }}
+                                {% elif reserva.nombre_cliente %}{{ reserva.nombre_cliente }}
+                                {% elif reserva.nombre_cliente_sin_cuenta %}{{ reserva.nombre_cliente_sin_cuenta }}
+                                {% else %}Sin información{% endif %}
+                            </div>
+                            <div class="mb-1"><b>Creada</b><br> {{ reserva.creado_en|date:'d/m/Y H:i' }}</div>
+                        </div>
+                    </div>
                             </div>
                             <div class="mb-2">
                                 <label class="text-muted small">Ubicación</label>
