@@ -717,12 +717,23 @@ def confirmar_reserva(request, reserva_id):
         return redirect('home')
     
     resultado = reserva.confirmar()
-    
-    if resultado:
-        messages.success(request, 'Reserva confirmada exitosamente.')
+
+    # Mensaje personalizado según tipo de reserva
+    nombre_cliente = None
+    if hasattr(reserva, 'jugador') and reserva.jugador:
+        nombre_cliente = reserva.jugador.alias
+    elif hasattr(reserva, 'jugador_principal') and reserva.jugador_principal:
+        nombre_cliente = reserva.jugador_principal.alias
+    elif hasattr(reserva, 'nombre_cliente') and reserva.nombre_cliente:
+        nombre_cliente = reserva.nombre_cliente
     else:
-        messages.warning(request, 'La reserva ya estaba confirmada.')
-    
+        nombre_cliente = 'Sin jugador'
+
+    if resultado:
+        messages.success(request, f'Reserva confirmada exitosamente para {nombre_cliente}.')
+    else:
+        messages.warning(request, f'La reserva ya estaba confirmada para {nombre_cliente}.')
+
     return redirect('reservas:detalle_reserva', reserva_id=reserva_id)
 
 
