@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
@@ -736,8 +737,10 @@ def confirmar_reserva(request, reserva_id):
     return redirect('reservas:detalle_reserva', reserva_id=reserva_id)
 
 
-@login_required
 def liberar_reserva_fija_fecha(request, reserva_fija_id):
+    # Si no está autenticado, devolver JSON de error
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'message': 'No autenticado'}, status=401)
     """
     Libera una ocurrencia específica de una reserva fija sin cancelar la recurrencia.
     Solo puede ser ejecutado por el dueño del complejo.
