@@ -145,6 +145,9 @@
                                         data-bs-target="#modalEditarReservaFija{{ reserva.id }}">
                                     <span class="material-symbols-rounded" style="font-size: 16px;">edit</span>
                                 </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning btn-liberar-fecha" data-reserva-id="{{ reserva.id }}" title="Liberar una fecha">
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">event_busy</span>
+                                </button>
                                 <form method="post" action="{% url 'reservas:cancelar_reserva_fija' reserva.id %}" class="d-inline cancelar-reserva-fija-form">
                                     {% csrf_token %}
                                     <button type="button" class="btn btn-sm btn-outline-danger btn-cancelar-reserva-fija">
@@ -503,6 +506,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }).then(result => {
                 if (result.isConfirmed) {
                     form.submit();
+                }
+            });
+        });
+    });
+
+    // ================== LIBERAR FECHA DE RESERVA FIJA ==================
+    document.querySelectorAll('.btn-liberar-fecha').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reservaId = btn.getAttribute('data-reserva-id');
+            Swal.fire({
+                title: 'Liberar una fecha',
+                html: `<input type='date' id='liberar-fecha-input' class='form-control' required min='{{ today|date:"Y-m-d" }}'>`,
+                showCancelButton: true,
+                confirmButtonText: 'Liberar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    const fecha = document.getElementById('liberar-fecha-input').value;
+                    if (!fecha) {
+                        Swal.showValidationMessage('Seleccione una fecha');
+                        return false;
+                    }
+                    return fecha;
+                }
+            }).then(result => {
+                if (result.isConfirmed) {
+                    fetch(`/reservas/liberar_reserva_fija/${reservaId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fecha: result.value })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('¡Listo!', data.message || 'La fecha fue liberada.', 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.message || 'No se pudo liberar la fecha.', 'error');
+                        }
+                    })
+                    .catch(() => Swal.fire('Error', 'No se pudo liberar la fecha.', 'error'));
                 }
             });
         });

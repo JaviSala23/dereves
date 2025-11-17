@@ -110,10 +110,17 @@
                     <hr>
                     
                     <div class="d-flex gap-2 justify-content-end">
+                        {% if es_dueno %}
+                        <a href="{% url 'reservas:gestionar_reservas' %}" class="btn btn-outline-secondary">
+                            <span class="material-symbols-rounded">arrow_back</span>
+                            Volver a Gestión de Reservas
+                        </a>
+                        {% else %}
                         <a href="{% url 'reservas:mis_reservas' %}" class="btn btn-outline-secondary">
                             <span class="material-symbols-rounded">arrow_back</span>
-                            Volver
+                            Volver a Mis Reservas
                         </a>
+                        {% endif %}
                         {% if es_dueno and not reserva.pagado %}
                         <form id="form-pagar" method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline">
                             {% csrf_token %}
