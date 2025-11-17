@@ -17,6 +17,9 @@ urlpatterns = [
     path('fijas/cancha/<int:cancha_id>/crear/', views.crear_reserva_fija, name='crear_reserva_fija'),
     path('fijas/<int:reserva_fija_id>/editar/', views.editar_reserva_fija, name='editar_reserva_fija'),
     path('fijas/<int:reserva_fija_id>/cancelar/', views.cancelar_reserva_fija, name='cancelar_reserva_fija'),
+
+    # Liberar una fecha de reserva fija
+    path('liberar_reserva_fija/<int:reserva_fija_id>/', views.liberar_reserva_fija_fecha, name='liberar_reserva_fija'),
     
     # Partidos abiertos
     path('partidos/turno/<int:turno_id>/crear/', views.crear_partido_abierto, name='crear_partido_abierto'),
