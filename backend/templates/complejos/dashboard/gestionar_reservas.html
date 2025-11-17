@@ -1,3 +1,4 @@
+{% load extras %}
 
 {% extends 'base.html' %}
 
@@ -22,7 +23,7 @@
                                     <span class="material-symbols-rounded text-primary" style="font-size: 40px;">event_available</span>
                                     <p class="card-text mt-2">Turnos disponibles:</p>
                                     <ul class="list-unstyled mb-0">
-                                        {% for turno in turnos_por_fecha|dict_get:fecha %}
+                                        {% for turno in turnos_por_fecha|get_item:fecha %}
                                             <li><span class="badge bg-success">{{ turno }}</span></li>
                                         {% empty %}
                                             <li class="text-muted">Sin turnos</li>
