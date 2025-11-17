@@ -257,9 +257,25 @@ def gestionar_reservas(request):
             tiene_simple = Reserva.objects.filter(cancha=cancha, fecha=dia).exists()
             if not tiene_fija and not tiene_simple:
                 canchas_disponibles += 1
-                # Agregar turnos posibles de la cancha
-                for turno in cancha.turnos:
-                    turnos_dia.add(turno)
+                # Generar turnos posibles para la cancha
+                hora_apertura = cancha.horario_apertura
+                hora_cierre = cancha.horario_cierre
+                duracion = cancha.duracion_turno_minutos
+                h = hora_apertura.hour
+                m = hora_apertura.minute
+                while True:
+                    hora_inicio = h * 60 + m
+                    hora_fin = hora_inicio + duracion
+                    if hora_fin > (hora_cierre.hour * 60 + hora_cierre.minute):
+                        break
+                    turno_str = f"{h:02d}:{m:02d}"
+                    turnos_dia.add(turno_str)
+                    m += duracion
+                    while m >= 60:
+                        m -= 60
+                        h += 1
+                    if (h > hora_cierre.hour) or (h == hora_cierre.hour and m > hora_cierre.minute - duracion):
+                        break
         if canchas_disponibles > 0:
             fechas_disponibles.append(dia)
             turnos_por_fecha[dia] = sorted(turnos_dia)
