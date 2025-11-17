@@ -726,9 +726,8 @@ async function obtenerFechasOcupadas(canchaId) {
     // Debe devolver un array de strings con fechas ocupadas: ["2025-11-13", ...]
     try {
         const resp = await fetch(`/complejos/api/canchas/${canchaId}/fechas_ocupadas/`);
-        if (!Array.isArray(ocupados)) ocupados = [];
-        if (!Array.isArray(horariosFijos)) horariosFijos = [];
-        let rangosFijos = horariosFijos.map(f => {
+        const data = await resp.json();
+        if (Array.isArray(data.fechas)) {
             return data.fechas;
         } else if (Array.isArray(data)) {
             return data;
