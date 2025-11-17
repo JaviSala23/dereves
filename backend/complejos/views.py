@@ -651,6 +651,9 @@ def obtener_horarios_disponibles(request, cancha_id):
         if isinstance(hora_fin, str):
             h, m = map(int, hora_fin.split(':'))
             hora_fin = time(h, m)
+        # Truncar microsegundos si existen
+        if hasattr(hora_fin, 'replace'):
+            hora_fin = hora_fin.replace(microsecond=0)
         reservas_simples_rangos.append((hora_inicio, hora_fin))
     horarios = []
     if cancha.horario_apertura and cancha.horario_cierre:
@@ -699,6 +702,9 @@ def obtener_horarios_disponibles(request, cancha_id):
                         continue
                     rf_inicio = reserva_fija.hora_inicio
                     rf_fin = reserva_fija.hora_fin
+                    # Truncar microsegundos si existen
+                    if hasattr(rf_fin, 'replace'):
+                        rf_fin = rf_fin.replace(microsecond=0)
                     inicio_fijo = datetime.combine(fecha, rf_inicio)
                     fin_fijo = datetime.combine(fecha, rf_fin)
                     print(f"Comparando con reserva fija: {inicio_fijo.time()} - {fin_fijo.time()}")
