@@ -123,7 +123,6 @@
                             </button>
                         </form>
                         {% endif %}
-{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -179,7 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-{% endblock %}
                         {% if not es_dueno and reserva.estado not in 'CANCELADA,COMPLETADA' %}
                         <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="d-inline cancelar-reserva-form">
                             {% csrf_token %}
