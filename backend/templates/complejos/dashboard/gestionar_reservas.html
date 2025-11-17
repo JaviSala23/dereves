@@ -17,18 +17,27 @@
                     <div class="row g-3 justify-content-center">
                         {% for fecha in group %}
                         <div class="col-12 col-sm-6 col-md-3">
-                            <div class="card border-primary h-100">
-                                <div class="card-body text-center">
-                                    <h6 class="card-title mb-2">{{ fecha|date:'l d/m/Y' }}</h6>
-                                    <span class="material-symbols-rounded text-primary" style="font-size: 40px;">event_available</span>
-                                    <p class="card-text mt-2">Turnos disponibles:</p>
-                                    <ul class="list-unstyled mb-0">
-                                        {% for turno in turnos_por_fecha|get_item:fecha %}
-                                            <li><span class="badge bg-success">{{ turno }}</span></li>
-                                        {% empty %}
-                                            <li class="text-muted">Sin turnos</li>
-                                        {% endfor %}
-                                    </ul>
+                            <div class="card border-primary h-100" style="font-size: 0.95rem; min-width: 180px; max-width: 220px; margin: 0 auto;">
+                                <div class="card-body text-center p-2">
+                                    <h6 class="card-title mb-1" style="font-size: 1rem;">{{ fecha|date:'l d/m/Y' }}</h6>
+                                    <span class="material-symbols-rounded text-primary mb-1" style="font-size: 28px;">event_available</span>
+                                    <p class="card-text mb-1" style="font-size: 0.95em;">Turnos disponibles:</p>
+                                    {% with turnos=turnos_por_fecha|get_item:fecha %}
+                                    {% if turnos %}
+                                    <div class="container-fluid px-0">
+                                        <div class="row g-1">
+                                            {% for turno in turnos %}
+                                                {% if forloop.counter0|divisibleby:4 and not forloop.first %}</div><div class="row g-1">{% endif %}
+                                                <div class="col-3 px-1">
+                                                    <span class="badge bg-success w-100" style="font-size:0.90em;">{{ turno }}</span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                        <div class="text-muted">Sin turnos</div>
+                                    {% endif %}
+                                    {% endwith %}
                                 </div>
                             </div>
                         </div>
