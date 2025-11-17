@@ -834,6 +834,27 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             actual += duracion;
         }
     }
+    // Obtener contexto de "hoy" y hora actual en Argentina (UTC-3)
+    let isToday = false;
+    let horaActual = null;
+    // Buscar si el inputId corresponde al modal de reserva fija y si el día seleccionado es hoy
+    if (inputId && (inputId.includes('fija') || inputId.includes('swal-fija'))) {
+        // Día de la semana seleccionado
+        let diaSemana = null;
+        // Intentar obtener el valor del select de día
+        const diaSelect = document.getElementById('swal-fija-dia');
+        if (diaSelect) {
+            diaSemana = parseInt(diaSelect.value);
+        }
+        // Hoy en Argentina (UTC-3)
+        const now = new Date();
+        // Ajustar a UTC-3 (hora de Argentina)
+        const nowArg = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        if (diaSemana !== null && nowArg.getDay() === diaSemana) {
+            isToday = true;
+            horaActual = `${nowArg.getHours().toString().padStart(2,'0')}:${nowArg.getMinutes().toString().padStart(2,'0')}`;
+        }
+    }
     let html = '<div class="row g-2">';
     horarios.forEach((h, idx) => {
         let hNorm = h;
@@ -852,6 +873,11 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
                 break;
             }
         }
+        // Bloquear turnos pasados de hoy (solo para reserva fija)
+        let esPasado = false;
+        if (isToday && horaActual && hNorm < horaActual) {
+            esPasado = true;
+        }
         let btnClass = 'btn-outline-primary';
         let disabled = '';
         let tooltip = '';
@@ -866,6 +892,10 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             btnClass = 'btn-outline-danger';
             disabled = 'disabled';
             tooltip = 'data-bs-toggle="tooltip" title="Horario ocupado"';
+        } else if (esPasado) {
+            btnClass = 'btn-secondary';
+            disabled = 'disabled';
+            tooltip = 'data-bs-toggle="tooltip" title="Turno pasado"';
         }
         html += `
             <div class='col-4 col-md-3 col-lg-2'>
