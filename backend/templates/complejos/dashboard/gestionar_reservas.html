@@ -364,7 +364,7 @@
                                                 </button>
                                             </form>
                                         {% endif %}
-                                        {% if (reserva.estado == 'PENDIENTE' or reserva.estado == 'CONFIRMADA') and not reserva.pagado %}
+                                        {% if reserva.estado == 'PENDIENTE' and not reserva.pagado or reserva.estado == 'CONFIRMADA' and not reserva.pagado %}
                                             <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline pagar-reserva-form">
                                                 {% csrf_token %}
                                                 <button type="button" class="btn btn-outline-success btn-pagar-reserva" title="Marcar como pagada">
@@ -438,7 +438,7 @@
                                 <a href="{% url 'reservas:detalle_reserva' reserva.id %}" class="btn btn-outline-primary btn-sm flex-fill" title="Ver detalle">
                                     <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
                                 </a>
-                                {% if (reserva.estado == 'PENDIENTE' or reserva.estado == 'CONFIRMADA') and not reserva.pagado %}
+                                {% if reserva.estado == 'PENDIENTE' and not reserva.pagado or reserva.estado == 'CONFIRMADA' and not reserva.pagado %}
                                     <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline pagar-reserva-form flex-fill">
                                         {% csrf_token %}
                                         <button type="button" class="btn btn-outline-success btn-sm btn-pagar-reserva w-100" title="Marcar como pagada">
