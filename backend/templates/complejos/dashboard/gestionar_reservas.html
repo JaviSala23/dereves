@@ -726,9 +726,9 @@ async function obtenerFechasOcupadas(canchaId) {
     // Debe devolver un array de strings con fechas ocupadas: ["2025-11-13", ...]
     try {
         const resp = await fetch(`/complejos/api/canchas/${canchaId}/fechas_ocupadas/`);
-        if (!resp.ok) return [];
-        const data = await resp.json();
-        if (Array.isArray(data.fechas)) {
+        if (!Array.isArray(ocupados)) ocupados = [];
+        if (!Array.isArray(horariosFijos)) horariosFijos = [];
+        let rangosFijos = horariosFijos.map(f => {
             return data.fechas;
         } else if (Array.isArray(data)) {
             return data;
@@ -756,7 +756,24 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
         horariosBox.innerHTML = '';
         return;
     }
-    if (precioInput && cancha.precio_base) {
+        // Detectar si el día seleccionado es hoy
+        let isToday = false;
+        if (fecha) {
+            const today = new Date();
+            const selected = new Date(fecha);
+            isToday = today.toISOString().slice(0,10) === selected.toISOString().slice(0,10);
+        } else if (diaSemana !== null) {
+            // Si es reserva fija por día de semana, comparar con hoy
+            const today = new Date();
+            isToday = today.getDay() === Number(diaSemana);
+        }
+        // Obtener hora actual en formato HH:MM
+        let horaActual = null;
+        if (isToday) {
+            const now = new Date();
+            horaActual = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        }
+        let html = '<div class="row g-2">';
         precioInput.value = cancha.precio_base;
     }
     let url = `/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`;
@@ -767,7 +784,7 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
         const resp = await fetch(url);
         const ocupados = await resp.json();
         const horasOcupadas = ocupados.map(o => o.hora_inicio);
-        horariosBox.innerHTML = renderHorariosFija(cancha, horasOcupadas, horaInput.id, ocupados);
+        horariosBox.innerHTML = renderHorariosFija(cancha, horasOcupadas, horaInput.id, ocupados, fecha, diaSemana);
         horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
             if (!btn.disabled) {
                 btn.addEventListener('click', function() {
