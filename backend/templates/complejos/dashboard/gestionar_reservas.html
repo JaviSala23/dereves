@@ -816,12 +816,14 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
         console.log('[Reserva Fija] Respuesta horarios ocupados:', data);
         // data puede ser [] o [{hora_inicio, hora_fin, tipo}...]
         // Extraer horas ocupadas y rangos fijos
-        const horasOcupadas = Array.isArray(data) ? data.filter(o => o.tipo !== 'reserva_fija').map(o => o.hora_inicio) : [];
-        const rangosFijos = Array.isArray(data) ? data.filter(o => o.tipo === 'reserva_fija' && o.hora_inicio && o.hora_fin).map(o => ({
-            hora_inicio: o.hora_inicio,
-            hora_fin: o.hora_fin,
-            tipo: o.tipo
-        })) : [];
+        // Solo pasar rangos válidos de reservas fijas
+        const rangosFijos = Array.isArray(data)
+            ? data.filter(o => o.tipo === 'reserva_fija' && o.hora_inicio && o.hora_fin)
+            : [];
+        const horasOcupadas = Array.isArray(data)
+            ? data.filter(o => o.tipo !== 'reserva_fija' && o.hora_inicio)
+                .map(o => o.hora_inicio)
+            : [];
         horariosBox.innerHTML = renderHorariosFija(cancha, horasOcupadas, horaInput.id, rangosFijos);
         // Limpiar selección previa de botones
         horariosBox.querySelectorAll('button[data-hora]').forEach(b => {
