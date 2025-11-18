@@ -1123,107 +1123,122 @@ function abrirSwalReservaSimple() {
         html: `
             <form id='formSwalSimple'>
                 <div class='mb-2'>
-                    <label>Cancha</label>
+                    <label class='form-label'>Cancha</label>
                     <select id='swal-simple-cancha' name='cancha_id' class='form-select' required>
                         ${canchasOptions}
                     </select>
                 </div>
-                
-                <div class='mb-2 text-start'>
+                <div class='mb-2'>
                     <label class='form-label'>Fecha</label>
-                    <!-- Input hidden donde se guarda el valor real (YYYY-MM-DD) -->
-                    <input type='hidden' id='swal-simple-fecha' name='fecha' required>
-                    <!-- Contenedor del calendario inline -->
-                    <div id='swal-simple-fecha-calendario' class='border rounded p-2'></div>
-                    <small class='form-text text-muted'>
-                        Hacé clic en una fecha disponible del calendario.
+                    <div class='input-group'>
+                        <input 
+                            type='text' 
+                            id='swal-simple-fecha' 
+                            name='fecha' 
+                            class='form-control' 
+                            required 
+                            readonly
+                            placeholder='Seleccioná una fecha'
+                        >
+                        <span class='input-group-text bg-white' id='swal-simple-fecha-icon' style='cursor:pointer;'>
+                            <span class="material-symbols-rounded" style="font-size:18px;">calendar_month</span>
+                        </span>
+                    </div>
+                    <small class="form-text text-muted">
+                        Tocá el campo o el ícono para abrir el calendario.
                     </small>
                 </div>
-
                 <div class='mb-2'>
-                    <label>Horario</label>
+                    <label class='form-label'>Horario</label>
                     <div id='swal-simple-horarios-box'></div>
                 </div>
                 <input type='hidden' id='swal-simple-hora' name='hora_inicio' required>
-
                 <div class='mb-2'>
-                    <label>Jugador (opcional)</label>
+                    <label class='form-label'>Jugador (opcional)</label>
                     <input type='text' id='swal-simple-jugador' class='form-control' placeholder='Buscar por nombre, @usuario o DNI'>
                     <input type='hidden' name='jugador_id' id='swal-simple-jugador-id'>
                 </div>
                 <div class='mb-2'>
-                    <label>Nombre Cliente</label>
+                    <label class='form-label'>Nombre Cliente</label>
                     <input type='text' name='nombre_cliente' id='swal-simple-nombre-cliente' class='form-control'>
                 </div>
                 <div class='mb-2'>
-                    <label>Teléfono</label>
+                    <label class='form-label'>Teléfono</label>
                     <input type='tel' name='telefono_cliente' class='form-control'>
                 </div>
                 <div class='mb-2'>
-                    <label>Precio</label>
+                    <label class='form-label'>Precio</label>
                     <input type='number' id='swal-simple-precio' name='precio' class='form-control' step='0.01' min='0' required>
                 </div>
             </form>
         `,
         width: '600px',
         didOpen: async () => {
-            const canchaSelect = document.getElementById('swal-simple-cancha');
-            const horariosBox = document.getElementById('swal-simple-horarios-box');
-            const horaInput = document.getElementById('swal-simple-hora');
-            const precioInput = document.getElementById('swal-simple-precio');
-            const fechaInput = document.getElementById('swal-simple-fecha');
-            const calendarioDiv = document.getElementById('swal-simple-fecha-calendario');
+            const canchaSelect   = document.getElementById('swal-simple-cancha');
+            const horariosBox    = document.getElementById('swal-simple-horarios-box');
+            const horaInput      = document.getElementById('swal-simple-hora');
+            const precioInput    = document.getElementById('swal-simple-precio');
+            const fechaInput     = document.getElementById('swal-simple-fecha');
+            const iconFecha      = document.getElementById('swal-simple-fecha-icon');
 
             const canchasData = JSON.parse(document.getElementById('canchas-data').textContent);
 
-            let fp = null;  // instancia de flatpickr inline
+            let fp = null; // instancia de flatpickr
 
-            // Actualiza el calendario inline según la cancha seleccionada
+            // Actualiza el calendario (restricciones) según la cancha
             async function updateFlatpickr() {
-                // Limpiar horarios y valor de fecha
-                horariosBox.innerHTML = '';
-                horaInput.value = '';
+                // Limpiar selección previa
                 fechaInput.value = '';
+                horaInput.value = '';
+                horariosBox.innerHTML = '';
 
-                // Destruir flatpickr anterior si existe
+                // Destruir instancia previa si existe
                 if (fp) {
                     fp.destroy();
                     fp = null;
                 }
 
-                // Si no hay cancha seleccionada, mostrar ayuda
                 if (!canchaSelect.value) {
-                    calendarioDiv.innerHTML = '<div class="text-muted small">Primero seleccioná una cancha.</div>';
+                    fechaInput.placeholder = 'Seleccioná una cancha primero';
                     return;
+                } else {
+                    fechaInput.placeholder = 'Seleccioná una fecha';
                 }
 
-                // Obtener fechas ocupadas desde el backend
+                // Traer fechas ocupadas para esta cancha
                 const ocupadas = await obtenerFechasOcupadas(canchaSelect.value);
 
-                // Inicializar flatpickr INLINE sobre el contenedor
-                calendarioDiv.innerHTML = '';  // limpiar por las dudas
-                fp = safeFlatpickr(calendarioDiv, {
-                    inline: true,
+                // Crear flatpickr sobre el input
+                fp = safeFlatpickr(fechaInput, {
                     minDate: 'today',
-                    disable: ocupadas,  // array de 'YYYY-MM-DD' que no se pueden elegir
+                    disable: ocupadas, // array de 'YYYY-MM-DD' a deshabilitar
                     dateFormat: 'Y-m-d',
                     locale: flatpickr.l10ns.es,
                     onChange: function(selectedDates, dateStr) {
-                        // Guardar la fecha elegida en el input hidden
+                        // dateStr ya viene en formato Y-m-d
                         fechaInput.value = dateStr;
-                        // Cada vez que se elige fecha, cargamos los horarios
                         updateHorarios();
                     }
                 });
+
+                // Hacer que tanto el input como el ícono abran el calendario
+                fechaInput.addEventListener('click', () => {
+                    if (fp) fp.open();
+                });
+                if (iconFecha) {
+                    iconFecha.addEventListener('click', () => {
+                        if (fp) fp.open();
+                    });
+                }
             }
 
-            // Carga los horarios disponibles para cancha + fecha
+            // Carga horarios disponibles para cancha + fecha
             async function updateHorarios() {
                 horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
                 horaInput.value = '';
 
                 const canchaId = canchaSelect.value;
-                const fecha = fechaInput.value;
+                const fecha    = fechaInput.value;
 
                 if (!canchaId || !fecha) {
                     horariosBox.innerHTML = '<div class="text-muted small">Seleccioná cancha y fecha.</div>';
@@ -1249,7 +1264,7 @@ function abrirSwalReservaSimple() {
                         return;
                     }
 
-                    // Bloquear cualquier turno ocupado, sin distinguir tipo
+                    // Marcar como ocupados aquellos turnos ya tomados
                     const ocupados = data.horarios
                         .filter(h => h.ocupado)
                         .map(h => h.hora_inicio);
@@ -1257,6 +1272,7 @@ function abrirSwalReservaSimple() {
                     const horariosFijos = [];
                     horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora', horariosFijos);
 
+                    // Manejar click en horario
                     horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
                         if (!btn.disabled) {
                             btn.addEventListener('click', function() {
@@ -1271,6 +1287,7 @@ function abrirSwalReservaSimple() {
                         }
                     });
 
+                    // Tooltips
                     const tooltipTriggerList = horariosBox.querySelectorAll('[data-bs-toggle="tooltip"]');
                     tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 
@@ -1280,16 +1297,21 @@ function abrirSwalReservaSimple() {
                 }
             }
 
-            // Cuando cambia la cancha: refrescar calendario (y luego usuario elige fecha)
+            // Cuando cambia la cancha, recalcular calendario
             canchaSelect.addEventListener('change', async () => {
                 await updateFlatpickr();
             });
 
-            // Inicializar calendario al abrir (por si ya hay una cancha seleccionada por defecto)
+            // Inicializar calendario al abrir
             await updateFlatpickr();
 
-            // Autocomplete del jugador
-            setupJugadorAutocomplete('swal-simple-jugador', 'swal-simple-jugador-id', 'swal-simple-jugador-list', 'swal-simple-nombre-cliente');
+            // Autocomplete jugador
+            setupJugadorAutocomplete(
+                'swal-simple-jugador',
+                'swal-simple-jugador-id',
+                'swal-simple-jugador-list',
+                'swal-simple-nombre-cliente'
+            );
         },
         showCancelButton: true,
         confirmButtonText: 'Crear',
@@ -1297,7 +1319,6 @@ function abrirSwalReservaSimple() {
         preConfirm: () => {
             const form = document.getElementById('formSwalSimple');
             const data = Object.fromEntries(new FormData(form));
-
             if (!data.cancha_id || !data.fecha || !data.hora_inicio || !data.precio) {
                 Swal.showValidationMessage('Complete todos los campos obligatorios');
                 return false;
