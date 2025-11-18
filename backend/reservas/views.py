@@ -150,7 +150,7 @@ def calendario_cancha(request, cancha_id):
                 # Eliminar la reserva directamente
                 reserva.delete()
                 messages.success(request, 'Reserva eliminada exitosamente.')
-                return redirect('reservas:gestionar_reservas')
+                return redirect('complejos:gestionar_reservas')
         if hora_actual <= (datetime.combine(fecha, hora_actual) - duracion).time():
             break
     
