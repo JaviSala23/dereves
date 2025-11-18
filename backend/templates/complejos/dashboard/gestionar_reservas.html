@@ -1034,6 +1034,51 @@ function abrirSwalReservaFija() {
         showCancelButton: true,
         confirmButtonText: 'Crear',
         cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const form = document.getElementById('formSwalFija');
+            if (!form.checkValidity()) {
+                Swal.showValidationMessage('Por favor, complete todos los campos requeridos.');
+                return false;
+            }
+            return {
+                cancha_id: form.cancha_id.value,
+                dia_semana: form.dia_semana.value,
+                hora_inicio: form.hora_inicio.value,
+                jugador_id: form.jugador_id.value,
+                nombre_cliente: form.nombre_cliente.value,
+                telefono_cliente: form.telefono_cliente.value,
+                precio: form.precio.value,
+            };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const datos = result.value;     
+            fetch('/complejos/api/reservas_fijas/crear/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken(),
+                },
+                body: JSON.stringify(datos),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('¡Creada!', 'La reserva fija ha sido creada exitosamente.', ' success').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.message || 'No se pudo crear la reserva fija.', 'error');
+                }
+            })
+            .catch(() => {
+                Swal.fire('Error', 'No se pudo crear la reserva fija.', 'error');
+            });
+        }
+    });
+}
+
+
 // --- DEFINICIÓN GLOBAL DE MODAL RESERVA SIMPLE ---
 function abrirSwalReservaSimple() {
     Swal.fire({
