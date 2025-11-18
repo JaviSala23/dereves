@@ -851,18 +851,22 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
 function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
     if (!Array.isArray(ocupados)) ocupados = [];
     if (!Array.isArray(horariosFijos)) horariosFijos = [];
-    let rangosFijos = horariosFijos.map(f => {
-        if (typeof f === 'object' && f.hora_inicio && f.hora_fin) {
-            return {
-                inicio: f.hora_inicio,
-                fin: f.hora_fin,
-                tipo: f.tipo || 'reserva_fija'
-            };
-        } else if (typeof f === 'string') {
-            return {inicio: f, fin: f, tipo: 'ocupado'};
-        }
-        return null;
-    }).filter(Boolean);
+    // Si NO hay reservas fijas ni horarios ocupados, no deshabilitar ningún turno
+    let rangosFijos = [];
+    if (horariosFijos.length > 0 || ocupados.length > 0) {
+        rangosFijos = horariosFijos.map(f => {
+            if (typeof f === 'object' && f.hora_inicio && f.hora_fin) {
+                return {
+                    inicio: f.hora_inicio,
+                    fin: f.hora_fin,
+                    tipo: f.tipo || 'reserva_fija'
+                };
+            } else if (typeof f === 'string') {
+                return {inicio: f, fin: f, tipo: 'ocupado'};
+            }
+            return null;
+        }).filter(Boolean);
+    }
     let horarios = [];
     if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
         const [hA, mA] = cancha.horario_apertura.split(':').map(Number);
@@ -919,15 +923,17 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             const [hh, mm] = h.split(':');
             hNorm = `${hh.padStart(2, '0')}:${mm ? mm.padStart(2, '0') : '00'}`;
         }
-        // Cambia aquí: si el horario está en ocupados, deshabilitar SIEMPRE (reserva simple o fija)
-        let ocupado = ocupados.includes(hNorm);
+        // Solo deshabilitar si hay reservas fijas u ocupados
+        let ocupado = (rangosFijos.length > 0 || ocupados.length > 0) ? ocupados.includes(hNorm) : false;
         let fijo = false;
         let tipoOcupacion = null;
-        for (const rf of rangosFijos) {
-            if (horaSolapa(hNorm, cancha.duracion_turno_minutos, rf.inicio, rf.fin)) {
-                fijo = true;
-                tipoOcupacion = rf.tipo;
-                break;
+        if (rangosFijos.length > 0) {
+            for (const rf of rangosFijos) {
+                if (horaSolapa(hNorm, cancha.duracion_turno_minutos, rf.inicio, rf.fin)) {
+                    fijo = true;
+                    tipoOcupacion = rf.tipo;
+                    break;
+                }
             }
         }
         // Bloquear turnos pasados de hoy (para reserva fija y simple)
