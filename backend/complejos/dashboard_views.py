@@ -463,13 +463,26 @@ def crear_reserva_simple_dashboard(request):
         duracion_minutos = cancha.duracion_turno_minutos or 90
         hora_fin = (datetime.combine(fecha_dt, hora_inicio_dt) + timedelta(minutes=duracion_minutos)).time()
         from reservas.models import Turno, Reserva
-        # Verificar si ya existe una reserva para ese horario y cancha
+        # Verificar si ya existe una reserva simple para ese horario y cancha
         if Reserva.objects.filter(
             cancha=cancha,
             fecha=fecha_dt,
             hora_inicio=hora_inicio_dt
         ).exists():
             return JsonResponse({'success': False, 'message': 'Ya existe una reserva para este horario.'})
+        # Verificar si hay una reserva fija activa y no liberada para ese turno
+        from reservas.models import ReservaFija, ReservaFijaLiberacion
+        dia_semana = fecha_dt.weekday()
+        reservas_fijas = ReservaFija.objects.filter(
+            cancha=cancha,
+            dia_semana=dia_semana,
+            estado='ACTIVA',
+            hora_inicio=hora_inicio_dt
+        )
+        for rf in reservas_fijas:
+            liberada = ReservaFijaLiberacion.objects.filter(reserva_fija=rf, fecha=fecha_dt).exists()
+            if not liberada:
+                return JsonResponse({'success': False, 'message': 'No se puede reservar: turno fijo activo no liberado.'})
         try:
             Reserva.objects.create(
                 cancha=cancha,
