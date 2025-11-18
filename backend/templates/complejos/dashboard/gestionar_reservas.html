@@ -800,25 +800,11 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
         horariosBox.innerHTML = '';
         return;
     }
-    // Detectar si el día seleccionado es hoy
-    let isToday = false;
-    if (fecha) {
-        const today = new Date();
-        const selected = new Date(fecha);
-        isToday = today.toISOString().slice(0,10) === selected.toISOString().slice(0,10);
-    } else if (diaSemana !== null) {
-        // Si es reserva fija por día de semana, comparar con hoy
-        const today = new Date();
-        isToday = today.getDay() === Number(diaSemana);
+    // Limpiar selección previa
+    horaInput.value = '';
+    if (precioInput && cancha.precio_base) {
+        precioInput.value = cancha.precio_base;
     }
-    // Obtener hora actual en formato HH:MM
-    let horaActual = null;
-    if (isToday) {
-        const now = new Date();
-        horaActual = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-    }
-    let html = '<div class="row g-2">';
-    precioInput.value = cancha.precio_base;
     let url = `/complejos/api/turnos_fijos_ocupados/?cancha_id=${canchaId}&dia_semana=${diaSemana}`;
     if (fecha) {
         url += `&fecha=${fecha}`;
@@ -826,10 +812,22 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
     console.log('[Reserva Fija] Consulta turnos ocupados:', { canchaId, diaSemana, url });
     try {
         const resp = await fetch(url);
-        const ocupados = await resp.json();
-        console.log('[Reserva Fija] Respuesta horarios ocupados:', ocupados);
-        const horasOcupadas = ocupados.map(o => o.hora_inicio);
-        horariosBox.innerHTML = renderHorariosFija(cancha, horasOcupadas, horaInput.id, ocupados, fecha, diaSemana);
+        const data = await resp.json();
+        console.log('[Reserva Fija] Respuesta horarios ocupados:', data);
+        // data puede ser [] o [{hora_inicio, hora_fin, tipo}...]
+        // Extraer horas ocupadas y rangos fijos
+        const horasOcupadas = Array.isArray(data) ? data.filter(o => o.tipo !== 'reserva_fija').map(o => o.hora_inicio) : [];
+        const rangosFijos = Array.isArray(data) ? data.filter(o => o.tipo === 'reserva_fija' && o.hora_inicio && o.hora_fin).map(o => ({
+            hora_inicio: o.hora_inicio,
+            hora_fin: o.hora_fin,
+            tipo: o.tipo
+        })) : [];
+        horariosBox.innerHTML = renderHorariosFija(cancha, horasOcupadas, horaInput.id, rangosFijos);
+        // Limpiar selección previa de botones
+        horariosBox.querySelectorAll('button[data-hora]').forEach(b => {
+            b.classList.remove('btn-success');
+            b.classList.add('btn-outline-primary');
+        });
         horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
             if (!btn.disabled) {
                 btn.addEventListener('click', function() {
@@ -843,6 +841,9 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
                 });
             }
         });
+        // Tooltips
+        const tooltipTriggerList = horariosBox.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
     } catch (error) {
         console.error('Error cargando horarios:', error);
         horariosBox.innerHTML = '<div class="text-danger small">Error al cargar horarios</div>';
