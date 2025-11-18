@@ -1173,16 +1173,11 @@ function abrirSwalReservaSimple() {
                         horariosBox.innerHTML = '<div class="text-danger small">Error al cargar horarios</div>';
                         return;
                     }
+                    // Bloquear cualquier turno ocupado, sin distinguir tipo
                     const ocupados = data.horarios
-                        .filter(h => h.ocupado && h.tipo_ocupacion !== 'RESERVA_FIJA')
+                        .filter(h => h.ocupado)
                         .map(h => h.hora_inicio);
-                    const horariosFijos = data.horarios
-                        .filter(h => h.tipo_ocupacion === 'RESERVA_FIJA')
-                        .map(h => ({
-                            hora_inicio: h.hora_inicio,
-                            hora_fin: h.hora_fin,
-                            tipo: 'reserva_fija'
-                        }));
+                    const horariosFijos = [];
                     horariosBox.innerHTML = renderHorariosFija(cancha, ocupados, 'swal-simple-hora', horariosFijos);
                     horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
                         if (!btn.disabled) {
