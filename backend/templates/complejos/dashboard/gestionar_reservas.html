@@ -992,7 +992,14 @@ function horaSolapa(hora, duracionMin, inicioFijo, finFijo) {
     const fin = inicio + duracionMin;
     const inicioF = hi * 60 + mi;
     const finF = hf * 60 + mf;
-    return inicio < finF && fin > inicioF;
+    // Log de depuración
+    console.log(`[horaSolapa] turno: ${hora} (${inicio}-${fin}) vs fija: ${inicioFijo}-${finFijo} (${inicioF}-${finF})`);
+    // Solo solapa si hay intersección estricta
+    const solapa = (inicio < finF && fin > inicioF);
+    if (solapa) {
+        console.log(`  -> SOLAPA: true`);
+    }
+    return solapa;
 }
 
 function abrirSwalReservaFija() {
