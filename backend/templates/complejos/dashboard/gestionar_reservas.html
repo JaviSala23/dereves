@@ -872,6 +872,9 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             return null;
         }).filter(Boolean);
     }
+    // Debug: mostrar ocupados y rangosFijos
+    console.log('[renderHorariosFija] ocupados:', ocupados);
+    console.log('[renderHorariosFija] rangosFijos:', rangosFijos);
     // Si rangosFijos y ocupados están vacíos, forzar que ningún turno esté deshabilitado
     const sinBloqueos = rangosFijos.length === 0 && ocupados.length === 0;
     let horarios = [];
@@ -947,6 +950,8 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
                 }
             }
         }
+        // Debug: mostrar estado de cada turno
+        console.log(`[renderHorariosFija] turno: ${hNorm} | ocupado: ${ocupado} | fijo: ${fijo}`);
         // Bloquear turnos pasados de hoy (para reserva fija y simple)
         let esPasado = false;
         if (isToday && horaActual && hNorm < horaActual) {
