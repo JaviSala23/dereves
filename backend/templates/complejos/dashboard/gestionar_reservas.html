@@ -855,7 +855,7 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
     if (!Array.isArray(horariosFijos)) horariosFijos = [];
     // Si NO hay reservas fijas ni horarios ocupados, no deshabilitar ningún turno
     let rangosFijos = [];
-    if (horariosFijos.length > 0 || ocupados.length > 0) {
+    if (Array.isArray(horariosFijos) && horariosFijos.length > 0) {
         rangosFijos = horariosFijos.map(f => {
             if (typeof f === 'object' && f.hora_inicio && f.hora_fin) {
                 return {
@@ -869,6 +869,8 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             return null;
         }).filter(Boolean);
     }
+    // Si rangosFijos y ocupados están vacíos, forzar que ningún turno esté deshabilitado
+    const sinBloqueos = rangosFijos.length === 0 && ocupados.length === 0;
     let horarios = [];
     if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
         const [hA, mA] = cancha.horario_apertura.split(':').map(Number);
@@ -925,11 +927,11 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             const [hh, mm] = h.split(':');
             hNorm = `${hh.padStart(2, '0')}:${mm ? mm.padStart(2, '0') : '00'}`;
         }
-        // Solo deshabilitar si hay reservas fijas u ocupados
-        let ocupado = (rangosFijos.length > 0 || ocupados.length > 0) ? ocupados.includes(hNorm) : false;
+        // Solo deshabilitar si hay reservas fijas u ocupados, si no, nunca
+        let ocupado = !sinBloqueos && ocupados.includes(hNorm);
         let fijo = false;
         let tipoOcupacion = null;
-        if (rangosFijos.length > 0) {
+        if (!sinBloqueos && rangosFijos.length > 0) {
             for (const rf of rangosFijos) {
                 if (horaSolapa(hNorm, cancha.duracion_turno_minutos, rf.inicio, rf.fin)) {
                     fijo = true;
