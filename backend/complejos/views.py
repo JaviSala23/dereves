@@ -173,24 +173,25 @@ def horarios_cancha(request, cancha_id):
                         ocupado = True
                         tipo_ocupacion = 'RESERVA_SIMPLE'
                         break
-            # 3. Si hay una reserva fija activa y no liberada que solape o coincida exactamente (ignorando segundos)
+            # 3. Si hay una reserva fija activa y no liberada que solape o coincida exactamente (solo horas y minutos)
             if not ocupado:
                 for reserva_fija in reservas_fijas:
                     if reserva_fija.id in liberaciones:
                         continue
+                    # Comparar solo horas y minutos
                     rf_inicio = reserva_fija.hora_inicio.replace(second=0, microsecond=0)
                     rf_fin = reserva_fija.hora_fin.replace(second=0, microsecond=0)
                     turno_inicio = hora_actual.time().replace(second=0, microsecond=0)
                     turno_fin = (hora_actual + duracion).time().replace(second=0, microsecond=0)
-                    inicio_fijo = datetime.combine(fecha, rf_inicio)
-                    fin_fijo = datetime.combine(fecha, rf_fin)
-                    inicio_turno_cmp = datetime.combine(fecha, turno_inicio)
-                    fin_turno_cmp = datetime.combine(fecha, turno_fin)
-                    # Bloquear si solapa o coincide exactamente (ignorando segundos)
-                    if (
-                        (inicio_turno_cmp < fin_fijo and fin_turno_cmp > inicio_fijo)
-                        or (inicio_turno_cmp == inicio_fijo and fin_turno_cmp == fin_fijo)
-                    ):
+                    # Convertir a minutos desde medianoche para comparar
+                    def to_min(t):
+                        return t.hour * 60 + t.minute
+                    t_ini = to_min(turno_inicio)
+                    t_fin = to_min(turno_fin)
+                    rf_ini = to_min(rf_inicio)
+                    rf_finm = to_min(rf_fin)
+                    # Bloquear si solapa o coincide exactamente
+                    if (t_ini < rf_finm and t_fin > rf_ini) or (t_ini == rf_ini and t_fin == rf_finm):
                         ocupado = True
                         tipo_ocupacion = 'RESERVA_FIJA'
                         break
