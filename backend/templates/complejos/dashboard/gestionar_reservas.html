@@ -1066,63 +1066,59 @@ function abrirSwalReservaFija() {
         showCancelButton: true,
         confirmButtonText: 'Crear',
         cancelButtonText: 'Cancelar',
-        preConfirm: async () => {
-            const form = document.getElementById('formSwalFija');
-            const data = Object.fromEntries(new FormData(form));
-            if (!data.cancha_id || !data.dia_semana || !data.hora_inicio || !data.precio) {
-                Swal.showValidationMessage('Complete todos los campos obligatorios');
-                return false;
+        horarios.forEach((h, idx) => {
+            let hNorm = h;
+            if (typeof h === 'string') {
+                const [hh, mm] = h.split(':');
+                hNorm = `${hh.padStart(2, '0')}:${mm ? mm.padStart(2, '0') : '00'}`;
             }
-            const resp = await fetch(`/complejos/api/validar_reserva_fija/?cancha_id=${data.cancha_id}&dia_semana=${data.dia_semana}&hora_inicio=${data.hora_inicio}`);
-            const resultado = await resp.json();
-            if (resultado.yafijo) {
-                Swal.showValidationMessage('Ya existe un turno fijo para ese día y horario en esta cancha.');
-                return false;
-            }
-            return data;
-        }
-    }).then(result => {
-        if (result.isConfirmed) {
-            fetch("{% url 'complejos:crear_reserva_fija_dashboard' %}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(result.value)
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire('¡Listo!', data.message, 'success').then(() => location.reload());
-                } else {
-                    Swal.fire('Error', data.message, 'error');
+            // Deshabilitar si está ocupado por simple o por fija no liberada
+            let ocupado = ocupados.includes(hNorm);
+            let fijo = false;
+            let tipoOcupacion = null;
+            if (!sinBloqueos && rangosFijos.length > 0) {
+                for (const rf of rangosFijos) {
+                    // Coincidencia exacta de inicio y fin
+                    const [hH, hM] = hNorm.split(':').map(Number);
+                    const inicioTurno = hH * 60 + hM;
+                    const finTurno = inicioTurno + Number(cancha.duracion_turno_minutos);
+                    const [rfH, rfM] = rf.inicio.split(':').map(Number);
+                    const [rfHf, rfMf] = rf.fin.split(':').map(Number);
+                    const inicioFijo = rfH * 60 + rfM;
+                    const finFijo = rfHf * 60 + rfMf;
+                    if (inicioTurno === inicioFijo && finTurno === finFijo) {
+                        fijo = true;
+                        tipoOcupacion = rf.tipo;
+                        break;
+                    }
                 }
-            })
-            .catch(() => Swal.fire('Error', 'No se pudo crear la reserva.', 'error'));
-        }
-    });
-}
-
-function abrirSwalReservaSimple() {
-    Swal.fire({
-        title: 'Reserva Simple',
-        html: `
-            <form id='formSwalSimple'>
-                <div class='mb-2'>
-                    <label>Cancha</label>
-                    <select id='swal-simple-cancha' name='cancha_id' class='form-select' required>
-                        ${canchasOptions}
-                    </select>
-                </div>
-                <div class='mb-2'>
-                    <label>Fecha</label>
-                    <div style="position: relative; max-width: 180px;">
-                        <input type='text' id='swal-simple-fecha' name='fecha' class='form-control' required readonly style="background: #fff; cursor: pointer; padding-right: 2.2rem;" placeholder="Seleccionar...">
-                        <span id="swal-simple-fecha-icon" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor:pointer; color: #007bff;">
-                            <span class="material-symbols-rounded" style="font-size: 22px;">calendar_month</span>
-                        </span>
-                    </div>
+            }
+            let btnClass = 'btn-outline-primary';
+            let disabled = '';
+            let tooltip = '';
+            if (fijo) {
+                btnClass = 'btn-secondary';
+                disabled = 'disabled';
+                const mensaje = tipoOcupacion === 'reserva_fija' 
+                    ? 'Bloqueado por reserva fija' 
+                    : 'Horario ocupado';
+                tooltip = `data-bs-toggle="tooltip" title="${mensaje}"`;
+            } else if (ocupado) {
+                btnClass = 'btn-outline-danger';
+                disabled = 'disabled';
+                tooltip = 'data-bs-toggle="tooltip" title="Horario ocupado"';
+            }
+            html += `
+                <div class='col-4 col-md-3 col-lg-2'>
+                    <button type='button' 
+                            class='btn btn-sm ${btnClass} w-100' 
+                            data-hora='${hNorm}' 
+                            ${disabled} 
+                            ${tooltip}>
+                        ${hNorm}
+                    </button>
+                </div>`;
+        });
                 </div>
                 <div class='mb-2'>
                     <label>Horario</label>
