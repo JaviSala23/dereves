@@ -274,7 +274,7 @@ def lista_complejos(request):
     provincia = request.GET.get('provincia', '')
     pais = request.GET.get('pais', '')
     deporte = request.GET.get('deporte', '')
-    
+
     # Filtros
     if localidad:
         complejos = complejos.filter(localidad__icontains=localidad)
@@ -282,7 +282,13 @@ def lista_complejos(request):
         complejos = complejos.filter(provincia__icontains=provincia)
     if pais:
         complejos = complejos.filter(pais__icontains=pais)
-    
+
+    # Definir complejos_data como la lista de complejos filtrados
+    complejos_data = complejos
+
+    # Si no existe, dejar complejos_agrupados como None o []
+    complejos_agrupados = []
+
     context = {
         'complejos_data': complejos_data,
         'complejos_agrupados': complejos_agrupados,
