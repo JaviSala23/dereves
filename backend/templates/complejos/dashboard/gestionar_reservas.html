@@ -928,6 +928,7 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
         let btnClass = 'btn-outline-primary';
         let disabled = '';
         let tooltip = '';
+        // Si hay reserva fija (no liberada, porque la API ya filtra liberadas), bloquear
         if (fijo) {
             btnClass = 'btn-secondary';
             disabled = 'disabled';
