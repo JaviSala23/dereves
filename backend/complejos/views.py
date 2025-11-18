@@ -173,19 +173,23 @@ def horarios_cancha(request, cancha_id):
                         ocupado = True
                         tipo_ocupacion = 'RESERVA_SIMPLE'
                         break
-            # 3. Si hay una reserva fija activa y no liberada que solape o coincida exactamente
+            # 3. Si hay una reserva fija activa y no liberada que solape o coincida exactamente (ignorando segundos)
             if not ocupado:
                 for reserva_fija in reservas_fijas:
                     if reserva_fija.id in liberaciones:
                         continue
-                    rf_inicio = reserva_fija.hora_inicio
-                    rf_fin = reserva_fija.hora_fin
+                    rf_inicio = reserva_fija.hora_inicio.replace(second=0, microsecond=0)
+                    rf_fin = reserva_fija.hora_fin.replace(second=0, microsecond=0)
+                    turno_inicio = hora_actual.time().replace(second=0, microsecond=0)
+                    turno_fin = (hora_actual + duracion).time().replace(second=0, microsecond=0)
                     inicio_fijo = datetime.combine(fecha, rf_inicio)
                     fin_fijo = datetime.combine(fecha, rf_fin)
-                    # Bloquear si solapa o coincide exactamente
+                    inicio_turno_cmp = datetime.combine(fecha, turno_inicio)
+                    fin_turno_cmp = datetime.combine(fecha, turno_fin)
+                    # Bloquear si solapa o coincide exactamente (ignorando segundos)
                     if (
-                        (inicio_turno < fin_fijo and fin_turno > inicio_fijo)
-                        or (inicio_turno == inicio_fijo and fin_turno == fin_fijo)
+                        (inicio_turno_cmp < fin_fijo and fin_turno_cmp > inicio_fijo)
+                        or (inicio_turno_cmp == inicio_fijo and fin_turno_cmp == fin_fijo)
                     ):
                         ocupado = True
                         tipo_ocupacion = 'RESERVA_FIJA'
