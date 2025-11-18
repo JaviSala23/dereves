@@ -35,12 +35,13 @@
                     <div class="row g-3 justify-content-center">
                         {% for fecha in group %}
                         <div class="col-12 col-sm-6 col-md-3">
-                            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeIn" style="min-width: 240px; max-width: 320px; margin: 0 auto; background: linear-gradient(135deg, #f8fafc 60%, #e3f0ff 100%);">
+                            {% with turnos=turnos_por_fecha|get_item:fecha %}
+                            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeIn {% if not turnos %}bg-light{% endif %}"
+                                 style="min-width: 240px; max-width: 320px; margin: 0 auto; {% if not turnos %}background: #f8d7da;{% else %}background: linear-gradient(135deg, #f8fafc 60%, #e3f0ff 100%);{% endif %}">
                                 <div class="card-body text-center p-2">
-                                    <h6 class="card-title mb-1 fw-bold text-primary" style="font-size: 1rem;">{{ fecha|date:'l d/m/Y' }}</h6>
-                                    <span class="material-symbols-rounded text-primary mb-1" style="font-size: 28px;">event_available</span>
-                                    <p class="card-text mb-1 text-secondary" style="font-size: 0.95em;">Turnos disponibles:</p>
-                                    {% with turnos=turnos_por_fecha|get_item:fecha %}
+                                    <h6 class="card-title mb-1 fw-bold {% if not turnos %}text-danger{% else %}text-primary{% endif %}" style="font-size: 1rem;">{{ fecha|date:'l d/m/Y' }}</h6>
+                                    <span class="material-symbols-rounded mb-1 {% if not turnos %}text-danger{% else %}text-primary{% endif %}" style="font-size: 28px;">event_available</span>
+                                    <p class="card-text mb-1 {% if not turnos %}text-danger fw-bold{% else %}text-secondary{% endif %}" style="font-size: 0.95em;">Turnos disponibles:</p>
                                     {% if turnos %}
                                     <div class="container-fluid px-0">
                                         <div class="row g-1">
@@ -58,11 +59,11 @@
                                         </div>
                                     </div>
                                     {% else %}
-                                        <div class="text-muted">Sin turnos</div>
+                                        <div class="fw-bold text-danger">Sin turnos</div>
                                     {% endif %}
-                                    {% endwith %}
                                 </div>
                             </div>
+                            {% endwith %}
                         </div>
                         {% endfor %}
                     </div>
