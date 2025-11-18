@@ -402,7 +402,8 @@ def crear_reserva_fija_dashboard(request):
             nombre_cliente=nombre_cliente,
             telefono_cliente=telefono_cliente,
             precio=precio,
-            creada_por=perfil_dueno
+            creada_por=perfil_dueno,
+            estado='ACTIVA'
         )
         return JsonResponse({'success': True, 'message': 'Turno fijo creado correctamente.'})
     except Exception as e:
