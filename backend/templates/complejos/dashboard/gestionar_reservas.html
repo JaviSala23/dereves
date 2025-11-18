@@ -1324,6 +1324,23 @@ function safeFlatpickr(element, options) {
 </script>
 
 
+<script>
+// Devuelve un array de fechas ocupadas para flatpickr, dado el id de cancha
+async function obtenerFechasOcupadas(canchaId) {
+    try {
+        const resp = await fetch(`/complejos/api/canchas/${canchaId}/fechas_ocupadas/`);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        // data debe ser un array de strings 'YYYY-MM-DD'
+        if (Array.isArray(data)) return data;
+        if (data.fechas) return data.fechas;
+        return [];
+    } catch (e) {
+        return [];
+    }
+}
+</script>
+
 
 <!-- Flatpickr CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
