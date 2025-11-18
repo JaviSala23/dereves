@@ -704,19 +704,25 @@ def unirse_partido(request, token):
 def confirmar_reserva(request, reserva_id):
     """Confirmar pago de una reserva (solo dueños)."""
     if request.method != 'POST':
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'Método no permitido'}, status=405)
         return redirect('reservas:detalle_reserva', reserva_id=reserva_id)
-    
+
     reserva = get_object_or_404(Reserva, id=reserva_id)
-    
+
     # Verificar que sea el dueño
     try:
         if reserva.cancha.complejo.dueno != request.user.perfil_dueno:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': 'No tienes permiso para confirmar esta reserva.'}, status=403)
             messages.error(request, 'No tienes permiso para confirmar esta reserva.')
             return redirect('home')
     except AttributeError:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'Solo dueños pueden confirmar reservas.'}, status=403)
         messages.error(request, 'Solo dueños pueden confirmar reservas.')
         return redirect('home')
-    
+
     resultado = reserva.confirmar()
 
     # Mensaje personalizado según tipo de reserva
@@ -730,6 +736,12 @@ def confirmar_reserva(request, reserva_id):
         nombre_cliente = reserva.nombre_cliente
     else:
         nombre_cliente = 'Sin jugador'
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if resultado:
+            return JsonResponse({'success': True, 'message': f'Reserva confirmada exitosamente para {nombre_cliente}.'})
+        else:
+            return JsonResponse({'success': False, 'message': 'La reserva ya estaba confirmada.'})
 
     if resultado:
         messages.success(request, f'Reserva confirmada exitosamente para {nombre_cliente}.')

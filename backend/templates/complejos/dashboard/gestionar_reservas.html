@@ -545,15 +545,17 @@
                                         {% if reserva.estado == 'PENDIENTE' and not reserva.pagado %}
                                             <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline confirmar-reserva-form" style="display: inline;">
                                                 {% csrf_token %}
-                                                <button type="button" class="btn btn-outline-primary btn-confirmar-reserva" title="Confirmar">
+                                                <button type="button" class="btn btn-outline-primary btn-confirmar-reserva" title="Confirmar"
+                                                    data-url="{% url 'reservas:confirmar_reserva' reserva.id %}">
                                                     <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span>
                                                 </button>
                                             </form>
                                         {% endif %}
                                         {% if reserva.estado in 'PENDIENTE,CONFIRMADA' and not reserva.pagado %}
-                                            <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="d-inline pagar-reserva-form" style="display: inline;">
+                                            <form method="post" action="{% url 'reservas:marcar_reserva_pagada' reserva.id %}" class="d-inline pagar-reserva-form" style="display: inline;">
                                                 {% csrf_token %}
-                                                <button type="button" class="btn btn-outline-success btn-pagar-reserva" title="Marcar como pagada">
+                                                <button type="button" class="btn btn-outline-success btn-pagar-reserva" title="Marcar como pagada"
+                                                    data-url="{% url 'reservas:marcar_reserva_pagada' reserva.id %}">
                                                     <span class="material-symbols-rounded" style="font-size: 16px;">payments</span>
                                                 </button>
                                             </form>
@@ -642,22 +644,64 @@
 <script>
 // ========== CONFIRMAR RESERVA SIMPLE ========== //
 document.addEventListener('DOMContentLoaded', function() {
-    // Confirmar reserva (si queda algún botón)
+    // Confirmar reserva por AJAX
     document.querySelectorAll('.btn-confirmar-reserva').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const form = btn.closest('form.confirmar-reserva-form');
             if (!form) return;
-            form.submit();
+            const url = btn.getAttribute('data-url');
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('¡Confirmada!', 'Se ha confirmado la reserva.', 'success').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.message || 'No se pudo confirmar la reserva.', 'error');
+                }
+            })
+            .catch(() => {
+                Swal.fire('Error', 'No se pudo confirmar la reserva.', 'error');
+            });
         });
     });
-    // Marcar como pagada
+    // Marcar como pagada por AJAX
     document.querySelectorAll('.btn-pagar-reserva').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const form = btn.closest('form.pagar-reserva-form');
             if (!form) return;
-            form.submit();
+            const url = btn.getAttribute('data-url');
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('¡Pagada!', 'Se ha pagado la reserva.', 'success').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.message || 'No se pudo marcar como pagada.', 'error');
+                }
+            })
+            .catch(() => {
+                Swal.fire('Error', 'No se pudo marcar como pagada.', 'error');
+            });
         });
     });
     // Cancelar reserva con confirmación
