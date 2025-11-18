@@ -173,8 +173,12 @@
                 </button>
                 <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalCrearReservaCampeonato">
                     <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">emoji_events</span>
-                    Reserva de Campeonato
+                    Reserva de Torneo
                 </button>
+<button type="button" class="btn btn-warning btn-sm" onclick="abrirSwalBloqueoTorneo()">
+    <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">emoji_events</span>
+    Reserva de Torneo
+</button>
                 <button type="button" class="btn btn-success btn-sm" onclick="abrirSwalReservaSimple()">
                     <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: middle;">add_circle</span>
                     Reserva Simple
@@ -1449,4 +1453,5 @@ async function obtenerFechasOcupadas(canchaId) {
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <!-- Flatpickr Spanish locale -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+<script src="{% static 'js/bloqueo_torneos.js' %}"></script>
 {% endblock %}
