@@ -823,9 +823,11 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
     if (fecha) {
         url += `&fecha=${fecha}`;
     }
+    console.log('[Reserva Fija] Consulta turnos ocupados:', { canchaId, diaSemana, url });
     try {
         const resp = await fetch(url);
         const ocupados = await resp.json();
+        console.log('[Reserva Fija] Respuesta horarios ocupados:', ocupados);
         const horasOcupadas = ocupados.map(o => o.hora_inicio);
         horariosBox.innerHTML = renderHorariosFija(cancha, horasOcupadas, horaInput.id, ocupados, fecha, diaSemana);
         horariosBox.querySelectorAll('button[data-hora]').forEach(btn => {
