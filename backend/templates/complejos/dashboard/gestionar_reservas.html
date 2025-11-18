@@ -913,9 +913,13 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
         if (diaSelect) {
             diaSemana = parseInt(diaSelect.value);
         }
+        // Ajuste: en el select 0=Lunes, 1=Martes,...,6=Domingo; en JS getDay() 0=Domingo, 1=Lunes,...,6=Sábado
+        // Por lo tanto, para comparar correctamente:
         const now = new Date();
         const nowArg = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-        if (diaSemana !== null && nowArg.getDay() === diaSemana) {
+        // Mapear getDay() (0=Domingo) a formato select (0=Lunes)
+        let diaSemanaHoy = nowArg.getDay() === 0 ? 6 : nowArg.getDay() - 1;
+        if (diaSemana !== null && diaSemanaHoy === diaSemana) {
             isToday = true;
             horaActual = `${nowArg.getHours().toString().padStart(2,'0')}:${nowArg.getMinutes().toString().padStart(2,'0')}`;
         }
