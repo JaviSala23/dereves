@@ -746,7 +746,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon: 'warning',
                 showCancelButton: true,
                 cancelButtonText: 'Cancelar',
-
+            }).then(result => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
 // Función mejorada para renderizar horarios de reserva fija
 async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput, fecha = null) {
     horariosBox.innerHTML = '<div class="text-muted small">Cargando horarios...</div>';
