@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Count, Sum, Q, Avg
 from django.utils import timezone
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, time
 import json
 from .models import Complejo, Cancha
 from reservas.models import Reserva, ReservaFija
@@ -252,28 +252,44 @@ def gestionar_reservas(request):
         turnos_dia = set()
         for cancha in canchas_qs:
             dia_semana = dia.weekday()
-            tiene_fija = ReservaFija.objects.filter(cancha=cancha, dia_semana=dia_semana, estado='ACTIVA').exists()
-            tiene_simple = Reserva.objects.filter(cancha=cancha, fecha=dia).exists()
-            if not tiene_fija and not tiene_simple:
-                # Generar turnos posibles para la cancha
-                hora_apertura = cancha.horario_apertura
-                hora_cierre = cancha.horario_cierre
-                duracion = cancha.duracion_turno_minutos
-                h = hora_apertura.hour
-                m = hora_apertura.minute
-                while True:
-                    hora_inicio = h * 60 + m
-                    hora_fin = hora_inicio + duracion
-                    if hora_fin > (hora_cierre.hour * 60 + hora_cierre.minute):
+            # Obtener reservas fijas activas para ese día y cancha
+            reservas_fijas = ReservaFija.objects.filter(cancha=cancha, dia_semana=dia_semana, estado='ACTIVA')
+            # Obtener reservas simples para ese día y cancha
+            reservas_simples = Reserva.objects.filter(cancha=cancha, fecha=dia)
+            # Generar turnos posibles para la cancha
+            hora_apertura = cancha.horario_apertura
+            hora_cierre = cancha.horario_cierre
+            duracion = cancha.duracion_turno_minutos
+            h = hora_apertura.hour
+            m = hora_apertura.minute
+            while True:
+                hora_inicio = h * 60 + m
+                hora_fin = hora_inicio + duracion
+                if hora_fin > (hora_cierre.hour * 60 + hora_cierre.minute):
+                    break
+                turno_inicio = time(hour=h, minute=m)
+                turno_fin = (datetime.combine(dia, turno_inicio) + timedelta(minutes=duracion)).time()
+                ocupado = False
+                # Verificar solapamiento con reservas fijas
+                for rf in reservas_fijas:
+                    if (rf.hora_inicio < turno_fin and rf.hora_fin > turno_inicio):
+                        ocupado = True
                         break
+                # Verificar solapamiento con reservas simples
+                if not ocupado:
+                    for rs in reservas_simples:
+                        if (rs.hora_inicio < turno_fin and rs.hora_fin > turno_inicio):
+                            ocupado = True
+                            break
+                if not ocupado:
                     turno_str = f"{h:02d}:{m:02d}"
                     turnos_dia.add(turno_str)
-                    m += duracion
-                    while m >= 60:
-                        m -= 60
-                        h += 1
-                    if (h > hora_cierre.hour) or (h == hora_cierre.hour and m > hora_cierre.minute - duracion):
-                        break
+                m += duracion
+                while m >= 60:
+                    m -= 60
+                    h += 1
+                if (h > hora_cierre.hour) or (h == hora_cierre.hour and m > hora_cierre.minute - duracion):
+                    break
         fechas_disponibles.append(dia)
         turnos_por_fecha[dia] = sorted(turnos_dia)
 
