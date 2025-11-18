@@ -1,5 +1,3 @@
-
-
 {% extends 'base.html' %}
 {% load extras %}
 {% block title %}Gestionar Reservas - Dashboard - DeRevés{% endblock %}
@@ -820,39 +818,48 @@ async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, p
     }
 }
 
-// Función mejorada para renderizar horarios con soporte para liberaciones
+// Función mejorada para renderizar horarios con soporte para ocupados y reservas fijas
 function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
+    // Normalizar parámetros
     if (!Array.isArray(ocupados)) ocupados = [];
     if (!Array.isArray(horariosFijos)) horariosFijos = [];
-    // Si NO hay reservas fijas ni horarios ocupados, no deshabilitar ningún turno
+
+    // Construir rangos fijos (para reservas fijas)
     let rangosFijos = [];
-    if (Array.isArray(horariosFijos) && horariosFijos.length > 0) {
-        rangosFijos = horariosFijos.map(f => {
-            if (typeof f === 'object' && f.hora_inicio && f.hora_fin) {
-                return {
-                    inicio: f.hora_inicio,
-                    fin: f.hora_fin,
-                    tipo: f.tipo || 'reserva_fija'
-                };
-            } else if (typeof f === 'string') {
-                return {inicio: f, fin: f, tipo: 'ocupado'};
-            }
-            return null;
-        }).filter(Boolean);
+    if (horariosFijos.length > 0) {
+        rangosFijos = horariosFijos
+            .map(f => {
+                if (typeof f === 'object' && f.hora_inicio && f.hora_fin) {
+                    return {
+                        inicio: f.hora_inicio,
+                        fin: f.hora_fin,
+                        tipo: f.tipo || 'reserva_fija'
+                    };
+                } else if (typeof f === 'string') {
+                    return { inicio: f, fin: f, tipo: 'ocupado' };
+                }
+                return null;
+            })
+            .filter(Boolean);
     }
-    // Debug: mostrar ocupados y rangosFijos
+
     console.log('[renderHorariosFija] ocupados:', ocupados);
     console.log('[renderHorariosFija] rangosFijos:', rangosFijos);
-    // Si rangosFijos y ocupados están vacíos, forzar que ningún turno esté deshabilitado
+
     const sinBloqueos = rangosFijos.length === 0 && ocupados.length === 0;
+
+    // Generar lista de horarios posibles según apertura/cierre y duración del turno
     let horarios = [];
     if (cancha.horario_apertura && cancha.horario_cierre && cancha.duracion_turno_minutos) {
         const [hA, mA] = cancha.horario_apertura.split(':').map(Number);
         const [hC, mC] = cancha.horario_cierre.split(':').map(Number);
+
         let totalMinApertura = hA * 60 + mA;
         let totalMinCierre = hC * 60 + mC;
+
         let duracion = Number(cancha.duracion_turno_minutos);
         if (isNaN(duracion) || duracion <= 0) duracion = 90;
+
         let actual = totalMinApertura;
         while (actual + duracion <= totalMinCierre) {
             let h = Math.floor(actual / 60);
@@ -861,63 +868,74 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
             actual += duracion;
         }
     }
-    // Bloqueo de turnos pasados para reserva fija y simple (según fecha/hora actual de Argentina)
+
+    // Cálculo de hoy/hora actual (zona horaria Argentina, UTC-3)
     let isToday = false;
     let horaActual = null;
     let fechaSeleccionada = null;
-    // Para reserva simple: inputId incluye 'simple'
+
+    // Caso reserva simple (usa fecha seleccionada en el flatpickr)
     if (inputId && inputId.includes('swal-simple')) {
-        // Obtener fecha seleccionada
         const fechaInput = document.getElementById('swal-simple-fecha');
         if (fechaInput && fechaInput.value) {
             fechaSeleccionada = fechaInput.value;
         }
-        // Hoy en Argentina (UTC-3)
+
         const now = new Date();
-        const nowArg = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-        const hoyStr = nowArg.toISOString().slice(0,10);
+        const nowArg = new Date(now.getTime() - 3 * 60 * 60 * 1000); // UTC-3
+        const hoyStr = nowArg.toISOString().slice(0, 10);
+
         if (fechaSeleccionada === hoyStr) {
             isToday = true;
             horaActual = `${nowArg.getHours().toString().padStart(2,'0')}:${nowArg.getMinutes().toString().padStart(2,'0')}`;
         }
-    } else if (inputId && (inputId.includes('fija') || inputId.includes('swal-fija'))) {
-        // Día de la semana seleccionado
+    }
+    // Caso reserva fija (usa día de la semana seleccionado)
+    else if (inputId && (inputId.includes('fija') || inputId.includes('swal-fija'))) {
         let diaSemana = null;
         const diaSelect = document.getElementById('swal-fija-dia');
         if (diaSelect) {
             diaSemana = parseInt(diaSelect.value);
         }
-        // Ajuste: en el select 0=Lunes, 1=Martes,...,6=Domingo; en JS getDay() 0=Domingo, 1=Lunes,...,6=Sábado
-        // Por lo tanto, para comparar correctamente:
         const now = new Date();
         const nowArg = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-        // Mapear getDay() (0=Domingo) a formato select (0=Lunes)
+        // JS getDay(): 0=Domingo,1=Lunes,...,6=Sábado
+        // Select: 0=Lunes,1=Martes,...,6=Domingo
         let diaSemanaHoy = nowArg.getDay() === 0 ? 6 : nowArg.getDay() - 1;
         if (diaSemana !== null && diaSemanaHoy === diaSemana) {
             isToday = true;
             horaActual = `${nowArg.getHours().toString().padStart(2,'0')}:${nowArg.getMinutes().toString().padStart(2,'0')}`;
         }
     }
+
     let html = '<div class="row g-2">';
-    horarios.forEach((h, idx) => {
+
+    horarios.forEach(h => {
+        // Normalizar hora a HH:MM
         let hNorm = h;
         if (typeof h === 'string') {
             const [hh, mm] = h.split(':');
             hNorm = `${hh.padStart(2, '0')}:${mm ? mm.padStart(2, '0') : '00'}`;
         }
-        // Solo deshabilitar si el turno coincide EXACTAMENTE con una reserva fija
+
+        // 1) ¿Está ocupado según el array "ocupados" (viene de la API)?
+        const ocupadoPorReserva = ocupados.includes(hNorm);
+
+        // 2) ¿Coincide exactamente con una reserva fija (rango de horas)?
         let fijo = false;
         let tipoOcupacion = null;
+
         if (!sinBloqueos && rangosFijos.length > 0) {
             for (const rf of rangosFijos) {
-                // Coincidencia exacta de inicio y fin
                 const [hH, hM] = hNorm.split(':').map(Number);
                 const inicioTurno = hH * 60 + hM;
                 const finTurno = inicioTurno + Number(cancha.duracion_turno_minutos);
+
                 const [rfH, rfM] = rf.inicio.split(':').map(Number);
                 const [rfHf, rfMf] = rf.fin.split(':').map(Number);
                 const inicioFijo = rfH * 60 + rfM;
                 const finFijo = rfHf * 60 + rfMf;
+
                 if (inicioTurno === inicioFijo && finTurno === finFijo) {
                     fijo = true;
                     tipoOcupacion = rf.tipo;
@@ -925,18 +943,35 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
                 }
             }
         }
+
         let btnClass = 'btn-outline-primary';
         let disabled = '';
         let tooltip = '';
-        // Si hay reserva fija (no liberada, porque la API ya filtra liberadas), bloquear
-        if (fijo) {
+
+        // 3) Bloquear si:
+        //    - es reserva fija, o
+        //    - está ocupado por otra reserva (simple u otra)
+        if (fijo || ocupadoPorReserva) {
             btnClass = 'btn-secondary';
             disabled = 'disabled';
-            const mensaje = tipoOcupacion === 'reserva_fija' 
-                ? 'Bloqueado por reserva fija' 
-                : 'Horario ocupado';
+            let mensaje = 'Horario ocupado';
+
+            if (fijo && tipoOcupacion === 'reserva_fija') {
+                mensaje = 'Bloqueado por reserva fija';
+            } else if (fijo) {
+                mensaje = 'Horario bloqueado';
+            }
+
             tooltip = `data-bs-toggle="tooltip" title="${mensaje}"`;
         }
+
+        // 4) Bloquear horarios pasados si es hoy (solo si aún no está disabled)
+        if (isToday && horaActual && hNorm < horaActual && !disabled) {
+            btnClass = 'btn-secondary';
+            disabled = 'disabled';
+            tooltip = `data-bs-toggle="tooltip" title="Horario pasado"`;
+        }
+
         html += `
             <div class='col-4 col-md-3 col-lg-2'>
                 <button type='button' 
@@ -948,6 +983,7 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
                 </button>
             </div>`;
     });
+
     html += '</div>';
     return html;
 }
