@@ -745,46 +745,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 text: 'Esta acción no se puede deshacer.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, eliminar',
                 cancelButtonText: 'Cancelar',
-            }).then(result => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
-    });
-});
-
-// ================= FUNCIONES AUXILIARES ===================
-// Inicializa flatpickr de forma segura, destruyendo instancias previas si existen
-function safeFlatpickr(element, options) {
-    if (!element) return null;
-    if (element._flatpickr) {
-        element._flatpickr.destroy();
-    }
-    return flatpickr(element, options);
-}
-// Devuelve un array de fechas (YYYY-MM-DD) en las que la cancha está completamente ocupada (no hay horarios disponibles para reserva simple)
-async function obtenerFechasOcupadas(canchaId) {
-    // Endpoint esperado: /complejos/api/canchas/<cancha_id>/fechas_ocupadas/
-    // Debe devolver un array de strings con fechas ocupadas: ["2025-11-13", ...]
-    try {
-        const resp = await fetch(`/complejos/api/canchas/${canchaId}/fechas_ocupadas/`);
-        const data = await resp.json();
-        if (Array.isArray(data.fechas)) {
-            return data.fechas;
-        } else if (Array.isArray(data)) {
-            return data;
-        }
-        return [];
-    } catch (e) {
-        console.error('Error obteniendo fechas ocupadas:', e);
-        return [];
-    }
-}
-
-// ================= FUNCIONES MEJORADAS ===================
 
 // Función mejorada para renderizar horarios de reserva fija
 async function updateHorariosFija(canchaId, diaSemana, horariosBox, horaInput, precioInput, fecha = null) {
