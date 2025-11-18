@@ -957,11 +957,6 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
                 }
             }
         }
-        // Bloquear turnos pasados de hoy (para reserva fija y simple)
-        let esPasado = false;
-        if (isToday && horaActual && hNorm < horaActual) {
-            esPasado = true;
-        }
         let btnClass = 'btn-outline-primary';
         let disabled = '';
         let tooltip = '';
@@ -972,10 +967,6 @@ function renderHorariosFija(cancha, ocupados, inputId, horariosFijos = []) {
                 ? 'Bloqueado por reserva fija' 
                 : 'Horario ocupado';
             tooltip = `data-bs-toggle="tooltip" title="${mensaje}"`;
-        } else if (esPasado) {
-            btnClass = 'btn-secondary';
-            disabled = 'disabled';
-            tooltip = 'data-bs-toggle="tooltip" title="Turno pasado"';
         }
         html += `
             <div class='col-4 col-md-3 col-lg-2'>
