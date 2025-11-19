@@ -126,10 +126,14 @@
                     </p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <a href="{% url 'complejos:detalle' item.complejo.slug %}" class="btn btn-sm btn-outline-primary">
-                        <span class="material-symbols-rounded">info</span>
-                        Ver Detalle
-                    </a>
+                    {% if item.complejo.slug %}
+                        <a href="{% url 'complejos:detalle' item.complejo.slug %}" class="btn btn-sm btn-outline-primary">
+                            <span class="material-symbols-rounded">info</span>
+                            Ver Detalle
+                        </a>
+                    {% else %}
+                        <span class="text-muted small">Sin detalle</span>
+                    {% endif %}
                 </div>
             </div>
         </div>
