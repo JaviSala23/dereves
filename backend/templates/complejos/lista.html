@@ -138,7 +138,7 @@
             </div>
         </div>
         <div class="card-body">
-            {% for cancha in item.canchas %}
+                {% for cancha in item.canchas.all %}
             <div class="cancha-item border-bottom pb-3 mb-3" data-cancha-id="{{ cancha.id }}">
                 <div class="row align-items-center">
                     <div class="col-md-3">
