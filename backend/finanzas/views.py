@@ -160,6 +160,11 @@ def dashboard_finanzas(request):
                         'precio': rf.precio,
                     })
 
+    # Calcular ingresos de turnos pagados y fijos cumplidos
+    total_turnos_simples_pagados = sum(r.precio for r in reservas_pagadas)
+    total_fijos_cumplidos = sum(rf['precio'] for rf in reservas_fijas_extra_pagadas)
+    total_ingresos_completo = float(resumen.total_ingresos) + float(total_turnos_simples_pagados) + float(total_fijos_cumplidos)
+
     context = {
         'complejos': complejos,
         'complejo_seleccionado': complejo_seleccionado,
@@ -174,6 +179,9 @@ def dashboard_finanzas(request):
         'reservas_pagadas': reservas_pagadas,
         'reservas_fijas_pagadas': reservas_fijas_pagadas,
         'reservas_fijas_extra_pagadas': reservas_fijas_extra_pagadas,
+        'total_turnos_simples_pagados': total_turnos_simples_pagados,
+        'total_fijos_cumplidos': total_fijos_cumplidos,
+        'total_ingresos_completo': total_ingresos_completo,
     }
 
     context = {
