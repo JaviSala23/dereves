@@ -2,6 +2,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+        {# Bloque para Google AdSense o ads personalizadas en <head> #}
+        {% block ads_head %}
+        <!-- Ejemplo Google AdSense: descomenta y reemplaza tu código -->
+        {#
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=TU_CLIENT_ID"
+            crossorigin="anonymous"></script>
+        #}
+        {% endblock %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}DeRevés - Plataforma Social y de Gestión Deportiva{% endblock %}</title>
@@ -232,11 +240,17 @@
 
     <!-- Main Content -->
     <main>
+        {# Bloque para ads/banner superior #}
+        {% block ads_top %}{% endblock %}
         {% block content %}{% endblock %}
+        {# Bloque para ads/banner inferior #}
+        {% block ads_bottom %}{% endblock %}
     </main>
 
     <!-- Footer -->
     <footer>
+            {# Bloque para ads en el footer o scripts adicionales de publicidad #}
+            {% block ads_footer %}{% endblock %}
         <div class="container">
             <div class="row">
                 <div class="col-md-4">
