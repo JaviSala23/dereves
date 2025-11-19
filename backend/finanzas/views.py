@@ -131,9 +131,9 @@ def dashboard_finanzas(request):
     )
 
     reservas_fijas_extra_pagadas = []
+    from calendar import monthrange
     for rf in reservas_fijas_vigentes:
         # Calcular las fechas de ocurrencia en el mes
-        from calendar import monthrange
         for dia in range(1, monthrange(año_actual, mes_actual)[1]+1):
             fecha_ocurrencia = datetime(año_actual, mes_actual, dia).date()
             if fecha_ocurrencia < rf.fecha_inicio:
