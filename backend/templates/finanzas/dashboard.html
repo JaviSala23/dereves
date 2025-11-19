@@ -1,3 +1,43 @@
+    <!-- Turnos Simples Pagados -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Turnos Simples Pagados</h5>
+                </div>
+                <div class="card-body">
+                    {% if reservas_pagadas and reservas_pagadas|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Cancha</th>
+                                    <th>Cliente</th>
+                                    <th>Precio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in reservas_pagadas %}
+                                <tr>
+                                    <td>{{ r.fecha|date:"d/m/Y" }}</td>
+                                    <td>{{ r.hora_inicio|time:"H:i" }} - {{ r.hora_fin|time:"H:i" }}</td>
+                                    <td>{{ r.cancha.nombre }}</td>
+                                    <td>{% if r.jugador_principal %}{{ r.jugador_principal }}{% else %}{{ r.nombre_cliente }}{% endif %}</td>
+                                    <td>${{ r.precio|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-4">No hay turnos simples pagados este mes.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
    {% extends 'base.html' %}
 {% load static %}
 
