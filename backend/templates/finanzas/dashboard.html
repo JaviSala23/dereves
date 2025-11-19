@@ -1,3 +1,41 @@
+    <!-- Reservas Fijas consideradas pagadas automáticamente -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Reservas Fijas Pagadas Automáticamente (por horario cumplido)</h5>
+                </div>
+                <div class="card-body">
+                    {% if reservas_fijas_extra_pagadas and reservas_fijas_extra_pagadas|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Cliente</th>
+                                    <th>Precio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rf in reservas_fijas_extra_pagadas %}
+                                <tr>
+                                    <td>{{ rf.fecha|date:"d/m/Y" }}</td>
+                                    <td>{{ rf.hora_inicio|time:"H:i" }} - {{ rf.hora_fin|time:"H:i" }}</td>
+                                    <td>{{ rf.nombre }}</td>
+                                    <td>${{ rf.precio|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-4">No hay reservas fijas consideradas pagadas automáticamente este mes.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 {% extends 'base.html' %}
 {% load static %}
 

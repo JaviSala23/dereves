@@ -98,6 +98,68 @@ def dashboard_finanzas(request):
         cantidad=Count('id')
     ).order_by('-total')[:5]
     
+    # Reservas pagadas (simples)
+    reservas_pagadas = Reserva.objects.filter(
+        cancha__complejo=complejo_seleccionado,
+        pagado=True,
+        fecha__gte=inicio_mes,
+        fecha__lt=fin_mes
+    )
+
+    # Reservas fijas pagadas
+
+    from reservas.models import ReservaFija, ReservaFijaLiberacion
+    from datetime import datetime, time
+    ahora = timezone.now()
+
+    # Reservas fijas pagadas manualmente
+    reservas_fijas_pagadas = ReservaFija.objects.filter(
+        cancha__complejo=complejo_seleccionado,
+        pagado=True,
+        fecha_inicio__lte=fin_mes,
+    ).filter(
+        models.Q(fecha_fin__gte=inicio_mes) | models.Q(fecha_fin__isnull=True)
+    )
+
+    # Reservas fijas que ya pasaron y no fueron liberadas (considerar como pagadas)
+    reservas_fijas_vigentes = ReservaFija.objects.filter(
+        cancha__complejo=complejo_seleccionado,
+        estado='ACTIVA',
+        fecha_inicio__lte=fin_mes,
+    ).filter(
+        models.Q(fecha_fin__gte=inicio_mes) | models.Q(fecha_fin__isnull=True)
+    )
+
+    reservas_fijas_extra_pagadas = []
+    for rf in reservas_fijas_vigentes:
+        # Calcular las fechas de ocurrencia en el mes
+        from calendar import monthrange
+        for dia in range(1, monthrange(año_actual, mes_actual)[1]+1):
+            fecha_ocurrencia = datetime(año_actual, mes_actual, dia).date()
+            if fecha_ocurrencia < rf.fecha_inicio:
+                continue
+            if rf.fecha_fin and fecha_ocurrencia > rf.fecha_fin:
+                continue
+            if fecha_ocurrencia.weekday() != rf.dia_semana:
+                continue
+            # Si la fecha y hora ya pasaron
+            hora_fin = rf.hora_fin
+            dt_fin = datetime.combine(fecha_ocurrencia, hora_fin)
+            if timezone.is_naive(dt_fin):
+                dt_fin = timezone.make_aware(dt_fin, timezone.get_current_timezone())
+            if dt_fin <= ahora:
+                # Verificar que NO haya liberación para esa fecha
+                liberada = rf.liberaciones.filter(fecha=fecha_ocurrencia).exists()
+                if not liberada:
+                    reservas_fijas_extra_pagadas.append({
+                        'reserva_fija': rf,
+                        'fecha': fecha_ocurrencia,
+                        'hora_inicio': rf.hora_inicio,
+                        'hora_fin': rf.hora_fin,
+                        'nombre': rf.jugador.alias if rf.jugador else rf.nombre_cliente,
+                        'precio': rf.precio,
+                    })
+
     context = {
         'complejos': complejos,
         'complejo_seleccionado': complejo_seleccionado,
@@ -109,6 +171,24 @@ def dashboard_finanzas(request):
         'gastos_por_categoria': gastos_por_categoria,
         'meses': ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        'reservas_pagadas': reservas_pagadas,
+        'reservas_fijas_pagadas': reservas_fijas_pagadas,
+        'reservas_fijas_extra_pagadas': reservas_fijas_extra_pagadas,
+    }
+
+    context = {
+        'complejos': complejos,
+        'complejo_seleccionado': complejo_seleccionado,
+        'resumen': resumen,
+        'transacciones_mes': transacciones_mes,
+        'mes_actual': mes_actual,
+        'año_actual': año_actual,
+        'datos_grafico': datos_grafico,
+        'gastos_por_categoria': gastos_por_categoria,
+        'meses': ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        'reservas_pagadas': reservas_pagadas,
+        'reservas_fijas_pagadas': reservas_fijas_pagadas,
     }
     return render(request, 'finanzas/dashboard.html', context)
 
