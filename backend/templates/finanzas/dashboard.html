@@ -87,11 +87,9 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-uppercase opacity-75">Ingresos</h6>
-                        <h2 class="mb-0">${{ total_ingresos_completo|floatformat:2 }}</h2>
+                        <h2 class="mb-0">${{ resumen.total_ingresos|floatformat:2 }}</h2>
                         <small>
-                            {{ resumen.cantidad_reservas }} reservas<br>
-                            + ${{ total_turnos_simples_pagados|floatformat:2 }} (turnos pagados)
-                            + ${{ total_fijos_cumplidos|floatformat:2 }} (fijos cumplidos)
+                            {{ resumen.cantidad_reservas }} reservas (ingresos registrados)<br>
                         </small>
                     </div>
                     <span class="material-symbols-rounded icon">trending_up</span>
