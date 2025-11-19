@@ -1,3 +1,35 @@
+{% block ads_left %}
+<!-- Banner lateral izquierdo de prueba -->
+<div style="background:#e0e0e0;border:2px dashed #888;color:#444;text-align:center;padding:80px 0 80px 0;font-size:1rem;">
+    [Banner lateral izquierdo 160x600]
+</div>
+{% endblock %}
+
+{% block ads_right %}
+<!-- Banner lateral derecho de prueba -->
+<div style="background:#e0e0e0;border:2px dashed #888;color:#444;text-align:center;padding:80px 0 80px 0;font-size:1rem;">
+    [Banner lateral derecho 160x600]
+</div>
+{% endblock %}
+
+{% block ads_modal %}
+<!-- Banner modal de prueba -->
+<div class="ads-modal-backdrop" id="adsModal" style="display:none;">
+    <div class="ads-modal-content">
+        <button class="ads-modal-close" onclick="document.getElementById('adsModal').style.display='none'">&times;</button>
+        <div style="font-size:1.3rem; font-weight:600; margin-bottom:12px;">¡Oferta especial!</div>
+        <div style="margin-bottom:16px;">Este es un ejemplo de banner modal. Aquí puedes poner una promo, anuncio o publicidad personalizada.</div>
+        <img src="https://via.placeholder.com/468x60?text=Banner+Modal" alt="Banner Modal" style="max-width:100%;height:auto;">
+    </div>
+</div>
+<script>
+    window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            document.getElementById('adsModal').style.display = 'flex';
+        }, 800); // Muestra el modal 0.8s después de cargar
+    });
+</script>
+{% endblock %}
 
 {% extends 'base.html' %}
 {% load static %}
