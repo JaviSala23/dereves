@@ -366,7 +366,7 @@ def cancelar_reserva_fija(request, reserva_fija_id):
     
     if request.user.tipo_usuario == 'DUENIO':
         try:
-            es_dueno = reserva_fija.cancha.complejo.dueno == request.user.perfil_dueno
+            es_dueno = reserva_fija.cancha.complejo.dueno == request.user.perfil_duena
         except AttributeError:
             pass
     
@@ -940,4 +940,68 @@ def marcar_reserva_pagada(request, reserva_id):
         return JsonResponse({'success': False, 'message': 'No tienes permiso para marcar como pagada esta reserva.'}, status=403)
     reserva.pagado = True
     reserva.save(update_fields=['pagado'])
+
+    # Crear transacción de ingreso si no existe
+    from finanzas.models import Transaccion
+    if not reserva.transacciones.filter(tipo='INGRESO', categoria='RESERVA').exists():
+        Transaccion.objects.create(
+            complejo=reserva.cancha.complejo,
+            tipo='INGRESO',
+            categoria='RESERVA',
+            monto=reserva.precio,
+            descripcion=f'Pago de reserva {reserva.id}',
+            fecha=reserva.fecha,
+            reserva=reserva,
+            registrado_por=request.user
+        )
+
     return JsonResponse({'success': True, 'message': 'Reserva marcada como pagada.'})
+
+
+@login_required
+def registrar_ingresos_fijos_cumplidos(request):
+    """
+    Crea transacciones de ingreso para todas las reservas fijas cumplidas (no liberadas) del día actual.
+    Solo para dueños.
+    """
+    if request.user.tipo_usuario != 'DUENIO':
+        return JsonResponse({'success': False, 'message': 'No autorizado'}, status=403)
+    from finanzas.models import Transaccion
+    from datetime import date
+    hoy = date.today()
+    reservas_fijas = ReservaFija.objects.filter(
+        cancha__complejo__dueno__usuario=request.user,
+        estado='ACTIVA',
+        pagado=False,
+        fecha_inicio__lte=hoy
+    ).filter(
+        models.Q(fecha_fin__gte=hoy) | models.Q(fecha_fin__isnull=True)
+    )
+    count = 0
+    for rf in reservas_fijas:
+        # ¿Corresponde hoy?
+        if hoy.weekday() != rf.dia_semana:
+            continue
+        # ¿No liberada?
+        if rf.liberaciones.filter(fecha=hoy).exists():
+            continue
+        # ¿Ya existe transacción?
+        if Transaccion.objects.filter(
+            complejo=rf.cancha.complejo,
+            tipo='INGRESO',
+            categoria='RESERVA_FIJA',
+            fecha=hoy,
+            descripcion__icontains=f"Reserva fija {rf.id}"
+        ).exists():
+            continue
+        Transaccion.objects.create(
+            complejo=rf.cancha.complejo,
+            tipo='INGRESO',
+            categoria='RESERVA_FIJA',
+            monto=rf.precio,
+            descripcion=f'Pago automático reserva fija {rf.id} ({rf.nombre_cliente or rf.jugador})',
+            fecha=hoy,
+            registrado_por=request.user
+        )
+        count += 1
+    return JsonResponse({'success': True, 'message': f'{count} ingresos de reservas fijas registrados.'})
