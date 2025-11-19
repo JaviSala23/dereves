@@ -202,13 +202,26 @@ def registrar_transaccion(request):
         complejo_id = request.POST.get('complejo_id')
         complejo = get_object_or_404(Complejo, id=complejo_id, dueno__usuario=request.user)
         
+        # Convertir fecha a objeto date si es string
+        fecha_str = request.POST.get('fecha', None)
+        if fecha_str:
+            if isinstance(fecha_str, str):
+                try:
+                    fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                except Exception:
+                    fecha_obj = timezone.now().date()
+            else:
+                fecha_obj = fecha_str
+        else:
+            fecha_obj = timezone.now().date()
+
         transaccion = Transaccion.objects.create(
             complejo=complejo,
             tipo=request.POST.get('tipo'),
             categoria=request.POST.get('categoria'),
             monto=Decimal(request.POST.get('monto')),
             descripcion=request.POST.get('descripcion'),
-            fecha=request.POST.get('fecha', timezone.now().date()),
+            fecha=fecha_obj,
             registrado_por=request.user
         )
         
