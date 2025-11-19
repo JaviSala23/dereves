@@ -180,6 +180,11 @@
                                         <small class="text-muted">{{ transaccion.descripcion|truncatewords:10 }}</small>
                                         <div class="mt-1">
                                             <small class="text-muted">{{ transaccion.fecha|date:"d/m/Y" }}</small>
+                                            {% if transaccion.reserva %}
+                                                <span class="badge {% if transaccion.reserva.pagado %}bg-success{% else %}bg-warning text-dark{% endif %} ms-2">
+                                                    {% if transaccion.reserva.pagado %}Pagado{% else %}Pendiente{% endif %}
+                                                </span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     <div class="text-end">

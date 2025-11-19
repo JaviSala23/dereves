@@ -111,6 +111,7 @@
                             <th>Tipo</th>
                             <th>Categoría</th>
                             <th>Descripción</th>
+                            <th>Estado Pago</th>
                             <th class="text-end">Monto</th>
                         </tr>
                     </thead>
@@ -126,6 +127,15 @@
                             </td>
                             <td>{{ transaccion.get_categoria_display }}</td>
                             <td>{{ transaccion.descripcion|truncatewords:15 }}</td>
+                            <td>
+                                {% if transaccion.reserva %}
+                                    <span class="badge {% if transaccion.reserva.pagado %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                        {% if transaccion.reserva.pagado %}Pagado{% else %}Pendiente{% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
                             <td class="text-end">
                                 <strong class="{% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
                                     {% if transaccion.tipo == 'INGRESO' %}+{% else %}-{% endif %}${{ transaccion.monto|floatformat:2 }}
