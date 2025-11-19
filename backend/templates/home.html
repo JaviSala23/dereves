@@ -1,3 +1,15 @@
+
+
+{% extends 'base.html' %}
+{% load static %}
+{% block ads_top %}
+<!-- Banner superior de prueba visual -->
+<div class="container my-3">
+    <div style="background:#eee;border:2px dashed #888;color:#444;text-align:center;padding:32px 0;font-size:1.5rem;">
+        [Espacio reservado para banner 728x90]
+    </div>
+</div>
+{% endblock %}
 {% block ads_left %}
 <!-- Banner lateral izquierdo de prueba -->
 <div style="background:#e0e0e0;border:2px dashed #888;color:#444;text-align:center;padding:80px 0 80px 0;font-size:1rem;">
@@ -29,17 +41,6 @@
         }, 800); // Muestra el modal 0.8s después de cargar
     });
 </script>
-{% endblock %}
-
-{% extends 'base.html' %}
-{% load static %}
-{% block ads_top %}
-<!-- Banner superior de prueba visual -->
-<div class="container my-3">
-    <div style="background:#eee;border:2px dashed #888;color:#444;text-align:center;padding:32px 0;font-size:1.5rem;">
-        [Espacio reservado para banner 728x90]
-    </div>
-</div>
 {% endblock %}
 {% block content %}
 <!-- Hero Section -->
