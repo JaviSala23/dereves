@@ -130,24 +130,26 @@ def mis_complejos_dashboard(request):
     Lista todos los complejos con opciones de edición.
     """
     if request.user.tipo_usuario != 'DUENIO':
-    
-        perfil_dueno = PerfilDueno.objects.get(usuario=request.user)
-        complejos = Complejo.objects.filter(dueno=perfil_dueno).prefetch_related('canchas')
-        
-        # Agregar estadísticas a cada complejo
-        for complejo in complejos:
-            complejo.num_canchas = complejo.canchas.count()
-            complejo.num_reservas_mes = Reserva.objects.filter(
-                cancha__complejo=complejo,
-                fecha__gte=timezone.now().date() - timedelta(days=30)
-            ).count()
-        
-        context = {
-            'complejos': complejos,
-            'perfil_dueno': perfil_dueno,
-        }
-        
-        return render(request, 'complejos/dashboard/mis_complejos.html', context)
+        messages.error(request, 'Acceso denegado. Solo para dueños de complejos.')
+        return redirect('home')
+
+    perfil_dueno = PerfilDueno.objects.get(usuario=request.user)
+    complejos = Complejo.objects.filter(dueno=perfil_dueno).prefetch_related('canchas')
+
+    # Agregar estadísticas a cada complejo
+    for complejo in complejos:
+        complejo.num_canchas = complejo.canchas.count()
+        complejo.num_reservas_mes = Reserva.objects.filter(
+            cancha__complejo=complejo,
+            fecha__gte=timezone.now().date() - timedelta(days=30)
+        ).count()
+
+    context = {
+        'complejos': complejos,
+        'perfil_dueno': perfil_dueno,
+    }
+
+    return render(request, 'complejos/dashboard/mis_complejos.html', context)
 
 
 
