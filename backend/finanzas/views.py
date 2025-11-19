@@ -184,20 +184,6 @@ def dashboard_finanzas(request):
         'total_ingresos_completo': total_ingresos_completo,
     }
 
-    context = {
-        'complejos': complejos,
-        'complejo_seleccionado': complejo_seleccionado,
-        'resumen': resumen,
-        'transacciones_mes': transacciones_mes,
-        'mes_actual': mes_actual,
-        'año_actual': año_actual,
-        'datos_grafico': datos_grafico,
-        'gastos_por_categoria': gastos_por_categoria,
-        'meses': ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
-        'reservas_pagadas': reservas_pagadas,
-        'reservas_fijas_pagadas': reservas_fijas_pagadas,
-    }
     return render(request, 'finanzas/dashboard.html', context)
 
 
