@@ -109,7 +109,6 @@ def dashboard_finanzas(request):
     # Reservas fijas pagadas
 
     from reservas.models import ReservaFija, ReservaFijaLiberacion
-    from datetime import datetime, time
     ahora = timezone.now()
 
     # Reservas fijas pagadas manualmente
