@@ -289,6 +289,38 @@ def lista_complejos(request):
     # Si no existe, dejar complejos_agrupados como None o []
     complejos_agrupados = []
 
+    # Provincias de Argentina
+    provincias = [
+        'Buenos Aires', 'Ciudad Autónoma de Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
+        'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones',
+        'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe',
+        'Santiago del Estero', 'Tierra del Fuego', 'Tucumán',
+    ]
+    # Países (puedes agregar más si lo deseas)
+    paises = ['Argentina']
+    # Deportes
+    deportes = [
+        ('PADEL', 'Pádel'),
+        ('FUTBOL5', 'Fútbol 5'),
+        ('FUTBOL7', 'Fútbol 7'),
+        ('FUTBOL11', 'Fútbol 11'),
+        ('TENIS', 'Tenis'),
+        ('FUTBOL_TENIS', 'Fútbol-Tenis'),
+        ('BASQUET', 'Básquet'),
+        ('VOLEY', 'Voley'),
+    ]
+    # Fecha de consulta (por defecto hoy)
+    from django.utils import timezone
+    fecha_str = request.GET.get('fecha')
+    if fecha_str:
+        try:
+            from datetime import datetime
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except Exception:
+            fecha = timezone.now().date()
+    else:
+        fecha = timezone.now().date()
+
     context = {
         'complejos_data': complejos_data,
         'complejos_agrupados': complejos_agrupados,
