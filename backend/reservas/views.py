@@ -1,3 +1,59 @@
+from django.views.decorators.csrf import csrf_exempt
+# Vista para marcar una ocurrencia de reserva fija como pagada manualmente
+@login_required
+@csrf_exempt
+def marcar_reserva_fija_pagada(request, reserva_fija_id, fecha):
+    """Marca una ocurrencia de reserva fija como pagada para una fecha específica."""
+    from finanzas.models import Transaccion, ResumenMensual
+    from datetime import datetime
+    reserva_fija = get_object_or_404(ReservaFija, id=reserva_fija_id)
+    # Solo dueños
+    try:
+        es_dueno = reserva_fija.cancha.complejo.dueno == getattr(request.user, 'perfil_dueno', None)
+    except AttributeError:
+        es_dueno = False
+    if not (es_dueno or request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'success': False, 'message': 'No tienes permiso para marcar como pagada esta reserva fija.'}, status=403)
+    # Fecha de la ocurrencia
+    try:
+        fecha_dt = datetime.strptime(fecha, '%Y-%m-%d').date()
+    except Exception:
+        return JsonResponse({'success': False, 'message': 'Fecha inválida.'}, status=400)
+    # Verificar que la fecha corresponde a la recurrencia
+    if fecha_dt < reserva_fija.fecha_inicio or (reserva_fija.fecha_fin and fecha_dt > reserva_fija.fecha_fin):
+        return JsonResponse({'success': False, 'message': 'Fecha fuera de rango de la reserva fija.'}, status=400)
+    if fecha_dt.weekday() != reserva_fija.dia_semana:
+        return JsonResponse({'success': False, 'message': 'La fecha no corresponde al día de la reserva fija.'}, status=400)
+    # Verificar que no esté liberada
+    if reserva_fija.liberaciones.filter(fecha=fecha_dt).exists():
+        return JsonResponse({'success': False, 'message': 'La fecha está liberada.'}, status=400)
+    # Verificar que no exista transacción
+    if Transaccion.objects.filter(
+        complejo=reserva_fija.cancha.complejo,
+        tipo='INGRESO',
+        categoria='RESERVA_FIJA',
+        fecha=fecha_dt,
+        descripcion__icontains=f"Reserva fija {reserva_fija.id}"
+    ).exists():
+        return JsonResponse({'success': False, 'message': 'Ya existe un ingreso para esa fecha.'}, status=400)
+    # Crear transacción
+    Transaccion.objects.create(
+        complejo=reserva_fija.cancha.complejo,
+        tipo='INGRESO',
+        categoria='RESERVA_FIJA',
+        monto=reserva_fija.precio,
+        descripcion=f'Pago manual reserva fija {reserva_fija.id} ({reserva_fija.nombre_cliente or reserva_fija.jugador})',
+        fecha=fecha_dt,
+        registrado_por=request.user
+    )
+    # Recalcular resumen mensual
+    resumen, _ = ResumenMensual.objects.get_or_create(
+        complejo=reserva_fija.cancha.complejo,
+        año=fecha_dt.year,
+        mes=fecha_dt.month
+    )
+    resumen.calcular_resumen()
+    return JsonResponse({'success': True, 'message': 'Ingreso registrado para la reserva fija.'})
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -942,9 +998,10 @@ def marcar_reserva_pagada(request, reserva_id):
     reserva.save(update_fields=['pagado'])
 
     # Crear transacción de ingreso si no existe
-    from finanzas.models import Transaccion
+    from finanzas.models import Transaccion, ResumenMensual
+    transaccion = None
     if not reserva.transacciones.filter(tipo='INGRESO', categoria='RESERVA').exists():
-        Transaccion.objects.create(
+        transaccion = Transaccion.objects.create(
             complejo=reserva.cancha.complejo,
             tipo='INGRESO',
             categoria='RESERVA',
@@ -954,6 +1011,13 @@ def marcar_reserva_pagada(request, reserva_id):
             reserva=reserva,
             registrado_por=request.user
         )
+        # Recalcular resumen mensual para reflejar el ingreso en el dashboard
+        resumen, _ = ResumenMensual.objects.get_or_create(
+            complejo=reserva.cancha.complejo,
+            año=reserva.fecha.year,
+            mes=reserva.fecha.month
+        )
+        resumen.calcular_resumen()
 
     return JsonResponse({'success': True, 'message': 'Reserva marcada como pagada.'})
 
