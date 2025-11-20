@@ -294,40 +294,57 @@ class ReservaFija(models.Model):
     
     def bloquear_turnos_futuros(self, hasta_fecha=None):
         """
-        Crea/actualiza turnos FIJO para las próximas ocurrencias de esta reserva fija.
+        Crea/actualiza turnos FIJO solo para los turnos que realmente solapan con la reserva fija.
         hasta_fecha: hasta qué fecha bloquear (por defecto 30 días a futuro)
         """
         if self.estado != 'ACTIVA':
             return []
-        
         if hasta_fecha is None:
             hasta_fecha = timezone.now().date() + timedelta(days=30)
-        
         fecha_actual = max(self.fecha_inicio, timezone.now().date())
         turnos_bloqueados = []
-        
+        from datetime import datetime, time as dt_time
         while fecha_actual <= hasta_fecha:
             if fecha_actual.weekday() == self.dia_semana:
                 if self.fecha_fin is None or fecha_actual <= self.fecha_fin:
-                    # Buscar o crear turno
-                    turno, created = Turno.objects.get_or_create(
-                        cancha=self.cancha,
-                        fecha=fecha_actual,
-                        hora_inicio=self.hora_inicio,
-                        defaults={
-                            'hora_fin': self.hora_fin,
-                            'precio': self.precio,
-                            'estado': 'FIJO'
-                        }
-                    )
-                    if not created and turno.estado != 'FIJO':
-                        turno.estado = 'FIJO'
-                        turno.precio = self.precio
-                        turno.save()
-                    turnos_bloqueados.append(turno)
-            
+                    # Buscar todos los turnos de ese día y cancha
+                    turnos = Turno.objects.filter(cancha=self.cancha, fecha=fecha_actual)
+                    for turno in turnos:
+                        # Comprobar solapamiento real de horarios
+                        inicio_fija = datetime.combine(fecha_actual, self.hora_inicio)
+                        fin_fija = datetime.combine(fecha_actual, self.hora_fin)
+                        inicio_turno = datetime.combine(fecha_actual, turno.hora_inicio)
+                        fin_turno = datetime.combine(fecha_actual, turno.hora_fin)
+                        # Debug prints para ver los valores
+                        print(f"[DEBUG] ReservaFija {self.id} {inicio_fija.time()}-{fin_fija.time()} vs Turno {turno.id} {inicio_turno.time()}-{fin_turno.time()}")
+                        # Solapan si inicio de uno es menor que fin del otro y viceversa
+                        if inicio_fija < fin_turno and fin_fija > inicio_turno:
+                            if turno.estado != 'FIJO':
+                                turno.estado = 'FIJO'
+                                turno.precio = self.precio
+                                turno.save()
+                                print(f"[DEBUG] Turno {turno.id} marcado como FIJO por ReservaFija {self.id}")
+                            turnos_bloqueados.append(turno)
+                    # Si no hay turnos creados exactamente para ese horario, crear uno solo si coincide exacto
+                    existe_turno_exact = turnos.filter(hora_inicio=self.hora_inicio, hora_fin=self.hora_fin).exists()
+                    if not existe_turno_exact:
+                        turno, created = Turno.objects.get_or_create(
+                            cancha=self.cancha,
+                            fecha=fecha_actual,
+                            hora_inicio=self.hora_inicio,
+                            hora_fin=self.hora_fin,
+                            defaults={
+                                'precio': self.precio,
+                                'estado': 'FIJO'
+                            }
+                        )
+                        if created or turno.estado != 'FIJO':
+                            turno.estado = 'FIJO'
+                            turno.precio = self.precio
+                            turno.save()
+                            print(f"[DEBUG] Turno {turno.id} (exacto) marcado como FIJO por ReservaFija {self.id}")
+                        turnos_bloqueados.append(turno)
             fecha_actual += timedelta(days=1)
-        
         return turnos_bloqueados
 
 
