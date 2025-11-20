@@ -255,19 +255,18 @@ def crear_reserva(request, cancha_id):
             messages.error(request, f'Este turno ya está ocupado. Estado: {turno.get_estado_display()}')
             return redirect('reservas:calendario_cancha', cancha_id=cancha_id)
     
-    # Crear la reserva
+    # Crear la reserva usando solo los campos válidos
     reserva = Reserva.objects.create(
-        turno=turno,
-        tipo_reserva='CLIENTE',  # Reservas desde calendario de jugadores son siempre de cliente
-        jugador=perfil_jugador if not es_dueno else None,
-        reservado_por_dueno=reservado_por_dueno,
-        nombre_cliente_sin_cuenta=nombre_cliente,
-        telefono_cliente=telefono_cliente,
-        email_cliente=email_cliente,
+        cancha=cancha,
+        jugador_principal=perfil_jugador if not es_dueno else None,
+        fecha=fecha,
+        hora_inicio=hora_inicio,
+        hora_fin=hora_fin,
         precio=turno.precio,
         metodo_pago=metodo_pago,
         estado='CONFIRMADA' if es_dueno else 'PENDIENTE',
-        creado_por=request.user
+        nombre_cliente=nombre_cliente if es_dueno else '',
+        observaciones=f"Reserva creada {'por dueño' if es_dueno else 'por jugador'}"
     )
     
     # Actualizar estado del turno
