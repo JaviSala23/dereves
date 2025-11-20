@@ -30,12 +30,12 @@ def mis_reservas(request):
         messages.error(request, 'No se encontró tu perfil de jugador.')
         return redirect('home')
     
-    # Reservas comunes (a través del nuevo modelo Turno)
+    # Reservas comunes (usando los campos directos de Reserva)
     reservas = Reserva.objects.filter(
         jugador_principal=perfil_jugador
     ).select_related(
-        'turno__cancha__complejo'
-    ).order_by('-turno__fecha', '-turno__hora_inicio')
+        'cancha', 'cancha__complejo'
+    ).order_by('-fecha', '-hora_inicio')
     
     # Reservas fijas
     reservas_fijas = ReservaFija.objects.filter(
