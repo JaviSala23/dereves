@@ -32,7 +32,7 @@ def mis_reservas(request):
     
     # Reservas comunes (a través del nuevo modelo Turno)
     reservas = Reserva.objects.filter(
-        jugador=perfil_jugador
+        jugador_principal=perfil_jugador
     ).select_related(
         'turno__cancha__complejo'
     ).order_by('-turno__fecha', '-turno__hora_inicio')
