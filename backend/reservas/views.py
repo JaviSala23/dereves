@@ -54,11 +54,11 @@ def mis_reservas(request):
     ahora = timezone.now()
     reservas_activas = []
     reservas_pasadas = []
-    
     for reserva in reservas:
-        # Combinar fecha y hora para comparar
+        # Combinar fecha y hora para comparar correctamente con ahora (datetime)
         fecha_hora_reserva = datetime.combine(reserva.fecha, reserva.hora_inicio)
-        if fecha_hora_reserva >= ahora.date() and reserva.estado != 'CANCELADA':
+        # Si la fecha/hora de la reserva es igual o posterior a ahora y no está cancelada
+        if fecha_hora_reserva >= ahora and reserva.estado != 'CANCELADA':
             reservas_activas.append(reserva)
         else:
             reservas_pasadas.append(reserva)
