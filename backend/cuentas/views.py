@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from .models import Usuario, PerfilJugador, PerfilDueno
+from .models import Usuario, PerfilJugador, PerfilDueno, Deporte, JugadorDeporte
 
 
 @login_required
@@ -49,17 +49,12 @@ def editar_perfil(request):
         usuario.username = request.POST.get('username', usuario.username)
         usuario.email = request.POST.get('email', usuario.email)
         usuario.nombre_real = request.POST.get('nombre_real', '')
-        
         # Actualizar foto de perfil si se subió una nueva
         if 'foto_perfil' in request.FILES:
             usuario.foto_perfil = request.FILES['foto_perfil']
-        
         usuario.save()
-        
         # Actualizar perfil según tipo
         if usuario.tipo_usuario == 'JUGADOR' and perfil:
-            perfil.posicion_favorita = request.POST.get('posicion_favorita', '')
-            perfil.pie_habil = request.POST.get('pie_habil', '')
             perfil.biografia = request.POST.get('biografia', '')
             perfil.localidad = request.POST.get('localidad', '')
             fecha_nac = request.POST.get('fecha_nacimiento', '')
@@ -67,18 +62,41 @@ def editar_perfil(request):
                 perfil.fecha_nacimiento = fecha_nac
             perfil.perfil_publico = 'perfil_publico' in request.POST
             perfil.save()
-        
+            # --- Manejo de deportes y habilidades ---
+            deportes_ids = request.POST.getlist('deportes')
+            deportes_objs = Deporte.objects.filter(id__in=deportes_ids)
+            # Eliminar los deportes que ya no están
+            JugadorDeporte.objects.filter(perfil=perfil).exclude(deporte__in=deportes_objs).delete()
+            for deporte in deportes_objs:
+                jd, _ = JugadorDeporte.objects.get_or_create(perfil=perfil, deporte=deporte)
+                jd.categoria = request.POST.get(f'categoria_{deporte.id}', '')
+                jd.posicion_favorita = request.POST.get(f'posicion_{deporte.id}', '')
+                jd.lado_habil = request.POST.get(f'lado_{deporte.id}', '')
+                jd.save()
         elif usuario.tipo_usuario == 'DUENIO' and perfil:
             perfil.nombre_negocio = request.POST.get('nombre_negocio', '')
             perfil.telefono_contacto = request.POST.get('telefono_contacto', '')
             perfil.cuit_cuil = request.POST.get('cuit_cuil', '')
             perfil.save()
-        
         messages.success(request, 'Perfil actualizado correctamente.')
         return redirect('cuentas:mi_perfil')
     
+    # --- Contexto para template ---
+    deportes_disponibles = Deporte.objects.filter(activo=True).order_by('nombre')
+    deportes_seleccionados = []
+    jugador_deportes = []
+    if usuario.tipo_usuario == 'JUGADOR' and perfil:
+        jugador_deportes = list(JugadorDeporte.objects.filter(perfil=perfil).select_related('deporte'))
+        deportes_seleccionados = [jd.deporte.id for jd in jugador_deportes]
+        # Si no hay ninguno, mostrar al menos uno vacío para el template
+        if not jugador_deportes:
+            for deporte in deportes_disponibles:
+                jugador_deportes.append(JugadorDeporte(perfil=perfil, deporte=deporte))
     context = {
         'perfil': perfil,
+        'deportes_disponibles': deportes_disponibles,
+        'deportes_seleccionados': deportes_seleccionados,
+        'jugador_deportes': jugador_deportes,
     }
     return render(request, 'cuentas/editar_perfil.html', context)
 
