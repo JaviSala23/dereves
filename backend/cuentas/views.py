@@ -101,9 +101,19 @@ def editar_perfil(request):
                 else:
                     jugador_deportes.append(JugadorDeporte(perfil=perfil, deporte=deporte))
         # Poblar habilidades y categorías por deporte
+        import json
         for deporte in deportes_disponibles:
-            habilidades_por_deporte[deporte.id] = list(HabilidadDeporte.objects.filter(deporte=deporte, activa=True).order_by('nombre'))
-            categorias_por_deporte[deporte.id] = list(CategoriaDeporte.objects.filter(deporte=deporte, activa=True).order_by('nombre'))
+            habilidades = list(HabilidadDeporte.objects.filter(deporte=deporte, activa=True).order_by('nombre'))
+            categorias = list(CategoriaDeporte.objects.filter(deporte=deporte, activa=True).order_by('nombre'))
+            # Serializar a lista de dicts simples
+            habilidades_por_deporte[deporte.id] = [
+                {'id': h.id, 'nombre': h.nombre, 'descripcion': h.descripcion}
+                for h in habilidades
+            ]
+            categorias_por_deporte[deporte.id] = [
+                {'id': c.id, 'nombre': c.nombre, 'descripcion': c.descripcion}
+                for c in categorias
+            ]
     context = {
         'perfil': perfil,
         'deportes_disponibles': deportes_disponibles,
