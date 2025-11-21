@@ -2,7 +2,7 @@
 
 {% load custom_filters %}
 {% load static %}
-{# Eliminar json_script, no se usa #}
+
 {% block title %}Editar Perfil - DeRevés{% endblock %}
 
 {% block content %}
@@ -88,10 +88,6 @@
                                                     {% endfor %}
                                                 </select>
                                                 {% endwith %}
-                                            {% comment %} Filtro para acceder a diccionario por clave en Django template {% endcomment %}
-                                            {% if not get_item %}
-                                                {% load custom_filters %}
-                                            {% endif %}
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label">Lado hábil</label>
@@ -134,19 +130,26 @@
                                 </div>
                             </div>
                         </template>
-                        <script id="habilidades-json" type="application/json">{{ habilidades_por_deporte|safe|escapejs }}</script>
-                        <script id="categorias-json" type="application/json">{{ categorias_por_deporte|safe|escapejs }}</script>
+
+                        {# Estos dos generan JSON válido automáticamente #}
+                        {{ habilidades_por_deporte|json_script:"habilidades-json" }}
+                        {{ categorias_por_deporte|json_script:"categorias-json" }}
+
                         <script>
                         // Mostrar/ocultar/agregar campos de cada deporte según selección
                         document.addEventListener('DOMContentLoaded', function() {
                             const selectDeportes = document.getElementById('deportes');
                             const contenedorCampos = document.getElementById('deportes-campos');
                             const template = document.getElementById('template-deporte-campos');
+
                             // Map para saber qué deportes ya tienen bloque
-                            let deportesActivos = Array.from(document.querySelectorAll('.deporte-campos')).map(div => div.getAttribute('data-deporte-id'));
+                            let deportesActivos = Array.from(document.querySelectorAll('.deporte-campos'))
+                                                      .map(div => div.getAttribute('data-deporte-id'));
+
                             // Obtener datos JSON de habilidades y categorías
                             const habilidadesPorDeporte = JSON.parse(document.getElementById('habilidades-json').textContent);
-                            const categoriasPorDeporte = JSON.parse(document.getElementById('categorias-json').textContent);
+                            const categoriasPorDeporte  = JSON.parse(document.getElementById('categorias-json').textContent);
+
                             function crearOpciones(arr, selected) {
                                 let html = '<option value="">Seleccionar...</option>';
                                 arr.forEach(obj => {
@@ -154,28 +157,35 @@
                                 });
                                 return html;
                             }
+
                             function agregarBloqueDeporte(id, nombre) {
                                 if (document.querySelector('.deporte-campos[data-deporte-id="'+id+'"]')) return;
                                 const clone = template.content.cloneNode(true);
                                 let html = clone.firstElementChild.outerHTML;
+
                                 // Rellenar selects
                                 const cats = categoriasPorDeporte[id] || [];
                                 const habs = habilidadesPorDeporte[id] || [];
+
                                 html = html.replace(/__ID__/g, id)
                                            .replace(/__NOMBRE__/g, nombre)
                                            .replace('__CATEGORIAS__', crearOpciones(cats))
                                            .replace('__HABILIDADES__', crearOpciones(habs));
+
                                 // Insertar
                                 const tempDiv = document.createElement('div');
                                 tempDiv.innerHTML = html;
                                 contenedorCampos.appendChild(tempDiv.firstElementChild);
                             }
+
                             function quitarBloqueDeporte(id) {
                                 const div = document.querySelector('.deporte-campos[data-deporte-id="'+id+'"]');
                                 if (div) div.remove();
                             }
+
                             function actualizarCampos() {
                                 const seleccionados = Array.from(selectDeportes.selectedOptions).map(opt => opt.value);
+
                                 // Agregar los nuevos
                                 seleccionados.forEach(id => {
                                     if (!document.querySelector('.deporte-campos[data-deporte-id="'+id+'"]')) {
@@ -184,6 +194,7 @@
                                     }
                                     document.querySelector('.deporte-campos[data-deporte-id="'+id+'"]').style.display = '';
                                 });
+
                                 // Quitar los no seleccionados
                                 document.querySelectorAll('.deporte-campos').forEach(div => {
                                     if (!seleccionados.includes(div.getAttribute('data-deporte-id'))) {
@@ -191,6 +202,7 @@
                                     }
                                 });
                             }
+
                             selectDeportes.addEventListener('change', actualizarCampos);
                             // Inicial
                             actualizarCampos();
