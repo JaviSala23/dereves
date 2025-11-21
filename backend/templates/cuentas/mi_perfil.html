@@ -42,14 +42,13 @@
                     Mis Reservas
                 </a>
                 <a href="#" class="list-group-item list-group-item-action">
-                <div class="list-group-item disabled d-flex align-items-center" style="opacity:0.7; cursor:not-allowed;">
-                    <span class="material-symbols-rounded me-2">emoji_events</span>
+                    <span class="material-symbols-rounded">emoji_events</span>
                     Mis Torneos
-                </div>
-                <div class="list-group-item disabled d-flex align-items-center" style="opacity:0.7; cursor:not-allowed;">
-                    <span class="material-symbols-rounded me-2">group</span>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">group</span>
                     Mis Partidos
-                </div>
+                </a>
                 {% elif user.tipo_usuario == 'DUENIO' %}
                 <a href="{% url 'complejos:dashboard_principal' %}" class="list-group-item list-group-item-action">
                     <span class="material-symbols-rounded">dashboard</span>
@@ -70,24 +69,17 @@
                 {% endif %}
             </div>
         </div>
-    </div>
+        
         <div class="col-md-9">
             <div class="card mb-4">
                 <div class="card-header">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <h5 class="mb-0">Información Personal</h5>
-                        </div>
-                        <div class="col-md-6 text-md-end text-center">
-                            <span class="fw-bold" style="font-size:1.3em;">{{ user.nombre_real|default:user.username }}</span>
-                        </div>
-                    </div>
+                    <h5 class="mb-0">Información Personal</h5>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="text-muted small">Nombre de Usuario</label>
-                            <p class="mb-0">@{{ user.username }}</p>
+                            <p class="mb-0">{{ user.username }}</p>
                         </div>
                         <div class="col-md-6">
                             <label class="text-muted small">Email</label>
@@ -96,15 +88,19 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <label class="text-muted small">Nombre Real</label>
+                            <p class="mb-0">{{ user.nombre_real|default:"No especificado" }}</p>
+                        </div>
+                        <div class="col-md-6">
                             <label class="text-muted small">Tipo de Usuario</label>
                             <p class="mb-0">{{ user.get_tipo_usuario_display }}</p>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6">
                             <label class="text-muted small">Fecha de Registro</label>
                             <p class="mb-0">{{ user.date_joined|date:"d/m/Y" }}</p>
                         </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-6">
                             <label class="text-muted small">Proveedor</label>
                             <p class="mb-0">
@@ -114,10 +110,6 @@
                                 <span class="badge bg-primary">DeRevés</span>
                                 {% endif %}
                             </p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Nombre Real</label>
-                            <p class="mb-0">{{ user.nombre_real|default:"No especificado" }}</p>
                         </div>
                     </div>
                 </div>
@@ -153,24 +145,22 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <h5 class="mb-0 text-muted">Próximamente</h5>
-                                    <small class="text-muted">Partidos</small>
-                                </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-verde-lima">{{ perfil.partidos_jugados }}</h3>
+                                <small class="text-muted">Partidos</small>
                             </div>
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <h5 class="mb-0 text-muted">Próximamente</h5>
-                                    <small class="text-muted">Torneos</small>
-                                </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-azul">{{ perfil.torneos_ganados }}</h3>
+                                <small class="text-muted">Torneos</small>
                             </div>
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <h5 class="mb-0 text-muted">Próximamente</h5>
-                                    <small class="text-muted">Rating</small>
-                                </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-morado">{{ perfil.rating }}</h3>
+                                <small class="text-muted">Rating</small>
                             </div>
                         </div>
                     </div>
@@ -204,7 +194,7 @@
                 <div class="card-body">
                     <div class="text-center text-muted py-4">
                         <span class="material-symbols-rounded" style="font-size: 48px;">sports_soccer</span>
-                        <p class="mt-2">Próximamente</p>
+                        <p class="mt-2">No hay actividad reciente</p>
                     </div>
                 </div>
             </div>
