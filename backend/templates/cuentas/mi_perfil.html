@@ -42,7 +42,13 @@
                     Mis Reservas
                 </a>
                 <a href="#" class="list-group-item list-group-item-action">
-                {# Botones 'Mis Torneos' y 'Mis Partidos' ocultos temporalmente #}
+                    <span class="material-symbols-rounded">emoji_events</span>
+                    Mis Torneos
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <span class="material-symbols-rounded">group</span>
+                    Mis Partidos
+                </a>
                 {% elif user.tipo_usuario == 'DUENIO' %}
                 <a href="{% url 'complejos:dashboard_principal' %}" class="list-group-item list-group-item-action">
                     <span class="material-symbols-rounded">dashboard</span>
@@ -122,33 +128,14 @@
                 </div>
                 <div class="card-body">
                     {% if user.tipo_usuario == 'JUGADOR' %}
-                    <div class="mb-3">
-                        <label class="text-muted small">Deportes y habilidades</label>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Deporte</th>
-                                        <th>Categoría</th>
-                                        <th>Posición</th>
-                                        <th>Lado hábil</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for jd in perfil.deportes_jugador.all %}
-                                    <tr>
-                                        <td>{{ jd.deporte.nombre }}</td>
-                                        <td>{{ jd.categoria|default:'-' }}</td>
-                                        <td>{{ jd.posicion_favorita|default:'-' }}</td>
-                                        <td>
-                                            {% if jd.lado_habil == 'DERECHO' %}Derecho{% elif jd.lado_habil == 'IZQUIERDO' %}Izquierdo{% elif jd.lado_habil == 'AMBOS' %}Ambos{% else %}-{% endif %}
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr><td colspan="4" class="text-center text-muted">Sin deportes cargados</td></tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Posición</label>
+                            <p class="mb-0">{{ perfil.posicion_favorita|default:"No especificada" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Pie Hábil</label>
+                            <p class="mb-0">{{ perfil.get_pie_habil_display|default:"No especificado" }}</p>
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -158,7 +145,24 @@
                         </div>
                     </div>
                     <div class="row">
-                        {# Contadores de partidos, torneos y rating ocultos temporalmente #}
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-verde-lima">{{ perfil.partidos_jugados }}</h3>
+                                <small class="text-muted">Partidos</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-azul">{{ perfil.torneos_ganados }}</h3>
+                                <small class="text-muted">Torneos</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0 text-morado">{{ perfil.rating }}</h3>
+                                <small class="text-muted">Rating</small>
+                            </div>
+                        </div>
                     </div>
                     {% elif user.tipo_usuario == 'DUENIO' %}
                     <div class="row mb-3">
@@ -183,7 +187,17 @@
             {% endif %}
             
             {% if user.tipo_usuario == 'JUGADOR' %}
-            {# Sección de actividad reciente oculta temporalmente #}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Actividad Reciente</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center text-muted py-4">
+                        <span class="material-symbols-rounded" style="font-size: 48px;">sports_soccer</span>
+                        <p class="mt-2">No hay actividad reciente</p>
+                    </div>
+                </div>
+            </div>
             {% endif %}
         </div>
     </div>
