@@ -42,13 +42,14 @@
                     Mis Reservas
                 </a>
                 <a href="#" class="list-group-item list-group-item-action">
-                    <span class="material-symbols-rounded">emoji_events</span>
+                <div class="list-group-item disabled d-flex align-items-center" style="opacity:0.7; cursor:not-allowed;">
+                    <span class="material-symbols-rounded me-2">emoji_events</span>
                     Mis Torneos
-                </a>
-                <a href="#" class="list-group-item list-group-item-action">
-                    <span class="material-symbols-rounded">group</span>
+                </div>
+                <div class="list-group-item disabled d-flex align-items-center" style="opacity:0.7; cursor:not-allowed;">
+                    <span class="material-symbols-rounded me-2">group</span>
                     Mis Partidos
-                </a>
+                </div>
                 {% elif user.tipo_usuario == 'DUENIO' %}
                 <a href="{% url 'complejos:dashboard_principal' %}" class="list-group-item list-group-item-action">
                     <span class="material-symbols-rounded">dashboard</span>
@@ -145,24 +146,7 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-4">
-                            <div class="text-center p-3 bg-light rounded">
-                                <h3 class="mb-0 text-verde-lima">{{ perfil.partidos_jugados }}</h3>
-                                <small class="text-muted">Partidos</small>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center p-3 bg-light rounded">
-                                <h3 class="mb-0 text-azul">{{ perfil.torneos_ganados }}</h3>
-                                <small class="text-muted">Torneos</small>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center p-3 bg-light rounded">
-                                <h3 class="mb-0 text-morado">{{ perfil.rating }}</h3>
-                                <small class="text-muted">Rating</small>
-                            </div>
-                        </div>
+                        {# Contadores de partidos, torneos y rating ocultos temporalmente #}
                     </div>
                     {% elif user.tipo_usuario == 'DUENIO' %}
                     <div class="row mb-3">
@@ -194,7 +178,7 @@
                 <div class="card-body">
                     <div class="text-center text-muted py-4">
                         <span class="material-symbols-rounded" style="font-size: 48px;">sports_soccer</span>
-                        <p class="mt-2">No hay actividad reciente</p>
+                        <p class="mt-2">Próximamente</p>
                     </div>
                 </div>
             </div>
