@@ -66,11 +66,21 @@
                                         <div class="row">
                                             <div class="col-md-4">
                                                 <label class="form-label">Categoría/Nivel</label>
-                                                <input type="text" class="form-control" name="categoria_{{ jd.deporte.id }}" value="{{ jd.categoria }}" placeholder="Ej: Intermedio, Avanzado, Primera...">
+                                                <select class="form-select" name="categoria_{{ jd.deporte.id }}">
+                                                    <option value="">Seleccionar...</option>
+                                                    {% for cat in categorias_por_deporte[jd.deporte.id] %}
+                                                        <option value="{{ cat.nombre }}" {% if jd.categoria == cat.nombre %}selected{% endif %}>{{ cat.nombre }}</option>
+                                                    {% endfor %}
+                                                </select>
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label">Posición Favorita</label>
-                                                <input type="text" class="form-control" name="posicion_{{ jd.deporte.id }}" value="{{ jd.posicion_favorita }}" placeholder="Ej: Delantero, Arquero, etc">
+                                                <label class="form-label">Habilidad/Posición</label>
+                                                <select class="form-select" name="posicion_{{ jd.deporte.id }}">
+                                                    <option value="">Seleccionar...</option>
+                                                    {% for hab in habilidades_por_deporte[jd.deporte.id] %}
+                                                        <option value="{{ hab.nombre }}" {% if jd.posicion_favorita == hab.nombre %}selected{% endif %}>{{ hab.nombre }}</option>
+                                                    {% endfor %}
+                                                </select>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label">Lado hábil</label>
