@@ -1,3 +1,4 @@
+from django.db import models
 class Deporte(models.Model):
     nombre = models.CharField(max_length=50, unique=True)
     descripcion = models.TextField(blank=True)
