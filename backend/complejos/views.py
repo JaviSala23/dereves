@@ -259,6 +259,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from datetime import datetime, timedelta
 from .models import Complejo, Cancha, ServicioComplejo, Localidad
+from .forms import CanchaForm
 from cuentas.models import PerfilDueno
 from reservas.models import Reserva, ReservaFija
 
@@ -514,60 +515,35 @@ def gestionar_complejo(request, slug):
     return render(request, 'complejos/gestionar.html', context)
 
 
+
 @login_required
 def agregar_cancha(request, slug):
     """
     Permite agregar una nueva cancha a un complejo.
     """
     complejo = get_object_or_404(Complejo, slug=slug)
-    
     # Verificar que sea el dueño
     if complejo.dueno.usuario != request.user:
         messages.error(request, 'No tienes permiso para agregar canchas a este complejo.')
         return redirect('complejos:detalle', slug=slug)
-    
+
     if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        deporte = request.POST.get('deporte')
-        tipo_superficie = request.POST.get('tipo_superficie', '')
-        tipo_pared = request.POST.get('tipo_pared', '')
-        techada = 'techada' in request.POST
-        iluminacion = 'iluminacion' in request.POST
-        precio_hora = request.POST.get('precio_hora')
-        horario_apertura = request.POST.get('horario_apertura', '08:00')
-        horario_cierre = request.POST.get('horario_cierre', '23:00')
-        duracion_turno = request.POST.get('duracion_turno_minutos', 60)
-        
-        # Crear cancha
-        cancha = Cancha.objects.create(
-            complejo=complejo,
-            nombre=nombre,
-            deporte=deporte,
-            tipo_superficie=tipo_superficie,
-            tipo_pared=tipo_pared,
-            techada=techada,
-            iluminacion=iluminacion,
-            precio_base=precio_hora,
-            precio_hora=precio_hora,
-            horario_apertura=horario_apertura,
-            horario_cierre=horario_cierre,
-            duracion_turno_minutos=duracion_turno,
-        )
-        
-        # Manejar foto si se subió
-        if 'foto' in request.FILES:
-            cancha.foto = request.FILES['foto']
+        form = CanchaForm(request.POST, request.FILES)
+        if form.is_valid():
+            cancha = form.save(commit=False)
+            cancha.complejo = complejo
             cancha.save()
-        
-        messages.success(request, f'Cancha "{nombre}" agregada exitosamente.')
-        return redirect('complejos:gestionar', slug=slug)
-    
+            messages.success(request, f'Cancha "{cancha.nombre}" agregada exitosamente.')
+            return redirect('complejos:gestionar', slug=slug)
+    else:
+        form = CanchaForm()
+
     context = {
         'complejo': complejo,
-        'deportes': Cancha.DEPORTE_CHOICES,
-        'tipos_pared': Cancha.TIPO_PARED_CHOICES,
+        'form': form,
     }
     return render(request, 'complejos/agregar_cancha.html', context)
+
 
 
 @login_required
@@ -577,42 +553,24 @@ def editar_cancha(request, slug, cancha_id):
     """
     complejo = get_object_or_404(Complejo, slug=slug)
     cancha = get_object_or_404(Cancha, id=cancha_id, complejo=complejo)
-    
     # Verificar que sea el dueño
     if complejo.dueno.usuario != request.user:
         messages.error(request, 'No tienes permiso para editar esta cancha.')
         return redirect('complejos:detalle', slug=slug)
-    
+
     if request.method == 'POST':
-        cancha.nombre = request.POST.get('nombre', cancha.nombre)
-        cancha.deporte = request.POST.get('deporte', cancha.deporte)
-        cancha.tipo_superficie = request.POST.get('tipo_superficie', '')
-        cancha.tipo_pared = request.POST.get('tipo_pared', '')
-        cancha.techada = 'techada' in request.POST
-        cancha.iluminacion = 'iluminacion' in request.POST
-        
-        precio_hora = request.POST.get('precio_hora')
-        if precio_hora:
-            cancha.precio_hora = precio_hora
-            cancha.precio_base = precio_hora
-        
-        cancha.horario_apertura = request.POST.get('horario_apertura', cancha.horario_apertura)
-        cancha.horario_cierre = request.POST.get('horario_cierre', cancha.horario_cierre)
-        cancha.duracion_turno_minutos = request.POST.get('duracion_turno_minutos', cancha.duracion_turno_minutos)
-        
-        # Manejar foto si se subió una nueva
-        if 'foto' in request.FILES:
-            cancha.foto = request.FILES['foto']
-        
-        cancha.save()
-        messages.success(request, f'Cancha "{cancha.nombre}" actualizada correctamente.')
-        return redirect('complejos:gestionar', slug=slug)
-    
+        form = CanchaForm(request.POST, request.FILES, instance=cancha)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Cancha "{cancha.nombre}" actualizada correctamente.')
+            return redirect('complejos:gestionar', slug=slug)
+    else:
+        form = CanchaForm(instance=cancha)
+
     context = {
         'complejo': complejo,
         'cancha': cancha,
-        'deportes': Cancha.DEPORTE_CHOICES,
-        'tipos_pared': Cancha.TIPO_PARED_CHOICES,
+        'form': form,
     }
     return render(request, 'complejos/editar_cancha.html', context)
 

@@ -111,17 +111,6 @@ class Cancha(models.Model):
     """
     Modelo para canchas dentro de un complejo.
     """
-    DEPORTE_CHOICES = [
-        ('PADEL', 'Pádel'),
-        ('FUTBOL5', 'Fútbol 5'),
-        ('FUTBOL7', 'Fútbol 7'),
-        ('FUTBOL11', 'Fútbol 11'),
-        ('TENIS', 'Tenis'),
-        ('FUTBOL_TENIS', 'Fútbol-Tenis'),
-        ('BASQUET', 'Básquet'),
-        ('VOLEY', 'Voley'),
-    ]
-    
     TIPO_PARED_CHOICES = [
         ('VIDRIO', 'Vidrio'),
         ('CEMENTO', 'Cemento'),
@@ -139,7 +128,12 @@ class Cancha(models.Model):
         related_name='canchas'
     )
     nombre = models.CharField(max_length=100)
-    deporte = models.CharField(max_length=20, choices=DEPORTE_CHOICES)
+    deporte = models.ForeignKey(
+        'cuentas.Deporte',
+        on_delete=models.PROTECT,
+        related_name='canchas',
+        verbose_name='Deporte'
+    )
     tipo_superficie = models.CharField(max_length=100, blank=True)
     tipo_pared = models.CharField(
         max_length=20,
