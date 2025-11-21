@@ -1,3 +1,34 @@
+class Deporte(models.Model):
+    nombre = models.CharField(max_length=50, unique=True)
+    descripcion = models.TextField(blank=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Deporte'
+        verbose_name_plural = 'Deportes'
+
+    def __str__(self):
+        return self.nombre
+
+
+# Relación intermedia para habilidades/categoría por deporte
+class JugadorDeporte(models.Model):
+    perfil = models.ForeignKey('PerfilJugador', on_delete=models.CASCADE, related_name='deportes_jugador')
+    deporte = models.ForeignKey(Deporte, on_delete=models.CASCADE)
+    # Categoría/nivel por deporte (ej: "Intermedio", "Avanzado", "Primera", etc)
+    categoria = models.CharField(max_length=50, blank=True)
+    # Posición favorita (opcional, depende del deporte)
+    posicion_favorita = models.CharField(max_length=100, blank=True)
+    # Pie o brazo hábil (opcional, depende del deporte)
+    lado_habil = models.CharField(max_length=20, blank=True, help_text='Pie o brazo hábil según el deporte')
+
+    class Meta:
+        unique_together = ('perfil', 'deporte')
+        verbose_name = 'Deporte del Jugador'
+        verbose_name_plural = 'Deportes del Jugador'
+
+    def __str__(self):
+        return f"{self.perfil.alias} - {self.deporte.nombre}"
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -81,8 +112,9 @@ class PerfilJugador(models.Model):
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='perfil_jugador')
     alias = models.CharField(max_length=100)
     localidad = models.CharField(max_length=200, blank=True)
-    posicion_favorita = models.CharField(max_length=100, blank=True)
-    pie_habil = models.CharField(max_length=20, choices=PIE_HABIL_CHOICES, blank=True)
+    # Ahora las habilidades y categoría van por deporte
+    # posicion_favorita y pie_habil/lado_habil se gestionan en JugadorDeporte
+    deportes = models.ManyToManyField(Deporte, through='JugadorDeporte', related_name='jugadores')
     estado_juego = models.CharField(
         max_length=20,
         choices=ESTADO_JUEGO_CHOICES,
