@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from .models import Usuario, PerfilJugador, PerfilDueno, Deporte, JugadorDeporte
+from .models import Usuario, PerfilJugador, PerfilDueno, Deporte, JugadorDeporte, HabilidadDeporte, CategoriaDeporte
 
 
 @login_required
@@ -85,6 +85,8 @@ def editar_perfil(request):
     deportes_disponibles = Deporte.objects.filter(activo=True).order_by('nombre')
     deportes_seleccionados = []
     jugador_deportes = []
+    habilidades_por_deporte = {}
+    categorias_por_deporte = {}
     if usuario.tipo_usuario == 'JUGADOR' and perfil:
         jugador_deportes = list(JugadorDeporte.objects.filter(perfil=perfil).select_related('deporte'))
         deportes_seleccionados = [jd.deporte.id for jd in jugador_deportes]
@@ -92,11 +94,17 @@ def editar_perfil(request):
         if not jugador_deportes:
             for deporte in deportes_disponibles:
                 jugador_deportes.append(JugadorDeporte(perfil=perfil, deporte=deporte))
+        # Poblar habilidades y categorías por deporte
+        for deporte in deportes_disponibles:
+            habilidades_por_deporte[deporte.id] = list(HabilidadDeporte.objects.filter(deporte=deporte, activa=True).order_by('nombre'))
+            categorias_por_deporte[deporte.id] = list(CategoriaDeporte.objects.filter(deporte=deporte, activa=True).order_by('nombre'))
     context = {
         'perfil': perfil,
         'deportes_disponibles': deportes_disponibles,
         'deportes_seleccionados': deportes_seleccionados,
         'jugador_deportes': jugador_deportes,
+        'habilidades_por_deporte': habilidades_por_deporte,
+        'categorias_por_deporte': categorias_por_deporte,
     }
     return render(request, 'cuentas/editar_perfil.html', context)
 
