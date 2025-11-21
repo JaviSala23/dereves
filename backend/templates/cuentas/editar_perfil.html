@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% load custom_filters %}
 {% block title %}Editar Perfil - DeRevés{% endblock %}
@@ -105,22 +104,92 @@
                                 </div>
                             {% endfor %}
                         </div>
+                        <!-- Template oculto para nuevos deportes -->
+                        <template id="template-deporte-campos">
+                            <div class="deporte-campos mb-3" data-deporte-id="__ID__" style="display:none;">
+                                <div class="card card-body border-primary mb-2">
+                                    <h6 class="mb-2">__NOMBRE__</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Categoría/Nivel</label>
+                                            <select class="form-select" name="categoria___ID__">__CATEGORIAS__</select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Habilidad/Posición</label>
+                                            <select class="form-select" name="posicion___ID__">__HABILIDADES__</select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Lado hábil</label>
+                                            <select class="form-select" name="lado___ID__">
+                                                <option value="">Seleccionar...</option>
+                                                <option value="DERECHO">Derecho</option>
+                                                <option value="IZQUIERDO">Izquierdo</option>
+                                                <option value="AMBOS">Ambos</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        {% json_script habilidades_por_deporte "habilidades-json" %}
+                        {% json_script categorias_por_deporte "categorias-json" %}
                         <script>
-                        // Mostrar/ocultar campos de cada deporte según selección
+                        // Mostrar/ocultar/agregar campos de cada deporte según selección
                         document.addEventListener('DOMContentLoaded', function() {
                             const selectDeportes = document.getElementById('deportes');
                             const contenedorCampos = document.getElementById('deportes-campos');
+                            const template = document.getElementById('template-deporte-campos');
+                            // Map para saber qué deportes ya tienen bloque
+                            let deportesActivos = Array.from(document.querySelectorAll('.deporte-campos')).map(div => div.getAttribute('data-deporte-id'));
+                            // Obtener datos JSON de habilidades y categorías
+                            const habilidadesPorDeporte = JSON.parse(document.getElementById('habilidades-json').textContent);
+                            const categoriasPorDeporte = JSON.parse(document.getElementById('categorias-json').textContent);
+                            function crearOpciones(arr, selected) {
+                                let html = '<option value="">Seleccionar...</option>';
+                                arr.forEach(obj => {
+                                    html += `<option value="${obj.nombre}"${selected===obj.nombre?' selected':''}>${obj.nombre}</option>`;
+                                });
+                                return html;
+                            }
+                            function agregarBloqueDeporte(id, nombre) {
+                                if (document.querySelector('.deporte-campos[data-deporte-id="'+id+'"]')) return;
+                                const clone = template.content.cloneNode(true);
+                                let html = clone.firstElementChild.outerHTML;
+                                // Rellenar selects
+                                const cats = categoriasPorDeporte[id] || [];
+                                const habs = habilidadesPorDeporte[id] || [];
+                                html = html.replace(/__ID__/g, id)
+                                           .replace(/__NOMBRE__/g, nombre)
+                                           .replace('__CATEGORIAS__', crearOpciones(cats))
+                                           .replace('__HABILIDADES__', crearOpciones(habs));
+                                // Insertar
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = html;
+                                contenedorCampos.appendChild(tempDiv.firstElementChild);
+                            }
+                            function quitarBloqueDeporte(id) {
+                                const div = document.querySelector('.deporte-campos[data-deporte-id="'+id+'"]');
+                                if (div) div.remove();
+                            }
                             function actualizarCampos() {
                                 const seleccionados = Array.from(selectDeportes.selectedOptions).map(opt => opt.value);
+                                // Agregar los nuevos
+                                seleccionados.forEach(id => {
+                                    if (!document.querySelector('.deporte-campos[data-deporte-id="'+id+'"]')) {
+                                        const nombre = selectDeportes.querySelector('option[value="'+id+'"]')?.textContent || '';
+                                        agregarBloqueDeporte(id, nombre);
+                                    }
+                                    document.querySelector('.deporte-campos[data-deporte-id="'+id+'"]').style.display = '';
+                                });
+                                // Quitar los no seleccionados
                                 document.querySelectorAll('.deporte-campos').forEach(div => {
-                                    if (seleccionados.includes(div.getAttribute('data-deporte-id'))) {
-                                        div.style.display = '';
-                                    } else {
-                                        div.style.display = 'none';
+                                    if (!seleccionados.includes(div.getAttribute('data-deporte-id'))) {
+                                        div.remove();
                                     }
                                 });
                             }
                             selectDeportes.addEventListener('change', actualizarCampos);
+                            // Inicial
                             actualizarCampos();
                         });
                         </script>

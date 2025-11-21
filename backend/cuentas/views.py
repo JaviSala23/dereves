@@ -88,12 +88,18 @@ def editar_perfil(request):
     habilidades_por_deporte = {}
     categorias_por_deporte = {}
     if usuario.tipo_usuario == 'JUGADOR' and perfil:
-        jugador_deportes = list(JugadorDeporte.objects.filter(perfil=perfil).select_related('deporte'))
-        deportes_seleccionados = [jd.deporte.id for jd in jugador_deportes]
-        # Si no hay ninguno, mostrar al menos uno vacío para el template
-        if not jugador_deportes:
-            for deporte in deportes_disponibles:
-                jugador_deportes.append(JugadorDeporte(perfil=perfil, deporte=deporte))
+        jugador_deportes_db = list(JugadorDeporte.objects.filter(perfil=perfil).select_related('deporte'))
+        deportes_seleccionados = [jd.deporte.id for jd in jugador_deportes_db]
+        # Para cada deporte seleccionado, asegurar que haya un objeto JugadorDeporte (real o virtual)
+        jugador_deportes = []
+        for deporte in deportes_disponibles:
+            if deporte.id in deportes_seleccionados:
+                # Buscar si ya existe en la DB
+                jd = next((j for j in jugador_deportes_db if j.deporte.id == deporte.id), None)
+                if jd:
+                    jugador_deportes.append(jd)
+                else:
+                    jugador_deportes.append(JugadorDeporte(perfil=perfil, deporte=deporte))
         # Poblar habilidades y categorías por deporte
         for deporte in deportes_disponibles:
             habilidades_por_deporte[deporte.id] = list(HabilidadDeporte.objects.filter(deporte=deporte, activa=True).order_by('nombre'))
