@@ -119,12 +119,6 @@
                                 </div>
                                 <div class="d-flex gap-2">
                                     {% if reserva.estado == 'PENDIENTE' %}
-                                    <form method="post" action="{% url 'reservas:confirmar_reserva' reserva.id %}" class="flex-grow-1 confirmar-reserva-form me-2">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-outline-success w-100">
-                                            Confirmar
-                                        </button>
-                                    </form>
                                     {% endif %}
                                     {% if reserva.estado != 'CANCELADA' %}
                                     <form method="post" action="{% url 'reservas:cancelar_reserva' reserva.id %}" class="flex-grow-1 cancelar-reserva-form">
