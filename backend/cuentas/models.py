@@ -1,3 +1,32 @@
+# Habilidades asociadas a cada deporte
+class HabilidadDeporte(models.Model):
+    deporte = models.ForeignKey('Deporte', on_delete=models.CASCADE, related_name='habilidades')
+    nombre = models.CharField(max_length=50)
+    descripcion = models.CharField(max_length=200, blank=True)
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('deporte', 'nombre')
+        verbose_name = 'Habilidad de Deporte'
+        verbose_name_plural = 'Habilidades de Deporte'
+
+    def __str__(self):
+        return f"{self.deporte.nombre} - {self.nombre}"
+
+# Categorías asociadas a cada deporte
+class CategoriaDeporte(models.Model):
+    deporte = models.ForeignKey('Deporte', on_delete=models.CASCADE, related_name='categorias')
+    nombre = models.CharField(max_length=50)
+    descripcion = models.CharField(max_length=200, blank=True)
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('deporte', 'nombre')
+        verbose_name = 'Categoría de Deporte'
+        verbose_name_plural = 'Categorías de Deporte'
+
+    def __str__(self):
+        return f"{self.deporte.nombre} - {self.nombre}"
 from django.db import models
 class Deporte(models.Model):
     nombre = models.CharField(max_length=50, unique=True)
