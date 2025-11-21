@@ -134,9 +134,10 @@
                                 </div>
                             </div>
                         </template>
-                        {% json_script habilidades_por_deporte "habilidades-json" %}
-                        {% json_script categorias_por_deporte "categorias-json" %}
                         <script>
+                        // Volcado manual de datos JSON seguro
+                        const habilidadesPorDeporte = JSON.parse("{{ habilidades_por_deporte|safe|escapejs }}");
+                        const categoriasPorDeporte = JSON.parse("{{ categorias_por_deporte|safe|escapejs }}");
                         // Mostrar/ocultar/agregar campos de cada deporte según selección
                         document.addEventListener('DOMContentLoaded', function() {
                             const selectDeportes = document.getElementById('deportes');
@@ -144,13 +145,10 @@
                             const template = document.getElementById('template-deporte-campos');
                             // Map para saber qué deportes ya tienen bloque
                             let deportesActivos = Array.from(document.querySelectorAll('.deporte-campos')).map(div => div.getAttribute('data-deporte-id'));
-                            // Obtener datos JSON de habilidades y categorías
-                            const habilidadesPorDeporte = JSON.parse(document.getElementById('habilidades-json').textContent);
-                            const categoriasPorDeporte = JSON.parse(document.getElementById('categorias-json').textContent);
                             function crearOpciones(arr, selected) {
-                                let html = '<option value="">Seleccionar...</option>';
+                                let html = '<option value=\"\">Seleccionar...</option>';
                                 arr.forEach(obj => {
-                                    html += `<option value="${obj.nombre}"${selected===obj.nombre?' selected':''}>${obj.nombre}</option>`;
+                                    html += `<option value=\"${obj.nombre}\"${selected===obj.nombre?' selected':''}>${obj.nombre}</option>`;
                                 });
                                 return html;
                             }
