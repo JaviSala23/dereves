@@ -1,3 +1,4 @@
+from django.db import models
 # Habilidades asociadas a cada deporte
 class HabilidadDeporte(models.Model):
     deporte = models.ForeignKey('Deporte', on_delete=models.CASCADE, related_name='habilidades')
