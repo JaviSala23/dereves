@@ -41,25 +41,33 @@
                     <h6 class="mb-0">Información</h6>
                 </div>
                 <div class="card-body">
-                    {% if perfil_jugador.posicion_favorita %}
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="material-symbols-rounded me-2 text-verde-lima">sports_soccer</span>
-                        <div>
-                            <small class="text-muted d-block">Posición</small>
-                            <strong>{{ perfil_jugador.posicion_favorita }}</strong>
-                        </div>
+                    <label class="text-muted small">Deportes y habilidades</label>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Deporte</th>
+                                    <th>Categoría</th>
+                                    <th>Posición</th>
+                                    <th>Lado hábil</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for jd in perfil_jugador.deportes_jugador.all %}
+                                <tr>
+                                    <td>{{ jd.deporte.nombre }}</td>
+                                    <td>{{ jd.categoria|default:'-' }}</td>
+                                    <td>{{ jd.posicion_favorita|default:'-' }}</td>
+                                    <td>
+                                        {% if jd.lado_habil == 'DERECHO' %}Derecho{% elif jd.lado_habil == 'IZQUIERDO' %}Izquierdo{% elif jd.lado_habil == 'AMBOS' %}Ambos{% else %}-{% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted">Sin deportes cargados</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    {% endif %}
-                    
-                    {% if perfil_jugador.pie_habil %}
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="material-symbols-rounded me-2 text-azul">footprint</span>
-                        <div>
-                            <small class="text-muted d-block">Pie Hábil</small>
-                            <strong>{{ perfil_jugador.get_pie_habil_display }}</strong>
-                        </div>
-                    </div>
-                    {% endif %}
                     
                     {% if perfil_jugador.fecha_nacimiento %}
                     <div class="d-flex align-items-center">

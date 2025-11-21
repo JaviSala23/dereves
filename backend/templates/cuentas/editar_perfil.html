@@ -93,7 +93,12 @@
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label">Lado hábil</label>
-                                                <input type="text" class="form-control" name="lado_{{ jd.deporte.id }}" value="{{ jd.lado_habil }}" placeholder="Pie o brazo hábil">
+                                                <select class="form-select" name="lado_{{ jd.deporte.id }}">
+                                                    <option value="">Seleccionar...</option>
+                                                    <option value="DERECHO" {% if jd.lado_habil == 'DERECHO' %}selected{% endif %}>Derecho</option>
+                                                    <option value="IZQUIERDO" {% if jd.lado_habil == 'IZQUIERDO' %}selected{% endif %}>Izquierdo</option>
+                                                    <option value="AMBOS" {% if jd.lado_habil == 'AMBOS' %}selected{% endif %}>Ambos</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
